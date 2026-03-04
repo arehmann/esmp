@@ -35,7 +35,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Neo4j, Qdrant, and MySQL are each reachable from the Spring Boot service (connection verified at startup)
   4. Project compiles cleanly with professional-grade package structure, Flyway schema migrations applied to MySQL
   5. Spring Boot Actuator exposes health, info, and metrics endpoints
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Gradle project skeleton, Docker Compose environment, Spring Boot app with health indicators and config
+- [ ] 01-02-PLAN.md — Integration tests for health indicators and virtual threads, human verification of full environment
 
 ### Phase 2: AST Extraction
 **Goal**: System can parse a Java/Vaadin 7 source module and persist structured AST entities to Neo4j
@@ -152,7 +156,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Infrastructure | 0/TBD | Not started | - |
+| 1. Infrastructure | 0/2 | Planning complete | - |
 | 2. AST Extraction | 0/TBD | Not started | - |
 | 3. Code Knowledge Graph | 0/TBD | Not started | - |
 | 4. Risk Analysis | 0/TBD | Not started | - |
