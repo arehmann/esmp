@@ -44,6 +44,26 @@ public class Neo4jSchemaInitializer implements ApplicationRunner {
         "CREATE CONSTRAINT java_field_id_unique IF NOT EXISTS"
             + " FOR (n:JavaField) REQUIRE n.fieldId IS UNIQUE");
 
+    createConstraint(
+        "java_annotation_fqn_unique",
+        "CREATE CONSTRAINT java_annotation_fqn_unique IF NOT EXISTS"
+            + " FOR (n:JavaAnnotation) REQUIRE n.fullyQualifiedName IS UNIQUE");
+
+    createConstraint(
+        "java_package_name_unique",
+        "CREATE CONSTRAINT java_package_name_unique IF NOT EXISTS"
+            + " FOR (n:JavaPackage) REQUIRE n.packageName IS UNIQUE");
+
+    createConstraint(
+        "java_module_name_unique",
+        "CREATE CONSTRAINT java_module_name_unique IF NOT EXISTS"
+            + " FOR (n:JavaModule) REQUIRE n.moduleName IS UNIQUE");
+
+    createConstraint(
+        "db_table_name_unique",
+        "CREATE CONSTRAINT db_table_name_unique IF NOT EXISTS"
+            + " FOR (n:DBTable) REQUIRE n.tableName IS UNIQUE");
+
     log.info("Neo4j uniqueness constraints for AST node types are in place.");
   }
 
