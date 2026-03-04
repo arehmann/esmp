@@ -13,7 +13,7 @@ ESMP is built as a strict dependency chain: infrastructure and tooling come firs
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Infrastructure** - Docker Compose environment with Neo4j, Qdrant, MySQL, and Spring Boot skeleton running (completed 2026-03-04)
-- [ ] **Phase 2: AST Extraction** - Parse Java/Vaadin 7 source into structured graph nodes using OpenRewrite LST
+- [x] **Phase 2: AST Extraction** - Parse Java/Vaadin 7 source into structured graph nodes using OpenRewrite LST (completed 2026-03-04)
 - [ ] **Phase 3: Code Knowledge Graph** - Full structural graph populated with all node types and relationship edges
 - [ ] **Phase 4: Graph Validation & Canonical Queries** - Structural graph correctness verified before building semantic layers
 - [ ] **Phase 5: Domain Lexicon** - Business term extraction, curation, and graph edge integration — moved early to prevent downstream rework
@@ -54,12 +54,12 @@ Plans:
   3. Call graph edges between methods across classes are stored as CALLS relationships in Neo4j
   4. A Vaadin 7 view class is parsed and its Vaadin component usage is captured in the graph
   5. Re-running extraction on an unchanged file does not create duplicate nodes (idempotent)
-**Plans:** 3 plans
+**Plans:** 3/3 plans complete
 
 Plans:
-- [ ] 02-01-PLAN.md — OpenRewrite/Vaadin dependencies, Neo4j domain model entities, synthetic test fixtures, schema constraints
-- [ ] 02-02-PLAN.md — JavaSourceParser, ClassMetadataVisitor, CallGraphVisitor, VaadinPatternVisitor with unit tests
-- [ ] 02-03-PLAN.md — ExtractionService, REST endpoint, Neo4j persistence, integration tests, Vaadin audit report
+- [x] 02-01-PLAN.md — OpenRewrite/Vaadin dependencies, Neo4j domain model entities, synthetic test fixtures, schema constraints
+- [x] 02-02-PLAN.md — JavaSourceParser, ClassMetadataVisitor, CallGraphVisitor, VaadinPatternVisitor with unit tests
+- [x] 02-03-PLAN.md — ExtractionService, REST endpoint, Neo4j persistence, integration tests, Vaadin audit report
 
 ### Phase 3: Code Knowledge Graph
 **Goal**: Neo4j graph contains the full structural model of the codebase with all node types, relationship edges, and is queryable via API
@@ -206,7 +206,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Infrastructure | 2/2 | Complete   | 2026-03-04 |
-| 2. AST Extraction | 0/3 | Planning complete | - |
+| 2. AST Extraction | 3/3 | Complete   | 2026-03-04 |
 | 3. Code Knowledge Graph | 0/TBD | Not started | - |
 | 4. Graph Validation & Canonical Queries | 0/TBD | Not started | - |
 | 5. Domain Lexicon | 0/TBD | Not started | - |

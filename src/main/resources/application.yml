@@ -40,5 +40,10 @@ qdrant:
   host: localhost
   port: 6334
 
+esmp:
+  extraction:
+    source-root: ""
+    classpath-file: ""
+
 server:
   port: 8080

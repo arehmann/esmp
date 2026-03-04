@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Phase 2 context gathered
-last_updated: "2026-03-04T14:59:53.803Z"
+stopped_at: Completed 02-ast-extraction 02-03-PLAN.md — human verify approved, phase 2 complete
+last_updated: "2026-03-04T18:01:21.156Z"
 last_activity: 2026-03-04 — Roadmap created, project initialized
 progress:
   total_phases: 13
-  completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  completed_phases: 2
+  total_plans: 5
+  completed_plans: 5
   percent: 0
 ---
 
@@ -53,6 +53,9 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01-infrastructure P01 | 9 | 2 tasks | 18 files |
 | Phase 01-infrastructure P02 | 13 | 1 tasks | 5 files |
 | Phase 01-infrastructure P02 | 65min | 2 tasks | 6 files |
+| Phase 02-ast-extraction P01 | 4min | 2 tasks | 16 files |
+| Phase 02-ast-extraction P02 | 15min | 2 tasks | 10 files |
+| Phase 02-ast-extraction P03 | 30min | 1 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -70,6 +73,16 @@ Recent decisions affecting current work:
 - [Phase 01-infrastructure]: Qdrant gRPC port is 6334 not 6333; QdrantGrpcClient.newBuilder must use useTls=false for local Docker Qdrant
 - [Phase 01-infrastructure]: MySQL host port changed to 3307 (permanent project convention) to avoid conflict with local dev MySQL on 3306
 - [Phase 01-infrastructure]: docker-compose.yml name: esmp groups all containers under ESMP project name
+- [Phase 02-ast-extraction]: Gradle alias openrewrite-java-jdk21 used instead of openrewrite-java-21 to avoid type-safe accessor failure on numeric suffix
+- [Phase 02-ast-extraction]: @Version annotation is org.springframework.data.annotation.Version (spring-data-commons), not in neo4j.core.schema package
+- [Phase 02-ast-extraction]: vaadin-server:7.7.48 is testImplementation only — provides Vaadin 7 type symbols for classpath resolution, must not be on runtime classpath due to javax.servlet conflict
+- [Phase 02-ast-extraction]: JavaTypeCache is in org.openrewrite.java.internal (internal package) — no public factory; accessed directly via JavaParser.Builder.typeCache()
+- [Phase 02-ast-extraction]: Inherited JPA methods (findAll, save) have Spring Data parent interface as declaring type, not the user-defined subinterface — only custom query methods resolve to SampleRepository
+- [Phase 02-ast-extraction]: Test classpath must include all java.class.path JARs (not just Vaadin JAR) for accurate Spring/JPA type resolution in visitor tests
+- [Phase 02-ast-extraction]: Dual transaction manager (JPA @Primary + neo4jTransactionManager) required when both JPA and Neo4j are on classpath to prevent ConditionalOnMissingBean suppression of Neo4j TM
+- [Phase 02-ast-extraction]: @Transactional('neo4jTransactionManager') qualifier required on ExtractionService.extract() to bind correct Neo4j session
+- [Phase 02-ast-extraction]: Dual transaction manager: JPA ConditionalOnMissingBean suppresses Neo4jTransactionManager auto-config when JPA is present; must create both explicitly with distinct bean names
+- [Phase 02-ast-extraction]: @Transactional('neo4jTransactionManager') qualifier required on ExtractionService.extract() to bind correct Neo4j session — default @Transactional binds to JPA (primary) TM
 
 ### Pending Todos
 
@@ -77,11 +90,11 @@ None yet.
 
 ### Blockers/Concerns
 
-- [Phase 1 risk]: OpenRewrite Vaadin 7 recipe coverage is LOW confidence — hands-on audit against sample module is required in Phase 2. Discovering gaps in Phase 4 would be catastrophic.
+- [RESOLVED — Phase 2]: OpenRewrite Vaadin 7 recipe coverage audited via VaadinAuditService in Plan 02-03. Known limitations documented (conditional component trees, reflective calls, runtime-only configs). Full recipe coverage confidence assessment deferred to Phase 4 (Graph Validation) where canonical Cypher queries will verify captured patterns against expected AST coverage.
 - [Phase 6 risk]: RAG retrieval quality must be empirically validated before building AI orchestration on top of it. Phase 6 must end with a retrieval quality evaluation.
 
 ## Session Continuity
 
-Last session: 2026-03-04T14:59:53.799Z
-Stopped at: Phase 2 context gathered
-Resume file: .planning/phases/02-ast-extraction/02-CONTEXT.md
+Last session: 2026-03-04T17:56:01.923Z
+Stopped at: Completed 02-ast-extraction 02-03-PLAN.md — human verify approved, phase 2 complete
+Resume file: None
