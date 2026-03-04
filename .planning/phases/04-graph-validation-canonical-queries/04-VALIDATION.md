@@ -38,11 +38,10 @@ created: 2026-03-05
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 4-01-01 | 01 | 1 | GVAL-01 | Integration | `./gradlew test --tests "com.esmp.graph.validation.ValidationServiceIntegrationTest"` | ❌ W0 | ⬜ pending |
-| 4-01-02 | 01 | 1 | GVAL-01 | Integration | `./gradlew test --tests "com.esmp.graph.api.ValidationControllerIntegrationTest"` | ❌ W0 | ⬜ pending |
-| 4-02-01 | 02 | 1 | GVAL-02 | Integration | `./gradlew test --tests "com.esmp.graph.api.ValidationControllerIntegrationTest#testDependencyCone*"` | ❌ W0 | ⬜ pending |
-| 4-03-01 | 03 | 1 | GVAL-03 | Integration | `./gradlew test --tests "com.esmp.graph.validation.ValidationServiceIntegrationTest#testOrphan*"` | ❌ W0 | ⬜ pending |
-| 4-04-01 | 04 | 1 | GVAL-04 | Integration | `./gradlew test --tests "com.esmp.graph.validation.ValidationServiceIntegrationTest#testInheritanceChain*"` | ❌ W0 | ⬜ pending |
+| 4-01-01 | 01 | 1 | GVAL-01, GVAL-03, GVAL-04 | Compile | `./gradlew compileJava` | ✅ | ⬜ pending |
+| 4-01-02 | 01 | 1 | GVAL-01, GVAL-03, GVAL-04 | Integration | `./gradlew test --tests "com.esmp.graph.api.ValidationControllerIntegrationTest"` | ❌ W1 | ⬜ pending |
+| 4-02-01 | 02 | 1 | GVAL-02 | Compile | `./gradlew compileJava` | ✅ | ⬜ pending |
+| 4-02-02 | 02 | 1 | GVAL-02 | Integration | `./gradlew test --tests "com.esmp.graph.api.DependencyConeIntegrationTest"` | ❌ W1 | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -50,8 +49,8 @@ created: 2026-03-05
 
 ## Wave 0 Requirements
 
-- [ ] `src/test/java/com/esmp/graph/validation/ValidationServiceIntegrationTest.java` — stubs for GVAL-01, GVAL-03, GVAL-04
-- [ ] `src/test/java/com/esmp/graph/api/ValidationControllerIntegrationTest.java` — stubs for GVAL-01 (endpoint), GVAL-02 (cone)
+- [ ] `src/test/java/com/esmp/graph/api/ValidationControllerIntegrationTest.java` — covers GVAL-01 (20 queries), GVAL-03 (orphans/duplicates), GVAL-04 (inheritance)
+- [ ] `src/test/java/com/esmp/graph/api/DependencyConeIntegrationTest.java` — covers GVAL-02 (dependency cone)
 - No new framework install needed — Testcontainers, JUnit 5, AssertJ already in `build.gradle.kts`
 
 *Existing infrastructure covers framework requirements.*
