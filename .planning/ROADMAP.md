@@ -12,7 +12,7 @@ ESMP is built as a strict dependency chain: infrastructure and tooling come firs
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Infrastructure** - Docker Compose environment with Neo4j, Qdrant, MySQL, and Spring Boot skeleton running
+- [x] **Phase 1: Infrastructure** - Docker Compose environment with Neo4j, Qdrant, MySQL, and Spring Boot skeleton running (completed 2026-03-04)
 - [ ] **Phase 2: AST Extraction** - Parse Java/Vaadin 7 source into structured graph nodes using OpenRewrite LST
 - [ ] **Phase 3: Code Knowledge Graph** - Full structural graph populated with all node types and relationship edges
 - [ ] **Phase 4: Risk Analysis** - Cyclomatic complexity, fan-in/out, DB write detection, and composite risk scoring per class
@@ -35,7 +35,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Neo4j, Qdrant, and MySQL are each reachable from the Spring Boot service (connection verified at startup)
   4. Project compiles cleanly with professional-grade package structure, Flyway schema migrations applied to MySQL
   5. Spring Boot Actuator exposes health, info, and metrics endpoints
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 01-01-PLAN.md — Gradle project skeleton, Docker Compose environment, Spring Boot app with health indicators and config
@@ -156,7 +156,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Infrastructure | 1/2 | In Progress|  |
+| 1. Infrastructure | 2/2 | Complete   | 2026-03-04 |
 | 2. AST Extraction | 0/TBD | Not started | - |
 | 3. Code Knowledge Graph | 0/TBD | Not started | - |
 | 4. Risk Analysis | 0/TBD | Not started | - |
