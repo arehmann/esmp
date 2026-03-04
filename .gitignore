@@ -1,0 +1,22 @@
+# Gradle
+.gradle/
+build/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# Java
+out/
+*.class
+
+# macOS
+.DS_Store
+
+# NOTE: .env is NOT gitignored because it only contains local dev defaults (no real secrets).
+# If you ever add real credentials to .env, add this line:
+#   .env
+# and create a .env.example file with placeholder values.

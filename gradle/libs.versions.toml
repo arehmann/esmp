@@ -1,0 +1,29 @@
+[versions]
+spring-boot        = "3.5.11"
+java               = "21"
+testcontainers     = "1.20.4"
+qdrant-client      = "1.13.0"
+spotless           = "7.0.2"
+google-java-format = "1.23.0"
+
+[libraries]
+spring-boot-starter-web       = { module = "org.springframework.boot:spring-boot-starter-web" }
+spring-boot-starter-actuator  = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+spring-boot-starter-data-neo4j = { module = "org.springframework.boot:spring-boot-starter-data-neo4j" }
+spring-boot-starter-data-jpa  = { module = "org.springframework.boot:spring-boot-starter-data-jpa" }
+spring-boot-starter-test      = { module = "org.springframework.boot:spring-boot-starter-test" }
+spring-boot-testcontainers    = { module = "org.springframework.boot:spring-boot-testcontainers" }
+micrometer-prometheus         = { module = "io.micrometer:micrometer-registry-prometheus" }
+flyway-core                   = { module = "org.flywaydb:flyway-core" }
+flyway-mysql                  = { module = "org.flywaydb:flyway-mysql" }
+mysql-connector               = { module = "com.mysql:mysql-connector-j" }
+qdrant-client                 = { module = "io.qdrant:client", version.ref = "qdrant-client" }
+grpc-stub                     = { module = "io.grpc:grpc-stub", version = "1.65.1" }
+testcontainers-junit          = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
+testcontainers-neo4j          = { module = "org.testcontainers:neo4j", version.ref = "testcontainers" }
+testcontainers-mysql          = { module = "org.testcontainers:mysql", version.ref = "testcontainers" }
+
+[plugins]
+spring-boot            = { id = "org.springframework.boot", version.ref = "spring-boot" }
+spring-dependency-mgmt = { id = "io.spring.dependency-management", version = "1.1.7" }
+spotless               = { id = "com.diffplug.spotless", version.ref = "spotless" }
