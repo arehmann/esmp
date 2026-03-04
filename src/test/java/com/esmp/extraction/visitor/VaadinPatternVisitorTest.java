@@ -33,7 +33,8 @@ class VaadinPatternVisitorTest {
   @Test
   void marksSampleVaadinView_asVaadinView() {
     assertThat(acc.getVaadinViews())
-        .as("SampleVaadinView should be marked as VaadinView (implements com.vaadin.navigator.View)")
+        .as(
+            "SampleVaadinView should be marked as VaadinView (implements com.vaadin.navigator.View)")
         .contains("com.example.sample.SampleVaadinView");
   }
 
@@ -53,7 +54,8 @@ class VaadinPatternVisitorTest {
 
   @Test
   void detectsAddComponentCalls_inSampleVaadinView() {
-    // SampleVaadinView.addComponent(titleLabel), addComponent(refreshButton), addComponent(customerTable)
+    // SampleVaadinView.addComponent(titleLabel), addComponent(refreshButton),
+    // addComponent(customerTable)
     long edgesFromView =
         acc.getComponentEdges().stream()
             .filter(e -> e.parentClassFqn().contains("SampleVaadinView"))
@@ -77,9 +79,7 @@ class VaadinPatternVisitorTest {
   private List<SourceFile> parseFixtures() throws URISyntaxException, IOException {
     Path fixturesDir =
         Paths.get(
-            Objects.requireNonNull(
-                    getClass().getClassLoader().getResource("fixtures"))
-                .toURI());
+            Objects.requireNonNull(getClass().getClassLoader().getResource("fixtures")).toURI());
     Path projectRoot = fixturesDir.getParent();
 
     List<Path> sources;

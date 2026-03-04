@@ -29,9 +29,7 @@ class JavaSourceParserTest {
     parser = new JavaSourceParser(loader);
     fixturesDir =
         Paths.get(
-            Objects.requireNonNull(
-                    getClass().getClassLoader().getResource("fixtures"))
-                .toURI());
+            Objects.requireNonNull(getClass().getClassLoader().getResource("fixtures")).toURI());
     projectRoot = fixturesDir.getParent();
   }
 
@@ -59,8 +57,7 @@ class JavaSourceParserTest {
       assertThatCode(() -> loader.load(tempFile.toString())).doesNotThrowAnyException();
       List<Path> result = loader.load(tempFile.toString());
       // Non-existent paths must be filtered out
-      assertThat(result)
-          .allMatch(Files::exists, "all returned paths should exist on disk");
+      assertThat(result).allMatch(Files::exists, "all returned paths should exist on disk");
     } finally {
       Files.deleteIfExists(tempFile);
     }
@@ -119,8 +116,18 @@ class JavaSourceParserTest {
     assertThat(acc.getComponentEdges()).isEmpty();
 
     acc.addClass(
-        "com.example.Foo", "Foo", "com.example", List.of(), List.of(), false, false, false,
-        null, List.of(), "/Foo.java", "abc123");
+        "com.example.Foo",
+        "Foo",
+        "com.example",
+        List.of(),
+        List.of(),
+        false,
+        false,
+        false,
+        null,
+        List.of(),
+        "/Foo.java",
+        "abc123");
     acc.addMethod(
         "com.example.Foo#doSomething(String)",
         "doSomething",
@@ -146,12 +153,32 @@ class JavaSourceParserTest {
   void accumulator_deduplicates_onSameKey() {
     ExtractionAccumulator acc = new ExtractionAccumulator();
     acc.addClass(
-        "com.example.Foo", "Foo", "com.example", List.of(), List.of(), false, false, false,
-        null, List.of(), "/Foo.java", "abc123");
+        "com.example.Foo",
+        "Foo",
+        "com.example",
+        List.of(),
+        List.of(),
+        false,
+        false,
+        false,
+        null,
+        List.of(),
+        "/Foo.java",
+        "abc123");
     // Adding same FQN again should update the entry (not create duplicate)
     acc.addClass(
-        "com.example.Foo", "Foo", "com.example", List.of("@Service"), List.of(), false, false,
-        false, null, List.of(), "/Foo.java", "abc456");
+        "com.example.Foo",
+        "Foo",
+        "com.example",
+        List.of("@Service"),
+        List.of(),
+        false,
+        false,
+        false,
+        null,
+        List.of(),
+        "/Foo.java",
+        "abc456");
     assertThat(acc.getClasses()).hasSize(1);
   }
 
@@ -159,9 +186,7 @@ class JavaSourceParserTest {
 
   private List<Path> collectJavaSources(Path dir) throws IOException {
     try (var stream = Files.walk(dir)) {
-      return stream
-          .filter(p -> p.toString().endsWith(".java"))
-          .toList();
+      return stream.filter(p -> p.toString().endsWith(".java")).toList();
     }
   }
 

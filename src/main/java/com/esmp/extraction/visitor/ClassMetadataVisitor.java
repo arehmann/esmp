@@ -15,8 +15,8 @@ import org.openrewrite.java.tree.JavaType;
  * method signatures (name, return type, parameters, annotations), and field definitions (name,
  * type, annotations). Only class-level fields are recorded — local variables are excluded.
  *
- * <p>IMPORTANT: Every {@code visit*} override MUST call the corresponding {@code super.visit*()}
- * to ensure recursion into nested classes, inner classes, and anonymous classes.
+ * <p>IMPORTANT: Every {@code visit*} override MUST call the corresponding {@code super.visit*()} to
+ * ensure recursion into nested classes, inner classes, and anonymous classes.
  */
 public class ClassMetadataVisitor extends JavaIsoVisitor<ExtractionAccumulator> {
 
@@ -44,7 +44,8 @@ public class ClassMetadataVisitor extends JavaIsoVisitor<ExtractionAccumulator> 
       boolean isAbstract = cd.hasModifier(J.Modifier.Type.Abstract);
 
       String superClass = null;
-      if (cd.getExtends() != null && cd.getExtends().getType() instanceof JavaType.FullyQualified sq) {
+      if (cd.getExtends() != null
+          && cd.getExtends().getType() instanceof JavaType.FullyQualified sq) {
         superClass = sq.getFullyQualifiedName();
       }
 

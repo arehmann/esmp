@@ -15,7 +15,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.SourceFile;
 
-/** Unit tests for {@link CallGraphVisitor}. Verifies call edge extraction against synthetic fixtures. */
+/**
+ * Unit tests for {@link CallGraphVisitor}. Verifies call edge extraction against synthetic
+ * fixtures.
+ */
 class CallGraphVisitorTest {
 
   private ExtractionAccumulator acc;
@@ -33,7 +36,8 @@ class CallGraphVisitorTest {
   @Test
   void detectsCallFromSampleService_findByName_to_repository_findByName() {
     // SampleService.findByName() -> SampleRepository.findByName() (custom method, not inherited)
-    // findByName is declared directly on SampleRepository, so its declaring type IS SampleRepository
+    // findByName is declared directly on SampleRepository, so its declaring type IS
+    // SampleRepository
     boolean found =
         acc.getCallEdges().stream()
             .anyMatch(
@@ -53,7 +57,8 @@ class CallGraphVisitorTest {
   void detectsCallFromSampleService_findAll_to_anyRepository() {
     // SampleService.findAll() calls repository.findAll().
     // The callee's declaring type may be a JpaRepository parent (e.g., ListCrudRepository)
-    // because findAll is an inherited method — the exact declaring type depends on classpath resolution.
+    // because findAll is an inherited method — the exact declaring type depends on classpath
+    // resolution.
     boolean found =
         acc.getCallEdges().stream()
             .anyMatch(
@@ -79,9 +84,7 @@ class CallGraphVisitorTest {
   private List<SourceFile> parseFixtures() throws URISyntaxException, IOException {
     Path fixturesDir =
         Paths.get(
-            Objects.requireNonNull(
-                    getClass().getClassLoader().getResource("fixtures"))
-                .toURI());
+            Objects.requireNonNull(getClass().getClassLoader().getResource("fixtures")).toURI());
     Path projectRoot = fixturesDir.getParent();
 
     List<Path> sources;

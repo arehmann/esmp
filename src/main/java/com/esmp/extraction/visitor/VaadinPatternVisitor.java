@@ -16,8 +16,8 @@ import org.openrewrite.java.tree.JavaType;
  *       extending {@code com.vaadin.ui.UI}
  *   <li><strong>VaadinComponent</strong>: classes that instantiate Vaadin UI component types via
  *       {@code new} expressions (e.g., {@code new Button()}, {@code new VerticalLayout()})
- *   <li><strong>VaadinDataBinding</strong>: classes that use {@code BeanFieldGroup},
- *       {@code FieldGroup}, or {@code BeanItemContainer}
+ *   <li><strong>VaadinDataBinding</strong>: classes that use {@code BeanFieldGroup}, {@code
+ *       FieldGroup}, or {@code BeanItemContainer}
  *   <li><strong>CONTAINS_COMPONENT edges</strong>: parent-child component hierarchy captured from
  *       {@code addComponent()} / {@code addComponents()} call sites
  * </ul>
@@ -148,7 +148,8 @@ public class VaadinPatternVisitor extends JavaIsoVisitor<ExtractionAccumulator> 
       return declaringFqn.startsWith(VAADIN_UI_PACKAGE);
     }
     // Heuristic fallback when type is unresolved: check if `this` is the receiver (implicit)
-    // In Vaadin 7, addComponent() without explicit target is always called on `this` (the container)
+    // In Vaadin 7, addComponent() without explicit target is always called on `this` (the
+    // container)
     return mi.getSelect() == null;
   }
 

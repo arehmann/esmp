@@ -42,7 +42,8 @@ class ClassMetadataVisitorTest {
         acc.getClasses().get("com.example.sample.SampleService");
     assertThat(data).isNotNull();
     assertThat(data.annotations())
-        .anyMatch(a -> a.contains("Service") || a.contains("org.springframework.stereotype.Service"));
+        .anyMatch(
+            a -> a.contains("Service") || a.contains("org.springframework.stereotype.Service"));
   }
 
   @Test
@@ -95,9 +96,7 @@ class ClassMetadataVisitorTest {
   private List<SourceFile> parseFixtures() throws URISyntaxException, IOException {
     Path fixturesDir =
         Paths.get(
-            Objects.requireNonNull(
-                    getClass().getClassLoader().getResource("fixtures"))
-                .toURI());
+            Objects.requireNonNull(getClass().getClassLoader().getResource("fixtures")).toURI());
     Path projectRoot = fixturesDir.getParent();
 
     List<Path> sources;

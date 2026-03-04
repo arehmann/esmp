@@ -79,17 +79,12 @@ public class JavaSourceParser {
       }
 
       JavaParser javaParser = builder.build();
-      List<SourceFile> result =
-          javaParser.parse(javaSourcePaths, projectRoot, ctx).toList();
-      log.info(
-          "Parsed {}/{} source files successfully",
-          result.size(),
-          javaSourcePaths.size());
+      List<SourceFile> result = javaParser.parse(javaSourcePaths, projectRoot, ctx).toList();
+      log.info("Parsed {}/{} source files successfully", result.size(), javaSourcePaths.size());
       return result;
     } catch (Exception e) {
       log.warn(
-          "Unexpected error during parsing — returning empty result. Error: {}",
-          e.getMessage());
+          "Unexpected error during parsing — returning empty result. Error: {}", e.getMessage());
       return Collections.emptyList();
     }
   }

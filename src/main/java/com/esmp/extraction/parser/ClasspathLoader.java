@@ -12,10 +12,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
- * Reads a classpath text file (one JAR path per line) and returns the list of existing {@link
- * Path} entries. Non-existent paths are skipped with a warning. If the classpath file itself does
- * not exist, returns an empty list and logs a warning — this allows parsing to proceed with
- * degraded type resolution rather than failing entirely.
+ * Reads a classpath text file (one JAR path per line) and returns the list of existing {@link Path}
+ * entries. Non-existent paths are skipped with a warning. If the classpath file itself does not
+ * exist, returns an empty list and logs a warning — this allows parsing to proceed with degraded
+ * type resolution rather than failing entirely.
  */
 @Component
 public class ClasspathLoader {
@@ -25,8 +25,8 @@ public class ClasspathLoader {
   /**
    * Loads classpath entries from the given file.
    *
-   * @param classpathFilePath path to the text file containing one JAR path per line; may be null
-   *     or empty
+   * @param classpathFilePath path to the text file containing one JAR path per line; may be null or
+   *     empty
    * @return list of {@link Path} objects that exist on disk; never null
    */
   public List<Path> load(String classpathFilePath) {

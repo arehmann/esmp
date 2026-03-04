@@ -10,8 +10,8 @@ import org.openrewrite.java.tree.JavaType;
  * OpenRewrite {@link JavaIsoVisitor} that extracts method-call graph edges from Java LSTs.
  *
  * <p>Covers AST-03: for every statically-resolved method invocation, this visitor creates a
- * directed {@link ExtractionAccumulator.CallEdge} from the enclosing method (caller) to the
- * invoked method (callee) with fully-qualified method IDs.
+ * directed {@link ExtractionAccumulator.CallEdge} from the enclosing method (caller) to the invoked
+ * method (callee) with fully-qualified method IDs.
  *
  * <p>Known limitations:
  *
@@ -47,8 +47,7 @@ public class CallGraphVisitor extends JavaIsoVisitor<ExtractionAccumulator> {
             ClassMetadataVisitor.buildMethodId(calleeClass, calleeMethod, calleeParamTypes);
 
         // Find the enclosing method declaration (caller context)
-        J.MethodDeclaration enclosingMethod =
-            getCursor().firstEnclosing(J.MethodDeclaration.class);
+        J.MethodDeclaration enclosingMethod = getCursor().firstEnclosing(J.MethodDeclaration.class);
         if (enclosingMethod != null && enclosingMethod.getMethodType() != null) {
           JavaType.Method callerType = enclosingMethod.getMethodType();
           String callerClass = callerType.getDeclaringType().getFullyQualifiedName();

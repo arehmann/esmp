@@ -145,7 +145,8 @@ public class ExtractionAccumulator {
       List<String> annotations,
       List<String> modifiers) {
     fields.put(
-        fieldId, new FieldNodeData(fieldId, simpleName, fieldType, declaringClass, annotations, modifiers));
+        fieldId,
+        new FieldNodeData(fieldId, simpleName, fieldType, declaringClass, annotations, modifiers));
   }
 
   /**
@@ -171,8 +172,7 @@ public class ExtractionAccumulator {
    */
   public void addComponentEdge(
       String parentClassFqn, String childClassFqn, String parentType, String childType) {
-    componentEdges.add(
-        new ComponentEdge(parentClassFqn, childClassFqn, parentType, childType));
+    componentEdges.add(new ComponentEdge(parentClassFqn, childClassFqn, parentType, childType));
   }
 
   /** Marks the given class FQN as a Vaadin View (will receive :VaadinView label). */
@@ -185,7 +185,10 @@ public class ExtractionAccumulator {
     vaadinComponents.add(fqn);
   }
 
-  /** Marks the given class FQN as a Vaadin Data Binding user (will receive :VaadinDataBinding label). */
+  /**
+   * Marks the given class FQN as a Vaadin Data Binding user (will receive :VaadinDataBinding
+   * label).
+   */
   public void markAsVaadinDataBinding(String fqn) {
     vaadinDataBindings.add(fqn);
   }
@@ -230,9 +233,7 @@ public class ExtractionAccumulator {
   // Inner record types
   // =========================================================================
 
-  /**
-   * Extracted data for a single Java class or interface.
-   */
+  /** Extracted data for a single Java class or interface. */
   public record ClassNodeData(
       String fqn,
       String simpleName,
@@ -247,9 +248,7 @@ public class ExtractionAccumulator {
       String sourceFilePath,
       String contentHash) {}
 
-  /**
-   * Extracted data for a single Java method or constructor.
-   */
+  /** Extracted data for a single Java method or constructor. */
   public record MethodNodeData(
       String methodId,
       String simpleName,
@@ -260,9 +259,7 @@ public class ExtractionAccumulator {
       List<String> modifiers,
       boolean isConstructor) {}
 
-  /**
-   * Extracted data for a single Java field declaration.
-   */
+  /** Extracted data for a single Java field declaration. */
   public record FieldNodeData(
       String fieldId,
       String simpleName,
@@ -271,21 +268,11 @@ public class ExtractionAccumulator {
       List<String> annotations,
       List<String> modifiers) {}
 
-  /**
-   * A directed call edge from one method to another.
-   */
+  /** A directed call edge from one method to another. */
   public record CallEdge(
-      String callerMethodId,
-      String calleeMethodId,
-      String sourceFile,
-      int lineNumber) {}
+      String callerMethodId, String calleeMethodId, String sourceFile, int lineNumber) {}
 
-  /**
-   * A CONTAINS_COMPONENT edge representing a parent-child layout relationship in Vaadin 7.
-   */
+  /** A CONTAINS_COMPONENT edge representing a parent-child layout relationship in Vaadin 7. */
   public record ComponentEdge(
-      String parentClassFqn,
-      String childClassFqn,
-      String parentType,
-      String childType) {}
+      String parentClassFqn, String childClassFqn, String parentType, String childType) {}
 }
