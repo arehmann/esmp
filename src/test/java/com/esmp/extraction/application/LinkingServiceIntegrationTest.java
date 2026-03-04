@@ -226,6 +226,55 @@ class LinkingServiceIntegrationTest {
   // DEPENDS_ON edge test
   // ---------------------------------------------------------------------------
 
+  // ---------------------------------------------------------------------------
+  // BINDS_TO edge tests
+  // ---------------------------------------------------------------------------
+
+  @Test
+  void linkBindsToEdges_createsBindsToRelationship() {
+    // Pre-populate two ClassNodes: a view and an entity
+    neo4jClient.query("""
+        CREATE (v:JavaClass {fullyQualifiedName: 'com.test.MyForm', simpleName: 'MyForm',
+                packageName: 'com.test', sourceFile: 'MyForm.java', annotations: [],
+                implementedInterfaces: [], extraLabels: ['VaadinDataBinding']})
+        CREATE (e:JavaClass {fullyQualifiedName: 'com.test.MyEntity', simpleName: 'MyEntity',
+                packageName: 'com.test', sourceFile: 'MyEntity.java', annotations: [],
+                implementedInterfaces: [], extraLabels: []})
+        """).run();
+
+    // Create accumulator with a BINDS_TO edge
+    ExtractionAccumulator acc = new ExtractionAccumulator();
+    acc.addBindsToEdge("com.test.MyForm", "com.test.MyEntity", "BeanFieldGroup");
+
+    int count = linkingService.linkBindsToEdges(acc);
+    assertThat(count).isEqualTo(1);
+
+    // Verify the edge exists in Neo4j
+    Long edgeCount = neo4jClient.query("""
+        MATCH (v:JavaClass {fullyQualifiedName: 'com.test.MyForm'})
+              -[r:BINDS_TO]->(e:JavaClass {fullyQualifiedName: 'com.test.MyEntity'})
+        RETURN count(r) AS cnt
+        """)
+        .fetchAs(Long.class)
+        .mappedBy((ts, record) -> record.get("cnt").asLong())
+        .one()
+        .orElse(0L);
+    assertThat(edgeCount).isEqualTo(1L);
+
+    // Verify idempotency: call again, count should still be 1
+    linkingService.linkBindsToEdges(acc);
+    Long edgeCountAfterRerun = neo4jClient.query("""
+        MATCH (:JavaClass {fullyQualifiedName: 'com.test.MyForm'})
+              -[r:BINDS_TO]->(:JavaClass {fullyQualifiedName: 'com.test.MyEntity'})
+        RETURN count(r) AS cnt
+        """)
+        .fetchAs(Long.class)
+        .mappedBy((ts, record) -> record.get("cnt").asLong())
+        .one()
+        .orElse(0L);
+    assertThat(edgeCountAfterRerun).isEqualTo(1L);
+  }
+
   @Test
   void createsDependsOnEdge_fromAccumulatorData() {
     // Arrange: two ClassNodes
