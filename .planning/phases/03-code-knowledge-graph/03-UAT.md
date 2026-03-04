@@ -1,5 +1,5 @@
 ---
-status: complete
+status: diagnosed
 phase: 03-code-knowledge-graph
 source: [03-01-SUMMARY.md, 03-02-SUMMARY.md, 03-03-SUMMARY.md, 03-04-SUMMARY.md]
 started: 2026-03-04T21:30:00Z
@@ -59,17 +59,32 @@ skipped: 0
   reason: "User reported: Empty services list. The query filters by Service label, but SampleService has labels: [] — stereotype label not applied despite @Service annotation being detected."
   severity: major
   test: 4
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "BUG 1: ClassMetadataVisitor.resolveAnnotationName() returns simple name 'Service' without classpath, but SERVICE_STEREOTYPES contains only FQNs — no match, acc.markAsService() never called. BUG 2: searchByName() reads cn.getExtraLabels() from SDN entity but @DynamicLabels not hydrated by derived queries — always returns empty even if labels existed in DB."
+  artifacts:
+    - path: "src/main/java/com/esmp/extraction/visitor/ClassMetadataVisitor.java"
+      issue: "SERVICE_STEREOTYPES/REPOSITORY_STEREOTYPES only contain FQNs, no simple name fallback"
+    - path: "src/main/java/com/esmp/graph/application/GraphQueryService.java"
+      issue: "searchByName() uses SDN derived query which doesn't hydrate @DynamicLabels"
+  missing:
+    - "Add simple names (Service, Repository, Controller, RestController, Component) to stereotype sets as fallback"
+    - "Replace searchByName() SDN derived query with Neo4jClient Cypher that reads labels() directly"
+  debug_session: ".planning/debug/stereotype-labels-not-applied.md"
 
 - truth: "Graph stores BINDS_TO, HAS_ANNOTATION, QUERIES relationship edges"
   status: failed
   reason: "User reported: Missing BINDS_TO, HAS_ANNOTATION, QUERIES edges. BINDS_TO: VaadinPatternVisitor reported 0 data bindings (Vaadin types not resolved without classpath). HAS_ANNOTATION and QUERIES also absent."
   severity: major
   test: 6
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "BINDS_TO: VaadinPatternVisitor.visitNewClass() checks nc.getType() instanceof JavaType.FullyQualified — returns null/Unknown without Vaadin JAR, entire block skipped. No simple-name fallback. QUERIES: linkQueryMethods() looks up declaringClassFqn (repository) in tableMappings (keyed by entity class) — always null, every record skipped. HAS_ANNOTATION: ClassNode.annotations stores simple names ('Entity') but JavaAnnotation.fullyQualifiedName stores FQNs ('javax.persistence.Entity') — Cypher MATCH never finds a match."
+  artifacts:
+    - path: "src/main/java/com/esmp/extraction/visitor/VaadinPatternVisitor.java"
+      issue: "visitNewClass() has no simple-name fallback for unresolved Vaadin types"
+    - path: "src/main/java/com/esmp/extraction/application/LinkingService.java"
+      issue: "linkQueryMethods() uses repository FQN to look up tableMappings keyed by entity FQN — always misses"
+    - path: "src/main/java/com/esmp/extraction/application/LinkingService.java"
+      issue: "linkAnnotations() Cypher UNWINDs c.annotations (simple names) but MATCHes JavaAnnotation.fullyQualifiedName (FQNs) — never matches"
+  missing:
+    - "VaadinPatternVisitor: add simple-name fallback for BeanFieldGroup/FieldGroup detection"
+    - "linkQueryMethods(): resolve repository→entity via JpaRepository generic type, then look up entity in tableMappings"
+    - "linkAnnotations(): normalize annotation names to FQNs before MATCH, or store FQNs in ClassNode.annotations"
+  debug_session: ".planning/debug/missing-relationship-edges.md"
