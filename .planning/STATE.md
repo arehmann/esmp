@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 02-ast-extraction 02-01-PLAN.md
-last_updated: "2026-03-04T15:55:37.332Z"
+stopped_at: Completed 02-ast-extraction 02-02-PLAN.md
+last_updated: "2026-03-04T16:14:21.156Z"
 last_activity: 2026-03-04 — Roadmap created, project initialized
 progress:
   total_phases: 13
   completed_phases: 1
   total_plans: 5
-  completed_plans: 3
+  completed_plans: 4
   percent: 0
 ---
 
@@ -54,6 +54,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01-infrastructure P02 | 13 | 1 tasks | 5 files |
 | Phase 01-infrastructure P02 | 65min | 2 tasks | 6 files |
 | Phase 02-ast-extraction P01 | 4min | 2 tasks | 16 files |
+| Phase 02-ast-extraction P02 | 15min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -74,6 +75,9 @@ Recent decisions affecting current work:
 - [Phase 02-ast-extraction]: Gradle alias openrewrite-java-jdk21 used instead of openrewrite-java-21 to avoid type-safe accessor failure on numeric suffix
 - [Phase 02-ast-extraction]: @Version annotation is org.springframework.data.annotation.Version (spring-data-commons), not in neo4j.core.schema package
 - [Phase 02-ast-extraction]: vaadin-server:7.7.48 is testImplementation only — provides Vaadin 7 type symbols for classpath resolution, must not be on runtime classpath due to javax.servlet conflict
+- [Phase 02-ast-extraction]: JavaTypeCache is in org.openrewrite.java.internal (internal package) — no public factory; accessed directly via JavaParser.Builder.typeCache()
+- [Phase 02-ast-extraction]: Inherited JPA methods (findAll, save) have Spring Data parent interface as declaring type, not the user-defined subinterface — only custom query methods resolve to SampleRepository
+- [Phase 02-ast-extraction]: Test classpath must include all java.class.path JARs (not just Vaadin JAR) for accurate Spring/JPA type resolution in visitor tests
 
 ### Pending Todos
 
@@ -86,6 +90,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-04T15:55:37.328Z
-Stopped at: Completed 02-ast-extraction 02-01-PLAN.md
+Last session: 2026-03-04T16:14:21.151Z
+Stopped at: Completed 02-ast-extraction 02-02-PLAN.md
 Resume file: None

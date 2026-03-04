@@ -14,8 +14,8 @@
 ### AST & Code Analysis
 
 - [x] **AST-01**: System can parse Java/Vaadin 7 source code into structured AST using OpenRewrite LST
-- [ ] **AST-02**: System extracts class metadata, method signatures, field definitions, annotations, and imports
-- [ ] **AST-03**: System builds call graph edges between methods across classes
+- [x] **AST-02**: System extracts class metadata, method signatures, field definitions, annotations, and imports
+- [x] **AST-03**: System builds call graph edges between methods across classes
 - [x] **AST-04**: System persists extracted nodes and relationships to Neo4j graph database
 
 ### Code Knowledge Graph
