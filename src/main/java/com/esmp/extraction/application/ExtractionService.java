@@ -3,12 +3,22 @@ package com.esmp.extraction.application;
 import com.esmp.extraction.audit.VaadinAuditReport;
 import com.esmp.extraction.audit.VaadinAuditService;
 import com.esmp.extraction.config.ExtractionConfig;
+import com.esmp.extraction.model.AnnotationNode;
 import com.esmp.extraction.model.ClassNode;
+import com.esmp.extraction.model.DBTableNode;
+import com.esmp.extraction.model.ModuleNode;
+import com.esmp.extraction.model.PackageNode;
 import com.esmp.extraction.parser.JavaSourceParser;
+import com.esmp.extraction.persistence.AnnotationNodeRepository;
 import com.esmp.extraction.persistence.ClassNodeRepository;
+import com.esmp.extraction.persistence.DBTableNodeRepository;
+import com.esmp.extraction.persistence.ModuleNodeRepository;
+import com.esmp.extraction.persistence.PackageNodeRepository;
 import com.esmp.extraction.visitor.CallGraphVisitor;
 import com.esmp.extraction.visitor.ClassMetadataVisitor;
+import com.esmp.extraction.visitor.DependencyVisitor;
 import com.esmp.extraction.visitor.ExtractionAccumulator;
+import com.esmp.extraction.visitor.JpaPatternVisitor;
 import com.esmp.extraction.visitor.VaadinPatternVisitor;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -38,6 +48,11 @@ public class ExtractionService {
   private final JavaSourceParser javaSourceParser;
   private final AccumulatorToModelMapper mapper;
   private final ClassNodeRepository classNodeRepository;
+  private final AnnotationNodeRepository annotationNodeRepository;
+  private final PackageNodeRepository packageNodeRepository;
+  private final ModuleNodeRepository moduleNodeRepository;
+  private final DBTableNodeRepository dbTableNodeRepository;
+  private final LinkingService linkingService;
   private final VaadinAuditService vaadinAuditService;
   private final ExtractionConfig extractionConfig;
 
@@ -45,11 +60,21 @@ public class ExtractionService {
       JavaSourceParser javaSourceParser,
       AccumulatorToModelMapper mapper,
       ClassNodeRepository classNodeRepository,
+      AnnotationNodeRepository annotationNodeRepository,
+      PackageNodeRepository packageNodeRepository,
+      ModuleNodeRepository moduleNodeRepository,
+      DBTableNodeRepository dbTableNodeRepository,
+      LinkingService linkingService,
       VaadinAuditService vaadinAuditService,
       ExtractionConfig extractionConfig) {
     this.javaSourceParser = javaSourceParser;
     this.mapper = mapper;
     this.classNodeRepository = classNodeRepository;
+    this.annotationNodeRepository = annotationNodeRepository;
+    this.packageNodeRepository = packageNodeRepository;
+    this.moduleNodeRepository = moduleNodeRepository;
+    this.dbTableNodeRepository = dbTableNodeRepository;
+    this.linkingService = linkingService;
     this.vaadinAuditService = vaadinAuditService;
     this.extractionConfig = extractionConfig;
   }
@@ -95,12 +120,16 @@ public class ExtractionService {
     ClassMetadataVisitor classMetadataVisitor = new ClassMetadataVisitor();
     CallGraphVisitor callGraphVisitor = new CallGraphVisitor();
     VaadinPatternVisitor vaadinPatternVisitor = new VaadinPatternVisitor();
+    DependencyVisitor dependencyVisitor = new DependencyVisitor();
+    JpaPatternVisitor jpaPatternVisitor = new JpaPatternVisitor();
 
     for (SourceFile sourceFile : sourceFiles) {
       try {
         classMetadataVisitor.visit(sourceFile, accumulator);
         callGraphVisitor.visit(sourceFile, accumulator);
         vaadinPatternVisitor.visit(sourceFile, accumulator);
+        dependencyVisitor.visit(sourceFile, accumulator);
+        jpaPatternVisitor.visit(sourceFile, accumulator);
       } catch (Exception e) {
         errorCount++;
         String error = "Error visiting " + sourceFile.getSourcePath() + ": " + e.getMessage();
@@ -111,10 +140,29 @@ public class ExtractionService {
 
     // Map accumulator data to entity objects
     List<ClassNode> classNodes = mapper.mapToClassNodes(accumulator);
+    List<AnnotationNode> annotationNodes = mapper.mapToAnnotationNodes(accumulator);
+    List<PackageNode> packageNodes = mapper.mapToPackageNodes(accumulator);
+    List<ModuleNode> moduleNodes = mapper.mapToModuleNodes(accumulator, resolvedSourceRoot);
+    List<DBTableNode> dbTableNodes = mapper.mapToDBTableNodes(accumulator);
 
-    // Persist — SDN saveAll() performs MERGE via @Id business keys
+    // Persist all node types — SDN saveAll() performs MERGE via @Id business keys
     classNodeRepository.saveAll(classNodes);
     log.info("Persisted {} class nodes to Neo4j", classNodes.size());
+
+    annotationNodeRepository.saveAll(annotationNodes);
+    log.info("Persisted {} annotation nodes to Neo4j", annotationNodes.size());
+
+    packageNodeRepository.saveAll(packageNodes);
+    log.info("Persisted {} package nodes to Neo4j", packageNodes.size());
+
+    moduleNodeRepository.saveAll(moduleNodes);
+    log.info("Persisted {} module nodes to Neo4j", moduleNodes.size());
+
+    dbTableNodeRepository.saveAll(dbTableNodes);
+    log.info("Persisted {} DB table nodes to Neo4j", dbTableNodes.size());
+
+    // Run linking pass — creates cross-class relationships via idempotent Cypher MERGE
+    LinkingService.LinkingResult linkingResult = linkingService.linkAllRelationships(accumulator);
 
     // Generate Vaadin audit report
     VaadinAuditReport auditReport = vaadinAuditService.generateReport(accumulator);
@@ -129,6 +177,11 @@ public class ExtractionService {
         accumulator.getVaadinViews().size(),
         accumulator.getVaadinComponents().size(),
         accumulator.getVaadinDataBindings().size(),
+        annotationNodes.size(),
+        packageNodes.size(),
+        moduleNodes.size(),
+        dbTableNodes.size(),
+        linkingResult,
         errorCount,
         errors,
         auditReport,
@@ -159,6 +212,11 @@ public class ExtractionService {
       int vaadinViewCount,
       int vaadinComponentCount,
       int vaadinDataBindingCount,
+      int annotationCount,
+      int packageCount,
+      int moduleCount,
+      int tableCount,
+      LinkingService.LinkingResult linkingResult,
       int errorCount,
       List<String> errors,
       VaadinAuditReport auditReport,
