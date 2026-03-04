@@ -1,6 +1,7 @@
 package com.esmp.extraction.application;
 
 import com.esmp.extraction.visitor.ExtractionAccumulator;
+import com.esmp.extraction.visitor.ExtractionAccumulator.BindsToRecord;
 import com.esmp.extraction.visitor.ExtractionAccumulator.DependencyEdge;
 import com.esmp.extraction.visitor.ExtractionAccumulator.QueryMethodRecord;
 import java.util.Map;
@@ -29,6 +30,8 @@ import org.springframework.transaction.annotation.Transactional;
  *   <li>{@code HAS_ANNOTATION} — from class to annotation node
  *   <li>{@code CONTAINS_CLASS} — from package node to class node
  *   <li>{@code CONTAINS_PACKAGE} — from module node to package node
+ *   <li>{@code BINDS_TO} — from Vaadin view/form to the entity it binds to (via BeanFieldGroup,
+ *       FieldGroup)
  * </ul>
  */
 @Service
@@ -56,16 +59,17 @@ public class LinkingService {
     int queriesCount = linkQueryMethods(acc);
     int hasAnnotationCount = linkAnnotations(acc);
     int containsClassCount = linkPackageHierarchy(acc);
+    int bindsToCount = linkBindsToEdges(acc);
 
     log.info(
         "Linking complete: EXTENDS={}, DEPENDS_ON={}, MAPS_TO_TABLE={}, "
-            + "QUERIES={}, HAS_ANNOTATION={}, CONTAINS_CLASS/PACKAGE={}",
+            + "QUERIES={}, HAS_ANNOTATION={}, CONTAINS_CLASS/PACKAGE={}, BINDS_TO={}",
         extendsCount, dependsOnCount, mapsToTableCount,
-        queriesCount, hasAnnotationCount, containsClassCount);
+        queriesCount, hasAnnotationCount, containsClassCount, bindsToCount);
 
     return new LinkingResult(
         extendsCount, dependsOnCount, mapsToTableCount,
-        queriesCount, hasAnnotationCount, containsClassCount);
+        queriesCount, hasAnnotationCount, containsClassCount, bindsToCount);
   }
 
   // ---------------------------------------------------------------------------
@@ -333,6 +337,49 @@ public class LinkingService {
   }
 
   // ---------------------------------------------------------------------------
+  // Vaadin data binding: BINDS_TO
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Creates BINDS_TO edges from Vaadin view ClassNodes to entity ClassNodes via idempotent Cypher
+   * MERGE. Each edge carries a {@code bindingMechanism} property ("BeanFieldGroup" or "FieldGroup").
+   *
+   * <p>Skips execution if the accumulator has no BINDS_TO edge data.
+   *
+   * @param acc the accumulator containing BINDS_TO edge records
+   * @return count of BINDS_TO edges created (or matched by MERGE)
+   */
+  @Transactional("neo4jTransactionManager")
+  public int linkBindsToEdges(ExtractionAccumulator acc) {
+    if (acc.getBindsToEdges().isEmpty()) {
+      return 0;
+    }
+
+    int count = 0;
+    for (BindsToRecord edge : acc.getBindsToEdges()) {
+      String cypher = """
+          MATCH (view:JavaClass {fullyQualifiedName: $viewFqn})
+          MATCH (entity:JavaClass {fullyQualifiedName: $entityFqn})
+          MERGE (view)-[r:BINDS_TO {bindingMechanism: $mechanism}]->(entity)
+          RETURN count(r) AS cnt
+          """;
+
+      Long cnt = neo4jClient.query(cypher)
+          .bindAll(Map.of(
+              "viewFqn", edge.viewClassFqn(),
+              "entityFqn", edge.entityClassFqn(),
+              "mechanism", edge.bindingMechanism()))
+          .fetchAs(Long.class)
+          .mappedBy((ts, record) -> record.get("cnt").asLong())
+          .one()
+          .orElse(0L);
+      count += cnt.intValue();
+    }
+
+    return count;
+  }
+
+  // ---------------------------------------------------------------------------
   // Result record
   // ---------------------------------------------------------------------------
 
@@ -343,5 +390,6 @@ public class LinkingService {
       int mapsToTableCount,
       int queriesCount,
       int hasAnnotationCount,
-      int containsHierarchyCount) {}
+      int containsHierarchyCount,
+      int bindsToCount) {}
 }
