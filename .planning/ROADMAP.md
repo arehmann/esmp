@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Infrastructure** - Docker Compose environment with Neo4j, Qdrant, MySQL, and Spring Boot skeleton running (completed 2026-03-04)
 - [x] **Phase 2: AST Extraction** - Parse Java/Vaadin 7 source into structured graph nodes using OpenRewrite LST (completed 2026-03-04)
-- [x] **Phase 3: Code Knowledge Graph** - Full structural graph populated with all node types and relationship edges (completed 2026-03-04)
+- [ ] **Phase 3: Code Knowledge Graph** - Full structural graph populated with all node types and relationship edges (gap closure in progress)
 - [ ] **Phase 4: Graph Validation & Canonical Queries** - Structural graph correctness verified before building semantic layers
 - [ ] **Phase 5: Domain Lexicon** - Business term extraction, curation, and graph edge integration — moved early to prevent downstream rework
 - [ ] **Phase 6: Structural Risk Analysis** - Cyclomatic complexity, fan-in/out, DB write detection, and composite structural risk scoring
@@ -71,13 +71,15 @@ Plans:
   3. User can call a REST API endpoint with a class name and receive its full structural context (methods, fields, dependencies, annotations)
   4. Graph query returns the complete inheritance chain for a given class
   5. API returns all Service classes that directly or transitively depend on a given Repository
-**Plans:** 4/4 plans complete
+**Plans:** 6 plans (4 complete, 2 gap closure)
 
 Plans:
 - [x] 03-01-PLAN.md — New Neo4j node entities, relationship properties, repositories, schema constraints, accumulator extensions
 - [x] 03-02-PLAN.md — DependencyVisitor, JpaPatternVisitor, stereotype detection, mapper extensions, LinkingService, ExtractionService wiring
 - [x] 03-03-PLAN.md — Graph query REST API (structural context, inheritance chain, transitive dependencies, search)
-- [ ] 03-04-PLAN.md — Gap closure: BINDS_TO edge detection in VaadinPatternVisitor and materialization in LinkingService
+- [x] 03-04-PLAN.md — Gap closure: BINDS_TO edge detection in VaadinPatternVisitor and materialization in LinkingService
+- [ ] 03-05-PLAN.md — Gap closure: Stereotype label simple-name fallback and searchByName label hydration fix
+- [ ] 03-06-PLAN.md — Gap closure: HAS_ANNOTATION FQN mismatch, QUERIES repository-to-entity resolution, BINDS_TO simple-name fallback
 
 ### Phase 4: Graph Validation & Canonical Queries
 **Goal**: Structural graph is verified correct before building semantic layers on top of it
@@ -213,7 +215,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 |-------|----------------|--------|-----------|
 | 1. Infrastructure | 2/2 | Complete   | 2026-03-04 |
 | 2. AST Extraction | 3/3 | Complete   | 2026-03-04 |
-| 3. Code Knowledge Graph | 4/4 | Complete   | 2026-03-04 |
+| 3. Code Knowledge Graph | 4/6 | Gap closure | - |
 | 4. Graph Validation & Canonical Queries | 0/TBD | Not started | - |
 | 5. Domain Lexicon | 0/TBD | Not started | - |
 | 6. Structural Risk Analysis | 0/TBD | Not started | - |
