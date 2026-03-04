@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 03-code-knowledge-graph 03-03-PLAN.md
-last_updated: "2026-03-04T19:00:40.524Z"
+stopped_at: Completed 03-code-knowledge-graph 03-02-PLAN.md
+last_updated: "2026-03-04T19:04:41.860Z"
 last_activity: 2026-03-04 — Roadmap created, project initialized
 progress:
   total_phases: 13
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 8
-  completed_plans: 7
+  completed_plans: 8
 ---
 
 ---
@@ -73,6 +73,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02-ast-extraction P03 | 30min | 1 tasks | 12 files |
 | Phase 03-code-knowledge-graph P01 | 3min | 2 tasks | 16 files |
 | Phase 03-code-knowledge-graph P03 | 16min | 2 tasks | 8 files |
+| Phase 03-code-knowledge-graph P02 | 19min | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -105,6 +106,8 @@ Recent decisions affecting current work:
 - [Phase 03-code-knowledge-graph]: DBTableNode.tableName stored lowercased for case-insensitive deduplication across RDBMS dialects
 - [Phase 03-code-knowledge-graph]: FQN path variables use :.+ regex suffix to prevent Spring MVC dot-truncation in graph API endpoints
 - [Phase 03-code-knowledge-graph]: Neo4jClient used for all variable-length Cypher traversals in GraphQueryService; GraphQueryRepository only for simple SDN derived lookups
+- [Phase 03-code-knowledge-graph]: JPA annotation FQN resolution fallback: JpaPatternVisitor maps simple names (Entity, Table, Query) to FQNs when OpenRewrite type resolution fails for javax.persistence types
+- [Phase 03-code-knowledge-graph]: LinkingServiceIntegrationTest uses full @SpringBootTest (not @DataNeo4jTest) to avoid neo4jTransactionManager qualifier bean not found in slice context
 
 ### Pending Todos
 
@@ -117,6 +120,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-04T19:00:40.519Z
-Stopped at: Completed 03-code-knowledge-graph 03-03-PLAN.md
+Last session: 2026-03-04T19:04:41.856Z
+Stopped at: Completed 03-code-knowledge-graph 03-02-PLAN.md
 Resume file: None
