@@ -12,7 +12,7 @@ ESMP is built as a strict dependency chain: infrastructure and tooling come firs
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Infrastructure** - Docker Compose environment with Neo4j, Qdrant, PostgreSQL, and Spring Boot skeleton running
+- [ ] **Phase 1: Infrastructure** - Docker Compose environment with Neo4j, Qdrant, MySQL, and Spring Boot skeleton running
 - [ ] **Phase 2: AST Extraction** - Parse Java/Vaadin 7 source into structured graph nodes using OpenRewrite LST
 - [ ] **Phase 3: Code Knowledge Graph** - Full structural graph populated with all node types and relationship edges
 - [ ] **Phase 4: Risk Analysis** - Cyclomatic complexity, fan-in/out, DB write detection, and composite risk scoring per class
@@ -30,10 +30,10 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Depends on**: Nothing (first phase)
 **Requirements**: INFRA-01, INFRA-02, INFRA-03
 **Success Criteria** (what must be TRUE):
-  1. `docker compose up` starts Neo4j, Qdrant, PostgreSQL, Prometheus, Grafana, and the Spring Boot service with no errors
+  1. `docker compose up` starts Neo4j, Qdrant, MySQL, Prometheus, Grafana, and the Spring Boot service with no errors
   2. Spring Boot service starts on Java 21 with virtual threads enabled and passes its health check endpoint
-  3. Neo4j, Qdrant, and PostgreSQL are each reachable from the Spring Boot service (connection verified at startup)
-  4. Project compiles cleanly with professional-grade package structure, Flyway schema migrations applied to PostgreSQL
+  3. Neo4j, Qdrant, and MySQL are each reachable from the Spring Boot service (connection verified at startup)
+  4. Project compiles cleanly with professional-grade package structure, Flyway schema migrations applied to MySQL
   5. Spring Boot Actuator exposes health, info, and metrics endpoints
 **Plans**: TBD
 

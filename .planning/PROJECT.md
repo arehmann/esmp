@@ -44,7 +44,7 @@ The platform can analyze a legacy module, understand its structure, business con
 - **Target system**: Brownfield enterprise Java application, multi-module Gradle build, 500k–1M LOC
 - **Migration path**: Vaadin 7 → Vaadin 24
 - **Team**: Solo developer with AI assistance (Claude)
-- **Deployment**: Docker Compose (Neo4j, Qdrant, Spring Boot services, Prometheus, Grafana)
+- **Deployment**: Docker Compose (Neo4j, Qdrant, MySQL, Spring Boot services, Prometheus, Grafana)
 - **AI strategy**: Claude for code understanding/generation, open-source embedding model (e.g., nomic-embed or all-MiniLM) for vector indexing
 - **Adoption model**: Passive observation → developer assist → controlled migration → full transition
 - **The legacy codebase continues active development** — ESMP must coexist without disruption
@@ -69,6 +69,7 @@ The platform can analyze a legacy module, understand its structure, business con
 | Docker Compose deployment | Quick local setup with Neo4j, Qdrant, and services | — Pending |
 | Neo4j for code graph | Mature graph DB, Cypher query language, good Java drivers | — Pending |
 | Qdrant for vector search | Purpose-built vector DB, good performance, Docker-friendly | — Pending |
+| MySQL for relational metadata | Migration job state, audit trail, confidence ledger | — Pending |
 | Brownfield parallel adoption | Non-disruptive: observe → assist → migrate → transition | — Pending |
 
 ---

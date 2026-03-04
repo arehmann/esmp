@@ -6,7 +6,7 @@
 <domain>
 ## Phase Boundary
 
-Docker Compose environment with Neo4j, Qdrant, PostgreSQL, Prometheus, Grafana, and a Spring Boot skeleton running on Java 21 with virtual threads. Developer can run the full ESMP environment locally with all data stores healthy and a Spring Boot service ready to accept ingestion requests. Flyway schema migrations applied to PostgreSQL. Spring Boot Actuator exposes health, info, and metrics endpoints.
+Docker Compose environment with Neo4j, Qdrant, MySQL, Prometheus, Grafana, and a Spring Boot skeleton running on Java 21 with virtual threads. Developer can run the full ESMP environment locally with all data stores healthy and a Spring Boot service ready to accept ingestion requests. Flyway schema migrations applied to MySQL. Spring Boot Actuator exposes health, info, and metrics endpoints.
 
 </domain>
 
@@ -23,22 +23,22 @@ Docker Compose environment with Neo4j, Qdrant, PostgreSQL, Prometheus, Grafana, 
 - Gradle Kotlin DSL (`build.gradle.kts`)
 - Gradle version catalog (`libs.versions.toml`) for centralized dependency versions
 - Minimal code quality plugins: Spotless for formatting only — add linting/analysis later when there's code to analyze
-- JUnit 5 + Testcontainers for testing — real Neo4j, Qdrant, PostgreSQL in integration tests
+- JUnit 5 + Testcontainers for testing — real Neo4j, Qdrant, MySQL in integration tests
 
 ### Docker service configuration
 - Single `docker-compose.yml` file (no profiles or multiple files) — use Spring profiles for app config
-- Named Docker volumes for Neo4j, Qdrant, PostgreSQL data persistence
+- Named Docker volumes for Neo4j, Qdrant, MySQL data persistence
 - Spring Boot app runs OUTSIDE Docker (IDE/CLI with `./gradlew bootRun`) — only data stores + monitoring in Docker for faster dev loop
-- Standard port mappings: Neo4j 7474/7687, Qdrant 6333/6334, PostgreSQL 5432, Prometheus 9090, Grafana 3000
+- Standard port mappings: Neo4j 7474/7687, Qdrant 6333/6334, MySQL 3306, Prometheus 9090, Grafana 3000
 
 ### Observability baseline
 - Spring Actuator health/info/metrics endpoints + Prometheus scraping — no Grafana dashboards yet (add when there's real data in Phase 2+)
 - Logging: both formats via Spring profile — structured JSON in `prod` profile, plain text in `dev` profile
-- Custom Spring Actuator health indicators for Neo4j, Qdrant, and PostgreSQL — startup fails fast if any store unreachable
+- Custom Spring Actuator health indicators for Neo4j, Qdrant, and MySQL — startup fails fast if any store unreachable
 - No distributed tracing in Phase 1 — single service, tracing adds value later
 
 ### Claude's Discretion
-- Specific Neo4j, Qdrant, PostgreSQL Docker image versions (use latest stable)
+- Specific Neo4j, Qdrant, MySQL Docker image versions (use latest stable)
 - Gradle wrapper version
 - Spotless formatting rules (Google Java Style or similar)
 - Flyway initial migration content (schema for migration job state tables)

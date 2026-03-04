@@ -60,7 +60,7 @@ Recent decisions affecting current work:
 
 - [Init]: Java 21 + Spring Boot 3.5.11 + Spring AI 1.1.2 as ESMP runtime
 - [Init]: OpenRewrite runs as Gradle plugin on target codebase only — never embedded in ESMP runtime (classpath isolation)
-- [Init]: PostgreSQL added for migration job state, audit trail, confidence ledger (research finding)
+- [Init]: MySQL added for migration job state, audit trail, confidence ledger (research finding)
 - [Init]: Local ONNX embeddings (all-MiniLM-L6-v2) preferred over API embeddings at bulk indexing scale
 
 ### Pending Todos
