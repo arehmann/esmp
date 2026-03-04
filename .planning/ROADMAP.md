@@ -71,7 +71,7 @@ Plans:
   3. User can call a REST API endpoint with a class name and receive its full structural context (methods, fields, dependencies, annotations)
   4. Graph query returns the complete inheritance chain for a given class
   5. API returns all Service classes that directly or transitively depend on a given Repository
-**Plans:** 6 plans (4 complete, 2 gap closure)
+**Plans:** 5/6 plans executed
 
 Plans:
 - [x] 03-01-PLAN.md — New Neo4j node entities, relationship properties, repositories, schema constraints, accumulator extensions
@@ -215,7 +215,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 |-------|----------------|--------|-----------|
 | 1. Infrastructure | 2/2 | Complete   | 2026-03-04 |
 | 2. AST Extraction | 3/3 | Complete   | 2026-03-04 |
-| 3. Code Knowledge Graph | 4/6 | Gap closure | - |
+| 3. Code Knowledge Graph | 5/6 | In Progress|  |
 | 4. Graph Validation & Canonical Queries | 0/TBD | Not started | - |
 | 5. Domain Lexicon | 0/TBD | Not started | - |
 | 6. Structural Risk Analysis | 0/TBD | Not started | - |
