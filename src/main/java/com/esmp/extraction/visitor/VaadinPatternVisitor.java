@@ -127,7 +127,31 @@ public class VaadinPatternVisitor extends JavaIsoVisitor<ExtractionAccumulator> 
         && VAADIN_DATA_BINDING_TYPES.contains(fq.getFullyQualifiedName())) {
       J.ClassDeclaration enclosingClass = getCursor().firstEnclosing(J.ClassDeclaration.class);
       if (enclosingClass != null && enclosingClass.getType() != null) {
-        acc.markAsVaadinDataBinding(enclosingClass.getType().getFullyQualifiedName());
+        String enclosingFqn = enclosingClass.getType().getFullyQualifiedName();
+        acc.markAsVaadinDataBinding(enclosingFqn);
+
+        // Emit BINDS_TO edge for BeanFieldGroup and FieldGroup (not BeanItemContainer)
+        String typeFqn = fq.getFullyQualifiedName();
+        String bindingMechanism = null;
+        if (typeFqn.contains("BeanFieldGroup")) {
+          bindingMechanism = "BeanFieldGroup";
+        } else if (typeFqn.contains("FieldGroup")) {
+          bindingMechanism = "FieldGroup";
+        }
+        // BeanItemContainer is a data source, not a form binding — skip it
+
+        if (bindingMechanism != null) {
+          // Extract entity type from generic type argument (e.g., BeanFieldGroup<SampleEntity>)
+          String entityFqn = "Unknown";
+          if (nc.getType() instanceof JavaType.Parameterized pt
+              && !pt.getTypeParameters().isEmpty()) {
+            JavaType typeParam = pt.getTypeParameters().get(0);
+            if (typeParam instanceof JavaType.FullyQualified entityType) {
+              entityFqn = entityType.getFullyQualifiedName();
+            }
+          }
+          acc.addBindsToEdge(enclosingFqn, entityFqn, bindingMechanism);
+        }
       }
     }
 
