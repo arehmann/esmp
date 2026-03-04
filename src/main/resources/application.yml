@@ -38,7 +38,7 @@ management:
 
 qdrant:
   host: localhost
-  port: 6333
+  port: 6334
 
 server:
   port: 8080

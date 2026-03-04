@@ -9,14 +9,14 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class QdrantConfig {
 
-    @Value("${qdrant.host}")
-    private String host;
+  @Value("${qdrant.host}")
+  private String host;
 
-    @Value("${qdrant.port}")
-    private int port;
+  @Value("${qdrant.port}")
+  private int port;
 
-    @Bean
-    public QdrantClient qdrantClient() {
-        return new QdrantClient(QdrantGrpcClient.newBuilder(host, port).build());
-    }
+  @Bean
+  public QdrantClient qdrantClient() {
+    return new QdrantClient(QdrantGrpcClient.newBuilder(host, port, false).build());
+  }
 }
