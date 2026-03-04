@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 03-code-knowledge-graph 03-05-PLAN.md
-last_updated: "2026-03-04T22:59:27.098Z"
+stopped_at: Completed 03-code-knowledge-graph 03-06-PLAN.md
+last_updated: "2026-03-04T23:05:57.277Z"
 last_activity: 2026-03-04 — Roadmap created, project initialized
 progress:
   total_phases: 13
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 11
-  completed_plans: 10
+  completed_plans: 11
   percent: 91
 ---
 
@@ -92,6 +92,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 03-code-knowledge-graph P02 | 19min | 2 tasks | 11 files |
 | Phase 03-code-knowledge-graph P04 | 4min | 2 tasks | 4 files |
 | Phase 03-code-knowledge-graph P05 | 13min | 2 tasks | 4 files |
+| Phase 03-code-knowledge-graph P06 | 20min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -130,6 +131,9 @@ Recent decisions affecting current work:
 - [Phase 03-code-knowledge-graph]: BINDS_TO entity FQN falls back to 'Unknown' when BeanFieldGroup/FieldGroup has no resolvable generic type parameter
 - [Phase 03-code-knowledge-graph]: SERVICE_STEREOTYPES and REPOSITORY_STEREOTYPES include both FQNs and simple names so stereotype labels apply when OpenRewrite cannot resolve annotation types from the parse classpath
 - [Phase 03-code-knowledge-graph]: searchByName() replaced with Neo4jClient Cypher using labels(c) — SDN derived query does not hydrate @DynamicLabels, leaving the labels list always empty
+- [Phase 03-code-knowledge-graph]: ClassMetadataVisitor annotation FQN normalization: switch-based simple-name-to-FQN fallback mirrors JpaPatternVisitor pattern, ensures c.annotations stores FQNs for HAS_ANNOTATION linking
+- [Phase 03-code-knowledge-graph]: QUERIES edge graph traversal: DEPENDS_ON|IMPLEMENTS*1..3 pattern avoids parsing JpaRepository generic type parameters — graph-native resolution
+- [Phase 03-code-knowledge-graph]: BINDS_TO simple-name fallback: BeanItemContainer excluded from fallback set; entity FQN falls back to 'Unknown' when generics unresolvable without Vaadin JARs
 
 ### Pending Todos
 
@@ -142,6 +146,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-04T22:59:27.093Z
-Stopped at: Completed 03-code-knowledge-graph 03-05-PLAN.md
+Last session: 2026-03-04T23:05:57.272Z
+Stopped at: Completed 03-code-knowledge-graph 03-06-PLAN.md
 Resume file: None
