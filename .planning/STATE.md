@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: "Checkpoint: Task 2 of 01-02-PLAN.md awaiting human verification of Docker Compose environment"
-last_updated: "2026-03-04T13:38:58.284Z"
+stopped_at: Completed 01-02-PLAN.md — Phase 1 infrastructure complete
+last_updated: "2026-03-04T14:20:43.877Z"
 last_activity: 2026-03-04 — Roadmap created, project initialized
 progress:
   total_phases: 10
@@ -52,6 +52,7 @@ Progress: [░░░░░░░░░░] 0%
 *Updated after each plan completion*
 | Phase 01-infrastructure P01 | 9 | 2 tasks | 18 files |
 | Phase 01-infrastructure P02 | 13 | 1 tasks | 5 files |
+| Phase 01-infrastructure P02 | 65min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -67,6 +68,8 @@ Recent decisions affecting current work:
 - [Phase 01-infrastructure]: Qdrant Maven artifact is io.qdrant:client (not java-client); grpc-stub must be explicit impl dep for ListenableFuture on classpath
 - [Phase 01-infrastructure]: foojay-resolver incompatible with Gradle 9.3.1 (IBM_SEMERU error); use org.gradle.java.installations.paths with local JDK instead
 - [Phase 01-infrastructure]: Qdrant gRPC port is 6334 not 6333; QdrantGrpcClient.newBuilder must use useTls=false for local Docker Qdrant
+- [Phase 01-infrastructure]: MySQL host port changed to 3307 (permanent project convention) to avoid conflict with local dev MySQL on 3306
+- [Phase 01-infrastructure]: docker-compose.yml name: esmp groups all containers under ESMP project name
 
 ### Pending Todos
 
@@ -79,6 +82,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-04T13:38:58.280Z
-Stopped at: Checkpoint: Task 2 of 01-02-PLAN.md awaiting human verification of Docker Compose environment
+Last session: 2026-03-04T14:20:43.874Z
+Stopped at: Completed 01-02-PLAN.md — Phase 1 infrastructure complete
 Resume file: None
