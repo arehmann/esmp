@@ -39,6 +39,23 @@ public class VaadinPatternVisitor extends JavaIsoVisitor<ExtractionAccumulator> 
           "com.vaadin.data.fieldgroup.FieldGroup",
           "com.vaadin.data.util.BeanItemContainer");
 
+  /**
+   * Simple names of Vaadin data binding types that emit BINDS_TO edges when their FQN cannot be
+   * resolved (i.e., when Vaadin JARs are absent from the parser classpath). BeanItemContainer is
+   * intentionally excluded — it is a data source, not a form-to-entity binding mechanism.
+   */
+  private static final Set<String> VAADIN_BINDING_SIMPLE_NAMES =
+      Set.of("BeanFieldGroup", "FieldGroup");
+
+  /**
+   * Simple names of common Vaadin UI component types used as a fallback when FQN resolution fails.
+   */
+  private static final Set<String> VAADIN_UI_SIMPLE_NAMES =
+      Set.of(
+          "Button", "TextField", "VerticalLayout", "HorizontalLayout", "Grid",
+          "Table", "Label", "ComboBox", "DateField", "Panel", "FormLayout",
+          "Window", "TabSheet");
+
   private static final Set<String> ADD_COMPONENT_METHODS = Set.of("addComponent", "addComponents");
 
   @Override
@@ -112,7 +129,7 @@ public class VaadinPatternVisitor extends JavaIsoVisitor<ExtractionAccumulator> 
 
   @Override
   public J.NewClass visitNewClass(J.NewClass nc, ExtractionAccumulator acc) {
-    // Detect instantiation of Vaadin UI component types
+    // Detect instantiation of Vaadin UI component types (FQN-based check)
     if (nc.getType() instanceof JavaType.FullyQualified fq
         && fq.getFullyQualifiedName().startsWith(VAADIN_UI_PACKAGE)) {
       // Mark the enclosing class as a VaadinComponent user
@@ -120,9 +137,19 @@ public class VaadinPatternVisitor extends JavaIsoVisitor<ExtractionAccumulator> 
       if (enclosingClass != null && enclosingClass.getType() != null) {
         acc.markAsVaadinComponent(enclosingClass.getType().getFullyQualifiedName());
       }
+    } else {
+      // Simple-name fallback: when Vaadin JARs are absent, FQN cannot be resolved.
+      // Match common Vaadin UI component simple names to still mark the enclosing class.
+      String simpleName = extractNewClassSimpleName(nc);
+      if (simpleName != null && VAADIN_UI_SIMPLE_NAMES.contains(simpleName)) {
+        J.ClassDeclaration enclosingClass = getCursor().firstEnclosing(J.ClassDeclaration.class);
+        if (enclosingClass != null && enclosingClass.getType() != null) {
+          acc.markAsVaadinComponent(enclosingClass.getType().getFullyQualifiedName());
+        }
+      }
     }
 
-    // Also detect BeanFieldGroup / FieldGroup instantiation for data binding
+    // Also detect BeanFieldGroup / FieldGroup instantiation for data binding (FQN-based check)
     if (nc.getType() instanceof JavaType.FullyQualified fq
         && VAADIN_DATA_BINDING_TYPES.contains(fq.getFullyQualifiedName())) {
       J.ClassDeclaration enclosingClass = getCursor().firstEnclosing(J.ClassDeclaration.class);
@@ -153,6 +180,20 @@ public class VaadinPatternVisitor extends JavaIsoVisitor<ExtractionAccumulator> 
           acc.addBindsToEdge(enclosingFqn, entityFqn, bindingMechanism);
         }
       }
+    } else {
+      // Simple-name fallback for BINDS_TO: when Vaadin JARs are absent, type cannot be resolved.
+      // Match BeanFieldGroup and FieldGroup by simple name to still emit BINDS_TO edge data.
+      // BeanItemContainer is intentionally excluded (it's a data source, not a form binding).
+      String simpleName = extractNewClassSimpleName(nc);
+      if (simpleName != null && VAADIN_BINDING_SIMPLE_NAMES.contains(simpleName)) {
+        J.ClassDeclaration enclosingClass = getCursor().firstEnclosing(J.ClassDeclaration.class);
+        if (enclosingClass != null && enclosingClass.getType() != null) {
+          String enclosingFqn = enclosingClass.getType().getFullyQualifiedName();
+          acc.markAsVaadinDataBinding(enclosingFqn);
+          // Entity FQN falls back to "Unknown" — generic type params are unresolvable without JARs
+          acc.addBindsToEdge(enclosingFqn, "Unknown", simpleName);
+        }
+      }
     }
 
     return super.visitNewClass(nc, acc);
@@ -175,6 +216,24 @@ public class VaadinPatternVisitor extends JavaIsoVisitor<ExtractionAccumulator> 
     // In Vaadin 7, addComponent() without explicit target is always called on `this` (the
     // container)
     return mi.getSelect() == null;
+  }
+
+  /**
+   * Extracts the simple class name from a {@code new} expression. Handles both plain identifiers
+   * ({@code new BeanFieldGroup()}) and parameterized types ({@code new BeanFieldGroup<Entity>()}).
+   *
+   * @param nc the new class expression
+   * @return the simple name, or {@code null} if it cannot be determined
+   */
+  private static String extractNewClassSimpleName(J.NewClass nc) {
+    if (nc.getClazz() instanceof J.Identifier id) {
+      return id.getSimpleName();
+    }
+    if (nc.getClazz() instanceof J.ParameterizedType pt
+        && pt.getClazz() instanceof J.Identifier id) {
+      return id.getSimpleName();
+    }
+    return null;
   }
 
   /** Detects data binding calls (e.g., fieldGroup.bind(), fieldGroup.commit()) and marks class. */

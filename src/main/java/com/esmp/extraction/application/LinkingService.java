@@ -220,6 +220,19 @@ public class LinkingService {
    * @param acc the accumulator containing query method records and table mappings
    * @return count of QUERIES edges created
    */
+  /**
+   * Creates QUERIES edges from MethodNodes to DBTableNodes by traversing the graph from the
+   * repository class to the entity it manages (via DEPENDS_ON or IMPLEMENTS edges), and then
+   * from that entity to its mapped DBTable (via MAPS_TO_TABLE).
+   *
+   * <p>This graph-native approach avoids the need to parse generic type parameters from
+   * repository interface declarations (e.g., {@code JpaRepository<SampleEntity, Long>}). Instead,
+   * it finds the entity by traversing the graph and locating an entity class that has a
+   * MAPS_TO_TABLE edge.
+   *
+   * @param acc the accumulator containing query method records
+   * @return count of QUERIES edges created
+   */
   @Transactional("neo4jTransactionManager")
   public int linkQueryMethods(ExtractionAccumulator acc) {
     if (acc.getQueryMethods().isEmpty()) {
@@ -228,28 +241,30 @@ public class LinkingService {
 
     int count = 0;
     for (QueryMethodRecord qm : acc.getQueryMethods()) {
-      // Look up direct table mapping for the declaring class
-      String tableName = acc.getTableMappings().get(qm.declaringClassFqn());
-      if (tableName == null) {
-        log.debug(
-            "Skipping QUERIES link for method {} — no table mapping for declaring class {}",
-            qm.methodId(), qm.declaringClassFqn());
-        continue;
-      }
-
+      // Graph-native traversal: from the repository class, traverse up to 3 hops through
+      // DEPENDS_ON or IMPLEMENTS edges to find an entity class with a MAPS_TO_TABLE edge.
+      // This handles the common pattern: Repository -[DEPENDS_ON|IMPLEMENTS*1..3]-> Entity
+      //                                   Entity -[MAPS_TO_TABLE]-> DBTable
       String cypher = """
           MATCH (m:JavaMethod {methodId: $methodId})
-          MATCH (t:DBTable {tableName: $tableName})
+          MATCH (repo:JavaClass {fullyQualifiedName: $repoFqn})
+          MATCH (repo)-[:DEPENDS_ON|IMPLEMENTS*1..3]->(entity:JavaClass)-[:MAPS_TO_TABLE]->(t:DBTable)
           MERGE (m)-[r:QUERIES]->(t)
           RETURN count(r) AS cnt
           """;
 
       Long cnt = neo4jClient.query(cypher)
-          .bindAll(Map.of("methodId", qm.methodId(), "tableName", tableName))
+          .bindAll(Map.of("methodId", qm.methodId(), "repoFqn", qm.declaringClassFqn()))
           .fetchAs(Long.class)
           .mappedBy((ts, record) -> record.get("cnt").asLong())
           .one()
           .orElse(0L);
+
+      if (cnt == 0L) {
+        log.debug(
+            "Skipping QUERIES link for method {} — no entity-table path found from declaring class {}",
+            qm.methodId(), qm.declaringClassFqn());
+      }
       count += cnt.intValue();
     }
 

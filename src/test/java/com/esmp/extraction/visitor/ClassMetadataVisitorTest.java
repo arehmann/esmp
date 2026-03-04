@@ -13,7 +13,10 @@ import java.util.List;
 import java.util.Objects;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.openrewrite.InMemoryExecutionContext;
 import org.openrewrite.SourceFile;
+import org.openrewrite.java.JavaParser;
+import org.openrewrite.java.internal.JavaTypeCache;
 
 /** Unit tests for {@link ClassMetadataVisitor}. Verifies extraction against synthetic fixtures. */
 class ClassMetadataVisitorTest {
@@ -90,8 +93,82 @@ class ClassMetadataVisitorTest {
   }
 
   // ---------------------------------------------------------------------------
+  // Simple-name fallback tests (no classpath — annotation types unresolved)
+  // ---------------------------------------------------------------------------
+
+  @Test
+  void simpleNameFallback_serviceAnnotation_marksAsService() {
+    // Parse inline source WITHOUT Spring on classpath — resolveAnnotationName returns "Service"
+    ExtractionAccumulator localAcc = parseInlineWithoutClasspath(
+        "com/example/MyService.java",
+        """
+        package com.example;
+        import org.springframework.stereotype.Service;
+        @Service
+        public class MyService {}
+        """);
+
+    assertThat(localAcc.getServiceClasses()).contains("com.example.MyService");
+  }
+
+  @Test
+  void simpleNameFallback_repositoryAnnotation_marksAsRepository() {
+    ExtractionAccumulator localAcc = parseInlineWithoutClasspath(
+        "com/example/MyRepository.java",
+        """
+        package com.example;
+        import org.springframework.stereotype.Repository;
+        @Repository
+        public class MyRepository {}
+        """);
+
+    assertThat(localAcc.getRepositoryClasses()).contains("com.example.MyRepository");
+  }
+
+  @Test
+  void simpleNameFallback_controllerAnnotation_marksAsService() {
+    ExtractionAccumulator localAcc = parseInlineWithoutClasspath(
+        "com/example/MyController.java",
+        """
+        package com.example;
+        import org.springframework.stereotype.Controller;
+        @Controller
+        public class MyController {}
+        """);
+
+    assertThat(localAcc.getServiceClasses()).contains("com.example.MyController");
+  }
+
+  @Test
+  void fqnResolved_serviceAnnotation_stillMarksAsService() {
+    // Regression: FQN-resolved annotation must still work (fixture test with classpath)
+    assertThat(acc.getServiceClasses()).contains("com.example.sample.SampleService");
+  }
+
+  // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
+
+  /**
+   * Parses an inline Java source string WITHOUT any classpath, so annotation types will not be
+   * resolved by OpenRewrite — only simple names will be available.
+   */
+  private ExtractionAccumulator parseInlineWithoutClasspath(String path, String source) {
+    InMemoryExecutionContext ctx = new InMemoryExecutionContext(t -> {});
+    JavaParser parser = JavaParser.fromJavaVersion()
+        .typeCache(new JavaTypeCache())
+        .logCompilationWarningsAndErrors(false)
+        .build();
+    List<SourceFile> sources = parser.parse(ctx, source)
+        .peek(sf -> {})
+        .toList();
+    ExtractionAccumulator localAcc = new ExtractionAccumulator();
+    ClassMetadataVisitor visitor = new ClassMetadataVisitor();
+    for (SourceFile sf : sources) {
+      visitor.visit(sf, localAcc);
+    }
+    return localAcc;
+  }
 
   private List<SourceFile> parseFixtures() throws URISyntaxException, IOException {
     Path fixturesDir =

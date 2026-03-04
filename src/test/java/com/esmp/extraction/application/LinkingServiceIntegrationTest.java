@@ -275,6 +275,119 @@ class LinkingServiceIntegrationTest {
     assertThat(edgeCountAfterRerun).isEqualTo(1L);
   }
 
+  // ---------------------------------------------------------------------------
+  // HAS_ANNOTATION edge tests
+  // ---------------------------------------------------------------------------
+
+  @Test
+  void linkAnnotations_createsHasAnnotationEdge_whenClassAnnotationsContainFqnMatchingAnnotationNode() {
+    // Arrange: a ClassNode whose annotations list contains an FQN, and a matching JavaAnnotation node
+    neo4jClient.query("""
+        CREATE (c:JavaClass {fullyQualifiedName: 'com.test.MyEntity', simpleName: 'MyEntity',
+                packageName: 'com.test', sourceFile: 'MyEntity.java',
+                annotations: ['javax.persistence.Entity'],
+                implementedInterfaces: [], extraLabels: []})
+        CREATE (a:JavaAnnotation {fullyQualifiedName: 'javax.persistence.Entity',
+                simpleName: 'Entity', packageName: 'javax.persistence'})
+        """).run();
+
+    ExtractionAccumulator acc = new ExtractionAccumulator();
+    acc.addAnnotation("javax.persistence.Entity", "Entity", "javax.persistence");
+
+    // Act
+    int count = linkingService.linkAnnotations(acc);
+
+    // Assert: one HAS_ANNOTATION edge created
+    assertThat(count).as("linkAnnotations should create 1 HAS_ANNOTATION edge").isEqualTo(1);
+
+    Long edgeCount = neo4jClient.query("""
+        MATCH (c:JavaClass {fullyQualifiedName: 'com.test.MyEntity'})
+              -[r:HAS_ANNOTATION]->(a:JavaAnnotation {fullyQualifiedName: 'javax.persistence.Entity'})
+        RETURN count(r) AS cnt
+        """)
+        .fetchAs(Long.class)
+        .mappedBy((ts, record) -> record.get("cnt").asLong())
+        .one()
+        .orElse(0L);
+    assertThat(edgeCount).as("Expected 1 HAS_ANNOTATION edge in Neo4j").isEqualTo(1L);
+  }
+
+  @Test
+  void linkAnnotations_isIdempotent() {
+    // Arrange
+    neo4jClient.query("""
+        CREATE (c:JavaClass {fullyQualifiedName: 'com.test.AService', simpleName: 'AService',
+                packageName: 'com.test', sourceFile: 'AService.java',
+                annotations: ['org.springframework.stereotype.Service'],
+                implementedInterfaces: [], extraLabels: []})
+        CREATE (a:JavaAnnotation {fullyQualifiedName: 'org.springframework.stereotype.Service',
+                simpleName: 'Service', packageName: 'org.springframework.stereotype'})
+        """).run();
+
+    ExtractionAccumulator acc = new ExtractionAccumulator();
+    acc.addAnnotation("org.springframework.stereotype.Service", "Service", "org.springframework.stereotype");
+
+    // Act: run twice
+    linkingService.linkAnnotations(acc);
+    linkingService.linkAnnotations(acc);
+
+    // Assert: still exactly one edge
+    Long edgeCount = neo4jClient.query("""
+        MATCH (:JavaClass)-[r:HAS_ANNOTATION]->(:JavaAnnotation) RETURN count(r) AS cnt
+        """)
+        .fetchAs(Long.class)
+        .mappedBy((ts, record) -> record.get("cnt").asLong())
+        .one()
+        .orElse(0L);
+    assertThat(edgeCount).as("HAS_ANNOTATION edges should not double on second run (idempotent MERGE)").isEqualTo(1L);
+  }
+
+  // ---------------------------------------------------------------------------
+  // QUERIES edge tests
+  // ---------------------------------------------------------------------------
+
+  @Test
+  void linkQueryMethods_createsQueriesEdge_byTraversingRepositoryToEntityToTable() {
+    // Arrange: SampleRepository -> (IMPLEMENTS) -> JpaRepositoryIface -> (MAPS_TO_TABLE via entity)
+    // Simpler graph: repo -> (DEPENDS_ON) -> entity -> (MAPS_TO_TABLE) -> table
+    // Use the graph traversal: MATCH (m)-[:QUERIES]->(t) after linking
+    neo4jClient.query("""
+        CREATE (repo:JavaClass {fullyQualifiedName: 'com.test.CustomerRepository',
+                simpleName: 'CustomerRepository', packageName: 'com.test',
+                annotations: [], implementedInterfaces: [], extraLabels: []})
+        CREATE (entity:JavaClass {fullyQualifiedName: 'com.test.Customer',
+                simpleName: 'Customer', packageName: 'com.test',
+                annotations: [], implementedInterfaces: [], extraLabels: []})
+        CREATE (table:DBTable {tableName: 'customers'})
+        CREATE (method:JavaMethod {methodId: 'com.test.CustomerRepository#findByName(java.lang.String)',
+                simpleName: 'findByName', declaringClass: 'com.test.CustomerRepository'})
+        CREATE (repo)-[:DEPENDS_ON]->(entity)
+        CREATE (entity)-[:MAPS_TO_TABLE]->(table)
+        """).run();
+
+    ExtractionAccumulator acc = new ExtractionAccumulator();
+    acc.addQueryMethod(
+        "com.test.CustomerRepository#findByName(java.lang.String)",
+        "com.test.CustomerRepository");
+
+    // Act
+    int count = linkingService.linkQueryMethods(acc);
+
+    // Assert: one QUERIES edge created
+    assertThat(count).as("linkQueryMethods should create 1 QUERIES edge via graph traversal").isEqualTo(1);
+
+    Long edgeCount = neo4jClient.query("""
+        MATCH (m:JavaMethod {methodId: 'com.test.CustomerRepository#findByName(java.lang.String)'})
+              -[r:QUERIES]->(t:DBTable {tableName: 'customers'})
+        RETURN count(r) AS cnt
+        """)
+        .fetchAs(Long.class)
+        .mappedBy((ts, record) -> record.get("cnt").asLong())
+        .one()
+        .orElse(0L);
+    assertThat(edgeCount).as("Expected 1 QUERIES edge from findByName to customers table").isEqualTo(1L);
+  }
+
   @Test
   void createsDependsOnEdge_fromAccumulatorData() {
     // Arrange: two ClassNodes

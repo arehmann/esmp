@@ -245,6 +245,45 @@ class GraphQueryControllerIntegrationTest {
   }
 
   @Test
+  void testSearch_returnsDynamicLabels() {
+    // SampleService has :JavaClass:Service labels in the test graph setup.
+    // The searchByName Neo4jClient query reads labels() directly, so "Service" must appear.
+    ResponseEntity<SearchResponse> response =
+        restTemplate.getForEntity("/api/graph/search?name=SampleService", SearchResponse.class);
+
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(response.getBody()).isNotNull();
+
+    SearchResponse.SearchEntry serviceEntry = response.getBody().results().stream()
+        .filter(r -> r.fullyQualifiedName().equals("com.example.SampleService"))
+        .findFirst()
+        .orElseThrow(() -> new AssertionError("SampleService not found in search results"));
+
+    assertThat(serviceEntry.labels())
+        .as("searchByName must return dynamic labels (Service) from Neo4j labels()")
+        .contains("Service");
+  }
+
+  @Test
+  void testSearch_repositoryEntry_hasDynamicLabel() {
+    // SampleRepository has :JavaClass:Repository labels in the test graph setup.
+    ResponseEntity<SearchResponse> response =
+        restTemplate.getForEntity("/api/graph/search?name=SampleRepository", SearchResponse.class);
+
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(response.getBody()).isNotNull();
+
+    SearchResponse.SearchEntry repoEntry = response.getBody().results().stream()
+        .filter(r -> r.fullyQualifiedName().equals("com.example.SampleRepository"))
+        .findFirst()
+        .orElseThrow(() -> new AssertionError("SampleRepository not found in search results"));
+
+    assertThat(repoEntry.labels())
+        .as("searchByName must return dynamic labels (Repository) from Neo4j labels()")
+        .contains("Repository");
+  }
+
+  @Test
   void testSearch_emptyResult() {
     ResponseEntity<SearchResponse> response =
         restTemplate.getForEntity("/api/graph/search?name=NoSuchClass", SearchResponse.class);

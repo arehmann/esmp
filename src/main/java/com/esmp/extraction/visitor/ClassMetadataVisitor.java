@@ -26,10 +26,20 @@ public class ClassMetadataVisitor extends JavaIsoVisitor<ExtractionAccumulator> 
           "org.springframework.stereotype.Service",
           "org.springframework.stereotype.Controller",
           "org.springframework.web.bind.annotation.RestController",
-          "org.springframework.stereotype.Component");
+          "org.springframework.stereotype.Component",
+          // Simple-name fallback: when OpenRewrite cannot resolve the annotation FQN
+          // (e.g., Spring is not on the parse classpath), resolveAnnotationName() returns
+          // the simple name. These entries ensure stereotype detection still works.
+          "Service",
+          "Controller",
+          "RestController",
+          "Component");
 
   private static final Set<String> REPOSITORY_STEREOTYPES =
-      Set.of("org.springframework.stereotype.Repository");
+      Set.of(
+          "org.springframework.stereotype.Repository",
+          // Simple-name fallback for unresolved annotation types
+          "Repository");
 
   @Override
   public J.ClassDeclaration visitClassDeclaration(
@@ -201,17 +211,40 @@ public class ClassMetadataVisitor extends JavaIsoVisitor<ExtractionAccumulator> 
     return null;
   }
 
+  /**
+   * Resolves the FQN for the given annotation. First tries OpenRewrite type resolution; if that
+   * fails (type unresolved or unknown), applies a simple-name-to-FQN fallback switch covering
+   * common Spring and JPA annotations. This ensures that annotation FQNs stored on class nodes
+   * match those stored on JavaAnnotation nodes, enabling HAS_ANNOTATION edge creation.
+   *
+   * <p>This mirrors the same fallback logic in {@code JpaPatternVisitor.resolveAnnotationFqn()}.
+   */
   private static String resolveAnnotationName(J.Annotation annotation) {
     if (annotation.getAnnotationType() != null
         && annotation.getAnnotationType().getType() instanceof JavaType.FullyQualified fq) {
       String fqn = fq.getFullyQualifiedName();
-      // When type resolution fails, OpenRewrite returns "<unknown>" as FQN — fall back to simple
-      // name so annotation-based tests can still match against the unqualified annotation name
+      // When type resolution fails, OpenRewrite returns "<unknown>" as FQN — fall through to
+      // the simple-name switch below
       if (fqn != null && !fqn.startsWith("<")) {
         return fqn;
       }
     }
-    return annotation.getSimpleName();
+    // Simple-name-to-FQN fallback: covers common annotations that fail type resolution when
+    // the annotation JARs are not on the parser classpath (e.g., javax.persistence, Spring)
+    String simpleName = annotation.getSimpleName();
+    return switch (simpleName) {
+      case "Entity"         -> "javax.persistence.Entity";
+      case "Table"          -> "javax.persistence.Table";
+      case "Service"        -> "org.springframework.stereotype.Service";
+      case "Repository"     -> "org.springframework.stereotype.Repository";
+      case "Controller"     -> "org.springframework.stereotype.Controller";
+      case "RestController" -> "org.springframework.web.bind.annotation.RestController";
+      case "Component"      -> "org.springframework.stereotype.Component";
+      case "Autowired"      -> "org.springframework.beans.factory.annotation.Autowired";
+      case "Inject"         -> "javax.inject.Inject";
+      case "Query"          -> "org.springframework.data.jpa.repository.Query";
+      default               -> simpleName;
+    };
   }
 
   private static String typeToString(JavaType type) {
