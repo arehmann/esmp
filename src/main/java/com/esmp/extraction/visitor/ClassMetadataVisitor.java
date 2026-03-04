@@ -26,10 +26,20 @@ public class ClassMetadataVisitor extends JavaIsoVisitor<ExtractionAccumulator> 
           "org.springframework.stereotype.Service",
           "org.springframework.stereotype.Controller",
           "org.springframework.web.bind.annotation.RestController",
-          "org.springframework.stereotype.Component");
+          "org.springframework.stereotype.Component",
+          // Simple-name fallback: when OpenRewrite cannot resolve the annotation FQN
+          // (e.g., Spring is not on the parse classpath), resolveAnnotationName() returns
+          // the simple name. These entries ensure stereotype detection still works.
+          "Service",
+          "Controller",
+          "RestController",
+          "Component");
 
   private static final Set<String> REPOSITORY_STEREOTYPES =
-      Set.of("org.springframework.stereotype.Repository");
+      Set.of(
+          "org.springframework.stereotype.Repository",
+          // Simple-name fallback for unresolved annotation types
+          "Repository");
 
   @Override
   public J.ClassDeclaration visitClassDeclaration(
