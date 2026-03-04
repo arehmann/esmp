@@ -1,16 +1,22 @@
 package com.esmp.extraction.application;
 
+import com.esmp.extraction.model.AnnotationNode;
 import com.esmp.extraction.model.CallsRelationship;
 import com.esmp.extraction.model.ClassNode;
 import com.esmp.extraction.model.ContainsComponentRelationship;
+import com.esmp.extraction.model.DBTableNode;
 import com.esmp.extraction.model.FieldNode;
 import com.esmp.extraction.model.MethodNode;
+import com.esmp.extraction.model.ModuleNode;
+import com.esmp.extraction.model.PackageNode;
 import com.esmp.extraction.visitor.ExtractionAccumulator;
+import com.esmp.extraction.visitor.ExtractionAccumulator.AnnotationData;
 import com.esmp.extraction.visitor.ExtractionAccumulator.CallEdge;
 import com.esmp.extraction.visitor.ExtractionAccumulator.ClassNodeData;
 import com.esmp.extraction.visitor.ExtractionAccumulator.ComponentEdge;
 import com.esmp.extraction.visitor.ExtractionAccumulator.FieldNodeData;
 import com.esmp.extraction.visitor.ExtractionAccumulator.MethodNodeData;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -123,6 +129,18 @@ public class AccumulatorToModelMapper {
       if (acc.getVaadinDataBindings().contains(cData.fqn())) {
         extraLabels.add("VaadinDataBinding");
       }
+
+      // Apply Phase 3 stereotype labels
+      if (acc.getServiceClasses().contains(cData.fqn())) {
+        extraLabels.add("Service");
+      }
+      if (acc.getRepositoryClasses().contains(cData.fqn())) {
+        extraLabels.add("Repository");
+      }
+      if (acc.getUIViewClasses().contains(cData.fqn())) {
+        extraLabels.add("UIView");
+      }
+
       classNode.setExtraLabels(extraLabels);
 
       // Attach method children
@@ -158,5 +176,86 @@ public class AccumulatorToModelMapper {
     }
 
     return new ArrayList<>(classNodesByFqn.values());
+  }
+
+  /**
+   * Maps annotation data from the accumulator into {@link AnnotationNode} entities.
+   *
+   * @param acc the accumulator populated by visitor traversal
+   * @return list of AnnotationNode entities ready for {@code saveAll()}
+   */
+  public List<AnnotationNode> mapToAnnotationNodes(ExtractionAccumulator acc) {
+    List<AnnotationNode> result = new ArrayList<>();
+    for (AnnotationData data : acc.getAnnotations().values()) {
+      AnnotationNode node = new AnnotationNode(data.fqn());
+      node.setSimpleName(data.simpleName());
+      node.setPackageName(data.packageName());
+      result.add(node);
+    }
+    return result;
+  }
+
+  /**
+   * Derives unique {@link PackageNode} entities from the class data in the accumulator.
+   *
+   * <p>CONTAINS_CLASS relationships are NOT wired here — the {@code LinkingService} handles them
+   * via Cypher MERGE to avoid circular SDN save issues.
+   *
+   * @param acc the accumulator populated by visitor traversal
+   * @return list of PackageNode entities (one per unique package name) ready for {@code saveAll()}
+   */
+  public List<PackageNode> mapToPackageNodes(ExtractionAccumulator acc) {
+    Map<String, PackageNode> byPackageName = new HashMap<>();
+    for (ClassNodeData cData : acc.getClasses().values()) {
+      String pkgName = cData.packageName();
+      if (pkgName != null && !pkgName.isBlank()) {
+        byPackageName.computeIfAbsent(pkgName, name -> {
+          PackageNode node = new PackageNode(name);
+          // simpleName = last segment
+          int lastDot = name.lastIndexOf('.');
+          node.setSimpleName(lastDot >= 0 ? name.substring(lastDot + 1) : name);
+          return node;
+        });
+      }
+    }
+    return new ArrayList<>(byPackageName.values());
+  }
+
+  /**
+   * Creates a single {@link ModuleNode} representing the source root being extracted.
+   *
+   * <p>For single-module projects the module name is the last path segment of {@code sourceRoot}.
+   * CONTAINS_PACKAGE relationships are NOT wired here — handled by {@code LinkingService}.
+   *
+   * @param acc the accumulator populated by visitor traversal
+   * @param sourceRoot absolute path to the Java source root directory
+   * @return list containing exactly one ModuleNode for the current source root
+   */
+  public List<ModuleNode> mapToModuleNodes(ExtractionAccumulator acc, String sourceRoot) {
+    if (acc.getClasses().isEmpty()) {
+      return List.of();
+    }
+    String moduleName = sourceRoot != null && !sourceRoot.isBlank()
+        ? Path.of(sourceRoot).getFileName().toString()
+        : "unknown-module";
+    ModuleNode node = new ModuleNode(moduleName);
+    node.setSourceRoot(sourceRoot);
+    node.setMultiModuleSubproject(false);
+    return List.of(node);
+  }
+
+  /**
+   * Maps table mapping data from the accumulator into {@link DBTableNode} entities.
+   *
+   * @param acc the accumulator populated by visitor traversal
+   * @return list of DBTableNode entities (one per unique table name) ready for {@code saveAll()}
+   */
+  public List<DBTableNode> mapToDBTableNodes(ExtractionAccumulator acc) {
+    // Deduplicate by table name (which is already lowercased in the accumulator)
+    Map<String, DBTableNode> byTableName = new HashMap<>();
+    for (String tableName : acc.getTableMappings().values()) {
+      byTableName.computeIfAbsent(tableName, name -> new DBTableNode(name));
+    }
+    return new ArrayList<>(byTableName.values());
   }
 }

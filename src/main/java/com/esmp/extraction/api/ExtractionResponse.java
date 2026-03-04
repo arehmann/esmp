@@ -18,6 +18,10 @@ public class ExtractionResponse {
   private int vaadinViewCount;
   private int vaadinComponentCount;
   private int vaadinDataBindingCount;
+  private int annotationCount;
+  private int packageCount;
+  private int moduleCount;
+  private int tableCount;
   private int errorCount;
   private List<String> errors;
   private VaadinAuditReport auditReport;
@@ -33,6 +37,10 @@ public class ExtractionResponse {
       int vaadinViewCount,
       int vaadinComponentCount,
       int vaadinDataBindingCount,
+      int annotationCount,
+      int packageCount,
+      int moduleCount,
+      int tableCount,
       int errorCount,
       List<String> errors,
       VaadinAuditReport auditReport,
@@ -44,6 +52,10 @@ public class ExtractionResponse {
     this.vaadinViewCount = vaadinViewCount;
     this.vaadinComponentCount = vaadinComponentCount;
     this.vaadinDataBindingCount = vaadinDataBindingCount;
+    this.annotationCount = annotationCount;
+    this.packageCount = packageCount;
+    this.moduleCount = moduleCount;
+    this.tableCount = tableCount;
     this.errorCount = errorCount;
     this.errors = errors;
     this.auditReport = auditReport;
@@ -104,6 +116,38 @@ public class ExtractionResponse {
 
   public void setVaadinDataBindingCount(int vaadinDataBindingCount) {
     this.vaadinDataBindingCount = vaadinDataBindingCount;
+  }
+
+  public int getAnnotationCount() {
+    return annotationCount;
+  }
+
+  public void setAnnotationCount(int annotationCount) {
+    this.annotationCount = annotationCount;
+  }
+
+  public int getPackageCount() {
+    return packageCount;
+  }
+
+  public void setPackageCount(int packageCount) {
+    this.packageCount = packageCount;
+  }
+
+  public int getModuleCount() {
+    return moduleCount;
+  }
+
+  public void setModuleCount(int moduleCount) {
+    this.moduleCount = moduleCount;
+  }
+
+  public int getTableCount() {
+    return tableCount;
+  }
+
+  public void setTableCount(int tableCount) {
+    this.tableCount = tableCount;
   }
 
   public int getErrorCount() {

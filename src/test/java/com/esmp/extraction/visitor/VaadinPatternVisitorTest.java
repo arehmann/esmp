@@ -72,6 +72,17 @@ class VaadinPatternVisitorTest {
     assertThat(acc.getVaadinComponents()).isNotEmpty();
   }
 
+  @Test
+  void detectsBindsToEdge_fromBeanFieldGroupInstantiation() {
+    // SampleVaadinForm uses new BeanFieldGroup<>(SampleEntity.class)
+    assertThat(acc.getBindsToEdges()).isNotEmpty();
+    assertThat(acc.getBindsToEdges())
+        .anyMatch(e ->
+            e.viewClassFqn().equals("com.example.sample.SampleVaadinForm")
+            && e.entityClassFqn().equals("com.example.sample.SampleEntity")
+            && e.bindingMechanism().equals("BeanFieldGroup"));
+  }
+
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------

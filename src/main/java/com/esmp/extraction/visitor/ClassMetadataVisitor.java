@@ -2,6 +2,7 @@ package com.esmp.extraction.visitor;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
@@ -19,6 +20,16 @@ import org.openrewrite.java.tree.JavaType;
  * ensure recursion into nested classes, inner classes, and anonymous classes.
  */
 public class ClassMetadataVisitor extends JavaIsoVisitor<ExtractionAccumulator> {
+
+  private static final Set<String> SERVICE_STEREOTYPES =
+      Set.of(
+          "org.springframework.stereotype.Service",
+          "org.springframework.stereotype.Controller",
+          "org.springframework.web.bind.annotation.RestController",
+          "org.springframework.stereotype.Component");
+
+  private static final Set<String> REPOSITORY_STEREOTYPES =
+      Set.of("org.springframework.stereotype.Repository");
 
   @Override
   public J.ClassDeclaration visitClassDeclaration(
@@ -73,6 +84,23 @@ public class ClassMetadataVisitor extends JavaIsoVisitor<ExtractionAccumulator> 
           implementedInterfaces,
           sourceFilePath,
           null); // contentHash computed at a higher level if needed
+
+      // Detect and apply stereotype labels based on annotation FQNs
+      for (J.Annotation annotation : cd.getLeadingAnnotations()) {
+        String annotFqn = resolveAnnotationName(annotation);
+        if (SERVICE_STEREOTYPES.contains(annotFqn)) {
+          acc.markAsService(fqn);
+        } else if (REPOSITORY_STEREOTYPES.contains(annotFqn)) {
+          acc.markAsRepository(fqn);
+        }
+        // Register annotation node data for non-unknown FQNs
+        if (annotFqn != null && !annotFqn.startsWith("<") && annotFqn.contains(".")) {
+          int lastDot = annotFqn.lastIndexOf('.');
+          String annotSimple = annotFqn.substring(lastDot + 1);
+          String annotPkg = annotFqn.substring(0, lastDot);
+          acc.addAnnotation(annotFqn, annotSimple, annotPkg);
+        }
+      }
     }
 
     // MUST call super to recurse into nested/inner classes and class body members

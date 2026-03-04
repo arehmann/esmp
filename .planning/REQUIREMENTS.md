@@ -20,9 +20,9 @@
 
 ### Code Knowledge Graph
 
-- [ ] **CKG-01**: Graph stores Class, Method, Field, Annotation, Package, Module, UI View, Service, Repository, and DB Table nodes
-- [ ] **CKG-02**: Graph stores CALLS, EXTENDS, IMPLEMENTS, DEPENDS_ON, BINDS_TO, QUERIES, MAPS_TO_TABLE relationships
-- [ ] **CKG-03**: User can query the graph via structured API endpoints
+- [x] **CKG-01**: Graph stores Class, Method, Field, Annotation, Package, Module, UI View, Service, Repository, and DB Table nodes
+- [x] **CKG-02**: Graph stores CALLS, EXTENDS, IMPLEMENTS, DEPENDS_ON, BINDS_TO, QUERIES, MAPS_TO_TABLE relationships
+- [x] **CKG-03**: User can query the graph via structured API endpoints
 
 ### Graph Validation & Canonical Queries
 
