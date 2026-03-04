@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Phase 3 context gathered
-last_updated: "2026-03-04T18:15:41.739Z"
+stopped_at: Completed 03-code-knowledge-graph 03-01-PLAN.md
+last_updated: "2026-03-04T18:41:51.932Z"
 last_activity: 2026-03-04 — Roadmap created, project initialized
 progress:
   total_phases: 13
   completed_phases: 2
-  total_plans: 5
-  completed_plans: 5
+  total_plans: 8
+  completed_plans: 6
 ---
 
 ---
@@ -71,6 +71,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02-ast-extraction P01 | 4min | 2 tasks | 16 files |
 | Phase 02-ast-extraction P02 | 15min | 2 tasks | 10 files |
 | Phase 02-ast-extraction P03 | 30min | 1 tasks | 12 files |
+| Phase 03-code-knowledge-graph P01 | 3min | 2 tasks | 16 files |
 
 ## Accumulated Context
 
@@ -98,6 +99,9 @@ Recent decisions affecting current work:
 - [Phase 02-ast-extraction]: @Transactional('neo4jTransactionManager') qualifier required on ExtractionService.extract() to bind correct Neo4j session
 - [Phase 02-ast-extraction]: Dual transaction manager: JPA ConditionalOnMissingBean suppresses Neo4jTransactionManager auto-config when JPA is present; must create both explicitly with distinct bean names
 - [Phase 02-ast-extraction]: @Transactional('neo4jTransactionManager') qualifier required on ExtractionService.extract() to bind correct Neo4j session — default @Transactional binds to JPA (primary) TM
+- [Phase 03-code-knowledge-graph]: QueriesRelationship targets DBTableNode — the QUERIES edge connects MethodNode to DBTableNode (not another method)
+- [Phase 03-code-knowledge-graph]: addAnnotation uses putIfAbsent deduplication by FQN in ExtractionAccumulator to prevent overwriting already-captured annotation metadata
+- [Phase 03-code-knowledge-graph]: DBTableNode.tableName stored lowercased for case-insensitive deduplication across RDBMS dialects
 
 ### Pending Todos
 
@@ -110,6 +114,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-04T18:15:41.735Z
-Stopped at: Phase 3 context gathered
-Resume file: .planning/phases/03-code-knowledge-graph/03-CONTEXT.md
+Last session: 2026-03-04T18:41:51.927Z
+Stopped at: Completed 03-code-knowledge-graph 03-01-PLAN.md
+Resume file: None
