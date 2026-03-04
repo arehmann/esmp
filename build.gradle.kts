@@ -29,8 +29,11 @@ dependencies {
     implementation(libs.mysql.connector)
     implementation(libs.qdrant.client)
     implementation(libs.grpc.stub)
+    implementation(libs.openrewrite.java)
+    implementation(libs.openrewrite.java.jdk21)
 
     testImplementation(libs.spring.boot.starter.test)
+    testImplementation(libs.vaadin.server)
     testImplementation(libs.spring.boot.testcontainers)
     testImplementation(libs.testcontainers.junit)
     testImplementation(libs.testcontainers.neo4j)

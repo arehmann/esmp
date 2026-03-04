@@ -5,6 +5,8 @@ testcontainers     = "1.20.4"
 qdrant-client      = "1.13.0"
 spotless           = "7.0.2"
 google-java-format = "1.23.0"
+openrewrite        = "8.74.3"
+vaadin-server      = "7.7.48"
 
 [libraries]
 spring-boot-starter-web       = { module = "org.springframework.boot:spring-boot-starter-web" }
@@ -22,6 +24,9 @@ grpc-stub                     = { module = "io.grpc:grpc-stub", version = "1.65.
 testcontainers-junit          = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
 testcontainers-neo4j          = { module = "org.testcontainers:neo4j", version.ref = "testcontainers" }
 testcontainers-mysql          = { module = "org.testcontainers:mysql", version.ref = "testcontainers" }
+openrewrite-java              = { module = "org.openrewrite:rewrite-java", version.ref = "openrewrite" }
+openrewrite-java-jdk21        = { module = "org.openrewrite:rewrite-java-21", version.ref = "openrewrite" }
+vaadin-server                 = { module = "com.vaadin:vaadin-server", version.ref = "vaadin-server" }
 
 [plugins]
 spring-boot            = { id = "org.springframework.boot", version.ref = "spring-boot" }
