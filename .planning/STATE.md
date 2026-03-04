@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Phase 1 context gathered
-last_updated: "2026-03-04T12:42:05.250Z"
+stopped_at: Completed 01-infrastructure-01-PLAN.md
+last_updated: "2026-03-04T13:23:25.477Z"
 last_activity: 2026-03-04 — Roadmap created, project initialized
 progress:
   total_phases: 10
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 2
+  completed_plans: 1
   percent: 0
 ---
 
@@ -50,6 +50,7 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: -
 
 *Updated after each plan completion*
+| Phase 01-infrastructure P01 | 9 | 2 tasks | 18 files |
 
 ## Accumulated Context
 
@@ -62,6 +63,8 @@ Recent decisions affecting current work:
 - [Init]: OpenRewrite runs as Gradle plugin on target codebase only — never embedded in ESMP runtime (classpath isolation)
 - [Init]: MySQL added for migration job state, audit trail, confidence ledger (research finding)
 - [Init]: Local ONNX embeddings (all-MiniLM-L6-v2) preferred over API embeddings at bulk indexing scale
+- [Phase 01-infrastructure]: Qdrant Maven artifact is io.qdrant:client (not java-client); grpc-stub must be explicit impl dep for ListenableFuture on classpath
+- [Phase 01-infrastructure]: foojay-resolver incompatible with Gradle 9.3.1 (IBM_SEMERU error); use org.gradle.java.installations.paths with local JDK instead
 
 ### Pending Todos
 
@@ -74,6 +77,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-04T12:42:05.247Z
-Stopped at: Phase 1 context gathered
-Resume file: .planning/phases/01-infrastructure/01-CONTEXT.md
+Last session: 2026-03-04T13:23:25.474Z
+Stopped at: Completed 01-infrastructure-01-PLAN.md
+Resume file: None
