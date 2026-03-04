@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Objects;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.openrewrite.InMemoryExecutionContext;
 import org.openrewrite.SourceFile;
 
 /** Unit tests for {@link ClassMetadataVisitor}. Verifies extraction against synthetic fixtures. */
@@ -26,10 +25,9 @@ class ClassMetadataVisitorTest {
   void setUp() throws Exception {
     parsedFixtures = parseFixtures();
     acc = new ExtractionAccumulator();
-    InMemoryExecutionContext ctx = new InMemoryExecutionContext();
     ClassMetadataVisitor visitor = new ClassMetadataVisitor();
     for (SourceFile source : parsedFixtures) {
-      visitor.visit(source, acc, ctx);
+      visitor.visit(source, acc);
     }
   }
 
@@ -109,24 +107,30 @@ class ClassMetadataVisitorTest {
 
     ClasspathLoader loader = new ClasspathLoader();
     JavaSourceParser parser = new JavaSourceParser(loader);
-    String classpathFile = buildVaadinClasspathFile();
+    String classpathFile;
+    try {
+      classpathFile = buildVaadinClasspathFile();
+    } catch (Exception e) {
+      classpathFile = "";
+    }
     return parser.parse(sources, projectRoot, classpathFile);
   }
 
   private String buildVaadinClasspathFile() throws Exception {
-    try {
-      Class<?> clazz = Class.forName("com.vaadin.ui.UI");
-      var location = clazz.getProtectionDomain().getCodeSource().getLocation();
-      if (location != null) {
-        Path jarPath = Paths.get(location.toURI());
-        Path tempFile = Files.createTempFile("vaadin-classpath", ".txt");
-        tempFile.toFile().deleteOnExit();
-        Files.writeString(tempFile, jarPath.toString());
-        return tempFile.toString();
+    String javaClassPath = System.getProperty("java.class.path", "");
+    String[] entries = javaClassPath.split(java.io.File.pathSeparator);
+    StringBuilder sb = new StringBuilder();
+    for (String entry : entries) {
+      if (entry.endsWith(".jar") && !entry.isBlank()) {
+        sb.append(entry).append("\n");
       }
-    } catch (Exception e) {
-      // degrade gracefully
     }
-    return "";
+    if (sb.isEmpty()) {
+      return "";
+    }
+    Path tempFile = Files.createTempFile("full-classpath", ".txt");
+    tempFile.toFile().deleteOnExit();
+    Files.writeString(tempFile, sb.toString().trim());
+    return tempFile.toString();
   }
 }
