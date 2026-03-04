@@ -1,0 +1,11 @@
+logging:
+  structured:
+    format:
+      console: ecs
+    ecs:
+      service:
+        name: esmp
+        environment: production
+  level:
+    root: WARN
+    com.esmp: INFO
