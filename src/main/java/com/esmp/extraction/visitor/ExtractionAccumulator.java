@@ -43,6 +43,23 @@ public class ExtractionAccumulator {
   private final Set<String> vaadinComponents = new HashSet<>();
   private final Set<String> vaadinDataBindings = new HashSet<>();
 
+  // ---------- Phase 3: stereotype sets ----------
+
+  private final Set<String> serviceClasses = new HashSet<>();
+  private final Set<String> repositoryClasses = new HashSet<>();
+  private final Set<String> uiViewClasses = new HashSet<>();
+
+  // ---------- Phase 3: annotation and table maps ----------
+
+  private final Map<String, AnnotationData> annotations = new HashMap<>();
+  private final Map<String, String> tableMappings = new HashMap<>();
+
+  // ---------- Phase 3: edge lists ----------
+
+  private final List<DependencyEdge> dependencyEdges = new ArrayList<>();
+  private final List<QueryMethodRecord> queryMethods = new ArrayList<>();
+  private final List<BindsToRecord> bindsToEdges = new ArrayList<>();
+
   // =========================================================================
   // Mutation methods
   // =========================================================================
@@ -194,6 +211,96 @@ public class ExtractionAccumulator {
   }
 
   // =========================================================================
+  // Phase 3: Mutation methods
+  // =========================================================================
+
+  /**
+   * Marks the given class FQN as a service bean (will receive :ServiceClass stereotype label).
+   *
+   * @param fqn fully qualified class name
+   */
+  public void markAsService(String fqn) {
+    serviceClasses.add(fqn);
+  }
+
+  /**
+   * Marks the given class FQN as a repository bean (will receive :RepositoryClass stereotype
+   * label).
+   *
+   * @param fqn fully qualified class name
+   */
+  public void markAsRepository(String fqn) {
+    repositoryClasses.add(fqn);
+  }
+
+  /**
+   * Marks the given class FQN as a UI view (non-Vaadin-specific general view marker).
+   *
+   * @param fqn fully qualified class name
+   */
+  public void markAsUIView(String fqn) {
+    uiViewClasses.add(fqn);
+  }
+
+  /**
+   * Registers an annotation type. Deduplicates by FQN — subsequent calls for the same FQN are
+   * silently ignored to avoid overwriting already-captured metadata.
+   *
+   * @param fqn fully qualified annotation type name
+   * @param simpleName simple (unqualified) name
+   * @param packageName Java package of the annotation type
+   */
+  public void addAnnotation(String fqn, String simpleName, String packageName) {
+    annotations.putIfAbsent(fqn, new AnnotationData(fqn, simpleName, packageName));
+  }
+
+  /**
+   * Records that the given JPA entity class maps to the specified table name.
+   *
+   * @param classFqn fully qualified name of the entity class
+   * @param tableName lowercased table name
+   */
+  public void addTableMapping(String classFqn, String tableName) {
+    tableMappings.put(classFqn, tableName);
+  }
+
+  /**
+   * Appends a directed DEPENDS_ON edge from one class to another.
+   *
+   * @param fromFqn FQN of the dependent class
+   * @param toFqn FQN of the dependency class
+   * @param injectionType how the dependency is injected ("field", "constructor", or "setter")
+   * @param fieldName name of the field or constructor/setter parameter
+   */
+  public void addDependencyEdge(
+      String fromFqn, String toFqn, String injectionType, String fieldName) {
+    dependencyEdges.add(new DependencyEdge(fromFqn, toFqn, injectionType, fieldName));
+  }
+
+  /**
+   * Appends a query method record indicating the given method issues database queries.
+   *
+   * @param methodId stable method identifier in the form {@code FQN#method(ParamTypes...)}
+   * @param declaringClassFqn FQN of the class that declares this method
+   */
+  public void addQueryMethod(String methodId, String declaringClassFqn) {
+    queryMethods.add(new QueryMethodRecord(methodId, declaringClassFqn));
+  }
+
+  /**
+   * Appends a BINDS_TO edge from a view class to an entity class via a Vaadin data binding
+   * mechanism.
+   *
+   * @param viewClassFqn FQN of the Vaadin view class
+   * @param entityClassFqn FQN of the bound entity class
+   * @param bindingMechanism Vaadin 7 binding type (e.g., "BeanFieldGroup", "FieldGroup")
+   */
+  public void addBindsToEdge(
+      String viewClassFqn, String entityClassFqn, String bindingMechanism) {
+    bindsToEdges.add(new BindsToRecord(viewClassFqn, entityClassFqn, bindingMechanism));
+  }
+
+  // =========================================================================
   // Read accessors
   // =========================================================================
 
@@ -227,6 +334,46 @@ public class ExtractionAccumulator {
 
   public Set<String> getVaadinDataBindings() {
     return Collections.unmodifiableSet(vaadinDataBindings);
+  }
+
+  /** Returns an unmodifiable view of all class FQNs marked as service beans. */
+  public Set<String> getServiceClasses() {
+    return Collections.unmodifiableSet(serviceClasses);
+  }
+
+  /** Returns an unmodifiable view of all class FQNs marked as repository beans. */
+  public Set<String> getRepositoryClasses() {
+    return Collections.unmodifiableSet(repositoryClasses);
+  }
+
+  /** Returns an unmodifiable view of all class FQNs marked as UI views. */
+  public Set<String> getUIViewClasses() {
+    return Collections.unmodifiableSet(uiViewClasses);
+  }
+
+  /** Returns an unmodifiable view of all registered annotation types, keyed by FQN. */
+  public Map<String, AnnotationData> getAnnotations() {
+    return Collections.unmodifiableMap(annotations);
+  }
+
+  /** Returns an unmodifiable view of entity class FQN to table name mappings. */
+  public Map<String, String> getTableMappings() {
+    return Collections.unmodifiableMap(tableMappings);
+  }
+
+  /** Returns an unmodifiable view of all DEPENDS_ON edge records. */
+  public List<DependencyEdge> getDependencyEdges() {
+    return Collections.unmodifiableList(dependencyEdges);
+  }
+
+  /** Returns an unmodifiable view of all query method records. */
+  public List<QueryMethodRecord> getQueryMethods() {
+    return Collections.unmodifiableList(queryMethods);
+  }
+
+  /** Returns an unmodifiable view of all BINDS_TO edge records. */
+  public List<BindsToRecord> getBindsToEdges() {
+    return Collections.unmodifiableList(bindsToEdges);
   }
 
   // =========================================================================
@@ -275,4 +422,24 @@ public class ExtractionAccumulator {
   /** A CONTAINS_COMPONENT edge representing a parent-child layout relationship in Vaadin 7. */
   public record ComponentEdge(
       String parentClassFqn, String childClassFqn, String parentType, String childType) {}
+
+  /** Extracted data for a unique Java annotation type encountered during extraction. */
+  public record AnnotationData(String fqn, String simpleName, String packageName) {}
+
+  /**
+   * A directed DEPENDS_ON edge indicating that {@code fromFqn} depends on {@code toFqn}, with
+   * metadata about how the dependency is injected.
+   */
+  public record DependencyEdge(
+      String fromFqn, String toFqn, String injectionType, String fieldName) {}
+
+  /** Identifies a repository query method and its declaring class. */
+  public record QueryMethodRecord(String methodId, String declaringClassFqn) {}
+
+  /**
+   * A BINDS_TO edge from a Vaadin view to an entity class, capturing the Vaadin 7 data binding
+   * mechanism used.
+   */
+  public record BindsToRecord(
+      String viewClassFqn, String entityClassFqn, String bindingMechanism) {}
 }
