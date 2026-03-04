@@ -106,7 +106,8 @@ class ExtractionIntegrationTest {
   @Test
   void triggerEndpointReturns200WithExtractionSummary() {
     ResponseEntity<ExtractionResponse> response =
-        restTemplate.postForEntity("/api/extraction/trigger", buildRequest(), ExtractionResponse.class);
+        restTemplate.postForEntity(
+            "/api/extraction/trigger", buildRequest(), ExtractionResponse.class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody()).isNotNull();
@@ -236,7 +237,8 @@ class ExtractionIntegrationTest {
   @Test
   void extractionResponseIncludesVaadinCounts() {
     ResponseEntity<ExtractionResponse> response =
-        restTemplate.postForEntity("/api/extraction/trigger", buildRequest(), ExtractionResponse.class);
+        restTemplate.postForEntity(
+            "/api/extraction/trigger", buildRequest(), ExtractionResponse.class);
 
     assertThat(response.getBody()).isNotNull();
     assertThat(response.getBody().getVaadinViewCount()).isGreaterThanOrEqualTo(0);
@@ -247,7 +249,8 @@ class ExtractionIntegrationTest {
   @Test
   void extractionResponseIncludesAuditReport() {
     ResponseEntity<ExtractionResponse> response =
-        restTemplate.postForEntity("/api/extraction/trigger", buildRequest(), ExtractionResponse.class);
+        restTemplate.postForEntity(
+            "/api/extraction/trigger", buildRequest(), ExtractionResponse.class);
 
     assertThat(response.getBody()).isNotNull();
     assertThat(response.getBody().getAuditReport()).isNotNull();
