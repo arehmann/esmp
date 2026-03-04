@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Phase 2 context gathered
-last_updated: "2026-03-04T14:59:53.803Z"
+stopped_at: Completed 02-ast-extraction 02-01-PLAN.md
+last_updated: "2026-03-04T15:55:37.332Z"
 last_activity: 2026-03-04 — Roadmap created, project initialized
 progress:
   total_phases: 13
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 5
+  completed_plans: 3
   percent: 0
 ---
 
@@ -53,6 +53,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01-infrastructure P01 | 9 | 2 tasks | 18 files |
 | Phase 01-infrastructure P02 | 13 | 1 tasks | 5 files |
 | Phase 01-infrastructure P02 | 65min | 2 tasks | 6 files |
+| Phase 02-ast-extraction P01 | 4min | 2 tasks | 16 files |
 
 ## Accumulated Context
 
@@ -70,6 +71,9 @@ Recent decisions affecting current work:
 - [Phase 01-infrastructure]: Qdrant gRPC port is 6334 not 6333; QdrantGrpcClient.newBuilder must use useTls=false for local Docker Qdrant
 - [Phase 01-infrastructure]: MySQL host port changed to 3307 (permanent project convention) to avoid conflict with local dev MySQL on 3306
 - [Phase 01-infrastructure]: docker-compose.yml name: esmp groups all containers under ESMP project name
+- [Phase 02-ast-extraction]: Gradle alias openrewrite-java-jdk21 used instead of openrewrite-java-21 to avoid type-safe accessor failure on numeric suffix
+- [Phase 02-ast-extraction]: @Version annotation is org.springframework.data.annotation.Version (spring-data-commons), not in neo4j.core.schema package
+- [Phase 02-ast-extraction]: vaadin-server:7.7.48 is testImplementation only — provides Vaadin 7 type symbols for classpath resolution, must not be on runtime classpath due to javax.servlet conflict
 
 ### Pending Todos
 
@@ -82,6 +86,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-04T14:59:53.799Z
-Stopped at: Phase 2 context gathered
-Resume file: .planning/phases/02-ast-extraction/02-CONTEXT.md
+Last session: 2026-03-04T15:55:37.328Z
+Stopped at: Completed 02-ast-extraction 02-01-PLAN.md
+Resume file: None

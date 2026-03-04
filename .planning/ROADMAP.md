@@ -54,7 +54,7 @@ Plans:
   3. Call graph edges between methods across classes are stored as CALLS relationships in Neo4j
   4. A Vaadin 7 view class is parsed and its Vaadin component usage is captured in the graph
   5. Re-running extraction on an unchanged file does not create duplicate nodes (idempotent)
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 
 Plans:
 - [ ] 02-01-PLAN.md — OpenRewrite/Vaadin dependencies, Neo4j domain model entities, synthetic test fixtures, schema constraints
@@ -206,7 +206,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Infrastructure | 2/2 | Complete   | 2026-03-04 |
-| 2. AST Extraction | 0/3 | Planning complete | - |
+| 2. AST Extraction | 1/3 | In Progress|  |
 | 3. Code Knowledge Graph | 0/TBD | Not started | - |
 | 4. Graph Validation & Canonical Queries | 0/TBD | Not started | - |
 | 5. Domain Lexicon | 0/TBD | Not started | - |
