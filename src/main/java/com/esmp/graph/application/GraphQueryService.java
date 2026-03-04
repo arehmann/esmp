@@ -1,6 +1,5 @@
 package com.esmp.graph.application;
 
-import com.esmp.extraction.model.ClassNode;
 import com.esmp.graph.api.ClassStructureResponse;
 import com.esmp.graph.api.ClassStructureResponse.DependencySummary;
 import com.esmp.graph.api.ClassStructureResponse.FieldSummary;
@@ -262,23 +261,53 @@ public class GraphQueryService {
   /**
    * Searches for classes by simple name (case-insensitive substring match).
    *
+   * <p>Uses Neo4jClient with a Cypher {@code labels()} query rather than an SDN derived query.
+   * SDN's derived query ({@code findBySimpleNameContainingIgnoreCase}) does not hydrate
+   * {@code @DynamicLabels} — the extra labels (Service, Repository, etc.) are always empty when
+   * returned via Spring Data entity mapping. Reading {@code labels(c)} directly from the Cypher
+   * wire protocol avoids this limitation.
+   *
    * @param name the substring to search for in simple names
-   * @return search response with all matching classes
+   * @return search response with all matching classes and their dynamic labels
    */
   public SearchResponse searchByName(String name) {
-    List<ClassNode> classNodes =
-        graphQueryRepository.findBySimpleNameContainingIgnoreCase(name);
+    String cypher =
+        """
+        MATCH (c:JavaClass)
+        WHERE toLower(c.simpleName) CONTAINS toLower($name)
+        RETURN c.fullyQualifiedName AS fqn,
+               c.simpleName        AS simpleName,
+               c.packageName       AS packageName,
+               [label IN labels(c) WHERE label <> 'JavaClass'] AS labels
+        ORDER BY c.simpleName
+        """;
 
-    List<SearchEntry> results = classNodes.stream()
-        .map(cn -> {
-          List<String> labels = new ArrayList<>(cn.getExtraLabels());
-          return new SearchEntry(
-              cn.getFullyQualifiedName(),
-              cn.getSimpleName(),
-              cn.getPackageName(),
-              labels);
-        })
-        .collect(Collectors.toList());
+    Collection<Map<String, Object>> rows =
+        neo4jClient
+            .query(cypher)
+            .bind(name).to("name")
+            .fetch()
+            .all();
+
+    List<SearchEntry> results =
+        rows.stream()
+            .map(
+                row -> {
+                  @SuppressWarnings("unchecked")
+                  List<String> labels =
+                      row.get("labels") instanceof List<?> list
+                          ? list.stream()
+                              .filter(l -> l instanceof String)
+                              .map(l -> (String) l)
+                              .collect(Collectors.toList())
+                          : new ArrayList<>();
+                  return new SearchEntry(
+                      (String) row.get("fqn"),
+                      (String) row.get("simpleName"),
+                      (String) row.get("packageName"),
+                      labels);
+                })
+            .collect(Collectors.toList());
 
     return new SearchResponse(name, results);
   }
