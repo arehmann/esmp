@@ -107,46 +107,46 @@
 
 ## Traceability
 
-| Requirement | Phase | Status |
-|-------------|-------|--------|
-| INFRA-01 | Phase 1 | Pending |
-| INFRA-02 | Phase 1 | Pending |
-| INFRA-03 | Phase 1 | Pending |
-| AST-01 | Phase 2 | Pending |
-| AST-02 | Phase 2 | Pending |
-| AST-03 | Phase 2 | Pending |
-| AST-04 | Phase 2 | Pending |
-| CKG-01 | Phase 3 | Pending |
-| CKG-02 | Phase 3 | Pending |
-| CKG-03 | Phase 3 | Pending |
-| RISK-01 | Phase 4 | Pending |
-| RISK-02 | Phase 4 | Pending |
-| RISK-03 | Phase 4 | Pending |
-| RISK-04 | Phase 4 | Pending |
-| RISK-05 | Phase 4 | Pending |
-| VEC-01 | Phase 5 | Pending |
-| VEC-02 | Phase 5 | Pending |
-| VEC-03 | Phase 5 | Pending |
-| VEC-04 | Phase 5 | Pending |
-| RAG-01 | Phase 6 | Pending |
-| RAG-02 | Phase 6 | Pending |
-| RAG-03 | Phase 6 | Pending |
-| RAG-04 | Phase 6 | Pending |
-| LEX-01 | Phase 7 | Pending |
-| LEX-02 | Phase 7 | Pending |
-| LEX-03 | Phase 7 | Pending |
-| LEX-04 | Phase 7 | Pending |
-| DASH-01 | Phase 8 | Pending |
-| DASH-02 | Phase 8 | Pending |
-| DASH-03 | Phase 8 | Pending |
-| DASH-04 | Phase 8 | Pending |
-| DASH-05 | Phase 8 | Pending |
-| DASH-06 | Phase 8 | Pending |
-| CI-01 | Phase 9 | Pending |
-| CI-02 | Phase 9 | Pending |
-| CI-03 | Phase 9 | Pending |
-| SCHED-01 | Phase 10 | Pending |
-| SCHED-02 | Phase 10 | Pending |
+| Requirement | Phase | Phase Name | Status |
+|-------------|-------|------------|--------|
+| INFRA-01 | Phase 1 | Infrastructure | Pending |
+| INFRA-02 | Phase 1 | Infrastructure | Pending |
+| INFRA-03 | Phase 1 | Infrastructure | Pending |
+| AST-01 | Phase 2 | AST Extraction | Pending |
+| AST-02 | Phase 2 | AST Extraction | Pending |
+| AST-03 | Phase 2 | AST Extraction | Pending |
+| AST-04 | Phase 2 | AST Extraction | Pending |
+| CKG-01 | Phase 3 | Code Knowledge Graph | Pending |
+| CKG-02 | Phase 3 | Code Knowledge Graph | Pending |
+| CKG-03 | Phase 3 | Code Knowledge Graph | Pending |
+| RISK-01 | Phase 4 | Risk Analysis | Pending |
+| RISK-02 | Phase 4 | Risk Analysis | Pending |
+| RISK-03 | Phase 4 | Risk Analysis | Pending |
+| RISK-04 | Phase 4 | Risk Analysis | Pending |
+| RISK-05 | Phase 4 | Risk Analysis | Pending |
+| VEC-01 | Phase 5 | Smart Chunking and Vector Indexing | Pending |
+| VEC-02 | Phase 5 | Smart Chunking and Vector Indexing | Pending |
+| VEC-03 | Phase 5 | Smart Chunking and Vector Indexing | Pending |
+| VEC-04 | Phase 5 | Smart Chunking and Vector Indexing | Pending |
+| RAG-01 | Phase 6 | RAG Pipeline | Pending |
+| RAG-02 | Phase 6 | RAG Pipeline | Pending |
+| RAG-03 | Phase 6 | RAG Pipeline | Pending |
+| RAG-04 | Phase 6 | RAG Pipeline | Pending |
+| LEX-01 | Phase 7 | Domain Lexicon | Pending |
+| LEX-02 | Phase 7 | Domain Lexicon | Pending |
+| LEX-03 | Phase 7 | Domain Lexicon | Pending |
+| LEX-04 | Phase 7 | Domain Lexicon | Pending |
+| DASH-01 | Phase 8 | Governance Dashboard | Pending |
+| DASH-02 | Phase 8 | Governance Dashboard | Pending |
+| DASH-03 | Phase 8 | Governance Dashboard | Pending |
+| DASH-04 | Phase 8 | Governance Dashboard | Pending |
+| DASH-05 | Phase 8 | Governance Dashboard | Pending |
+| DASH-06 | Phase 8 | Governance Dashboard | Pending |
+| CI-01 | Phase 9 | Continuous Indexing | Pending |
+| CI-02 | Phase 9 | Continuous Indexing | Pending |
+| CI-03 | Phase 9 | Continuous Indexing | Pending |
+| SCHED-01 | Phase 10 | Risk-Prioritized Scheduling | Pending |
+| SCHED-02 | Phase 10 | Risk-Prioritized Scheduling | Pending |
 
 **Coverage:**
 - v1 requirements: 37 total
@@ -155,4 +155,4 @@
 
 ---
 *Requirements defined: 2026-03-04*
-*Last updated: 2026-03-04 after initial definition*
+*Last updated: 2026-03-04 — traceability finalized after roadmap creation*
