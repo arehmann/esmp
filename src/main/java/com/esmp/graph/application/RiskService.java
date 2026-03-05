@@ -365,17 +365,24 @@ public class RiskService {
   // ---------------------------------------------------------------------------
 
   /**
-   * Returns a list of JavaClass nodes sorted by descending structural risk score, with optional
-   * filtering by module, package prefix, stereotype, and result limit.
+   * Returns a list of JavaClass nodes sorted by descending risk score, with optional filtering by
+   * module, package prefix, stereotype, result limit, and sort field.
    *
    * @param module      optional JavaModule name to scope the query
    * @param packageName optional package name prefix (classes in that package or sub-packages)
    * @param stereotype  optional stereotype label (e.g., "Service", "Repository")
    * @param limit       maximum number of results (default 50 when called from controller)
-   * @return list of heatmap entries sorted by descending structuralRiskScore
+   * @param sortBy      sort field: {@code "enhanced"} (default) sorts by enhancedRiskScore DESC;
+   *                    {@code "structural"} sorts by structuralRiskScore DESC
+   * @return list of heatmap entries sorted by descending risk score
    */
   public List<RiskHeatmapEntry> getHeatmap(
-      String module, String packageName, String stereotype, int limit) {
+      String module, String packageName, String stereotype, int limit, String sortBy) {
+
+    // Validate sortBy to one of two known values — safe because orderByProp is never user-interpolated
+    // directly into Cypher; it's one of two hardcoded Java strings.
+    String orderByProp = "structural".equals(sortBy) ? "structuralRiskScore" : "enhancedRiskScore";
+    String notNullProp = "structural".equals(sortBy) ? "structuralRiskScore" : "enhancedRiskScore";
 
     StringBuilder cypher = new StringBuilder();
     Map<String, Object> params = new HashMap<>();
@@ -384,14 +391,10 @@ public class RiskService {
       cypher.append("""
           MATCH (m:JavaModule {moduleName: $module})-[:CONTAINS_PACKAGE]->(p:JavaPackage)
                 -[:CONTAINS_CLASS]->(c:JavaClass)
-          WHERE c.structuralRiskScore IS NOT NULL
-          """);
+          WHERE c.""" + notNullProp + " IS NOT NULL\n");
       params.put("module", module);
     } else {
-      cypher.append("""
-          MATCH (c:JavaClass)
-          WHERE c.structuralRiskScore IS NOT NULL
-          """);
+      cypher.append("MATCH (c:JavaClass)\nWHERE c." + notNullProp + " IS NOT NULL\n");
     }
 
     if (packageName != null && !packageName.isBlank()) {
@@ -404,11 +407,7 @@ public class RiskService {
       params.put("stereotype", stereotype);
     }
 
-    cypher.append("""
-        RETURN c
-        ORDER BY c.structuralRiskScore DESC
-        LIMIT $limit
-        """);
+    cypher.append("RETURN c\nORDER BY c." + orderByProp + " DESC\nLIMIT $limit\n");
     params.put("limit", (long) limit);
 
     Collection<RiskHeatmapEntry> results = neo4jClient.query(cypher.toString())
@@ -474,7 +473,12 @@ public class RiskService {
         node.get("hasDbWrites").asBoolean(false),
         (int) node.get("dbWriteCount").asLong(0L),
         node.get("structuralRiskScore").asDouble(0.0),
-        extractStereotypeLabels(node));
+        extractStereotypeLabels(node),
+        node.get("domainCriticality").asDouble(0.0),
+        node.get("securitySensitivity").asDouble(0.0),
+        node.get("financialInvolvement").asDouble(0.0),
+        node.get("businessRuleDensity").asDouble(0.0),
+        node.get("enhancedRiskScore").asDouble(0.0));
   }
 
   private RiskDetailResponse mapNodeToDetailResponse(Node node, List<MethodComplexityEntry> methods) {
@@ -490,6 +494,11 @@ public class RiskService {
         (int) node.get("dbWriteCount").asLong(0L),
         node.get("structuralRiskScore").asDouble(0.0),
         extractStereotypeLabels(node),
+        node.get("domainCriticality").asDouble(0.0),
+        node.get("securitySensitivity").asDouble(0.0),
+        node.get("financialInvolvement").asDouble(0.0),
+        node.get("businessRuleDensity").asDouble(0.0),
+        node.get("enhancedRiskScore").asDouble(0.0),
         methods);
   }
 
