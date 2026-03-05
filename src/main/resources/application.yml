@@ -44,6 +44,12 @@ esmp:
   extraction:
     source-root: ""
     classpath-file: ""
+  risk:
+    weight:
+      complexity: 0.4
+      fan-in: 0.2
+      fan-out: 0.2
+      db-writes: 0.2
 
 server:
   port: 8080

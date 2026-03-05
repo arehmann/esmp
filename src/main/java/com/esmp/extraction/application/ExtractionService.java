@@ -3,6 +3,7 @@ package com.esmp.extraction.application;
 import com.esmp.extraction.audit.VaadinAuditReport;
 import com.esmp.extraction.audit.VaadinAuditService;
 import com.esmp.extraction.config.ExtractionConfig;
+import com.esmp.graph.application.RiskService;
 import com.esmp.extraction.model.AnnotationNode;
 import com.esmp.extraction.model.BusinessTermNode;
 import com.esmp.extraction.model.ClassNode;
@@ -18,6 +19,7 @@ import com.esmp.extraction.persistence.ModuleNodeRepository;
 import com.esmp.extraction.persistence.PackageNodeRepository;
 import com.esmp.extraction.visitor.CallGraphVisitor;
 import com.esmp.extraction.visitor.ClassMetadataVisitor;
+import com.esmp.extraction.visitor.ComplexityVisitor;
 import com.esmp.extraction.visitor.DependencyVisitor;
 import com.esmp.extraction.visitor.ExtractionAccumulator;
 import com.esmp.extraction.visitor.JpaPatternVisitor;
@@ -60,6 +62,7 @@ public class ExtractionService {
   private final BusinessTermNodeRepository businessTermNodeRepository;
   private final Neo4jClient neo4jClient;
   private final LinkingService linkingService;
+  private final RiskService riskService;
   private final VaadinAuditService vaadinAuditService;
   private final ExtractionConfig extractionConfig;
 
@@ -74,6 +77,7 @@ public class ExtractionService {
       BusinessTermNodeRepository businessTermNodeRepository,
       Neo4jClient neo4jClient,
       LinkingService linkingService,
+      RiskService riskService,
       VaadinAuditService vaadinAuditService,
       ExtractionConfig extractionConfig) {
     this.javaSourceParser = javaSourceParser;
@@ -86,6 +90,7 @@ public class ExtractionService {
     this.businessTermNodeRepository = businessTermNodeRepository;
     this.neo4jClient = neo4jClient;
     this.linkingService = linkingService;
+    this.riskService = riskService;
     this.vaadinAuditService = vaadinAuditService;
     this.extractionConfig = extractionConfig;
   }
@@ -135,6 +140,8 @@ public class ExtractionService {
     JpaPatternVisitor jpaPatternVisitor = new JpaPatternVisitor();
     // LexiconVisitor runs after jpaPatternVisitor so table mappings are available in accumulator
     LexiconVisitor lexiconVisitor = new LexiconVisitor();
+    // ComplexityVisitor runs last to compute CC and detect DB writes for Phase 6 risk metrics
+    ComplexityVisitor complexityVisitor = new ComplexityVisitor();
 
     for (SourceFile sourceFile : sourceFiles) {
       try {
@@ -144,6 +151,7 @@ public class ExtractionService {
         dependencyVisitor.visit(sourceFile, accumulator);
         jpaPatternVisitor.visit(sourceFile, accumulator);
         lexiconVisitor.visit(sourceFile, accumulator);
+        complexityVisitor.visit(sourceFile, accumulator);
       } catch (Exception e) {
         errorCount++;
         String error = "Error visiting " + sourceFile.getSourcePath() + ": " + e.getMessage();
@@ -182,6 +190,10 @@ public class ExtractionService {
 
     // Run linking pass — creates cross-class relationships via idempotent Cypher MERGE
     LinkingService.LinkingResult linkingResult = linkingService.linkAllRelationships(accumulator);
+
+    // Compute fan-in/out and composite structural risk scores from DEPENDS_ON edges.
+    // MUST run after linking — DEPENDS_ON edges must exist for fan-in/out to be accurate.
+    riskService.computeAndPersistRiskScores();
 
     // Generate Vaadin audit report
     VaadinAuditReport auditReport = vaadinAuditService.generateReport(accumulator);

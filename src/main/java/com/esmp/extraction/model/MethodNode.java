@@ -37,6 +37,9 @@ public class MethodNode {
   /** FQN of the declaring class, for reverse lookup. */
   private String declaringClass;
 
+  /** Cyclomatic complexity of this method (1 = no branches, higher = more complex). */
+  private int cyclomaticComplexity;
+
   /** Outgoing call graph edges — methods this method calls. */
   @Relationship(type = "CALLS", direction = Relationship.Direction.OUTGOING)
   private List<CallsRelationship> callsOut = new ArrayList<>();
@@ -125,5 +128,13 @@ public class MethodNode {
 
   public void setCallsOut(List<CallsRelationship> callsOut) {
     this.callsOut = callsOut;
+  }
+
+  public int getCyclomaticComplexity() {
+    return cyclomaticComplexity;
+  }
+
+  public void setCyclomaticComplexity(int cyclomaticComplexity) {
+    this.cyclomaticComplexity = cyclomaticComplexity;
   }
 }
