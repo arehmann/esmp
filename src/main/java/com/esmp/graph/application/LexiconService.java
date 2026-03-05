@@ -37,6 +37,15 @@ public class LexiconService {
   }
 
   /**
+   * Returns all business terms as {@link BusinessTermNode} entities for in-memory grid binding.
+   *
+   * @return all persisted BusinessTerm nodes
+   */
+  public List<BusinessTermNode> findAll() {
+    return new ArrayList<>(businessTermNodeRepository.findAll());
+  }
+
+  /**
    * Returns all business terms with optional filtering by criticality, curation status, and
    * search substring. For the list view, {@code relatedClassFqns} is always empty.
    *

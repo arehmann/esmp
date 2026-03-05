@@ -7,6 +7,7 @@ spotless           = "7.0.2"
 google-java-format = "1.23.0"
 openrewrite        = "8.74.3"
 vaadin-server      = "7.7.48"
+vaadin             = "24.9.12"
 
 [libraries]
 spring-boot-starter-web       = { module = "org.springframework.boot:spring-boot-starter-web" }
@@ -27,8 +28,11 @@ testcontainers-mysql          = { module = "org.testcontainers:mysql", version.r
 openrewrite-java              = { module = "org.openrewrite:rewrite-java", version.ref = "openrewrite" }
 openrewrite-java-jdk21        = { module = "org.openrewrite:rewrite-java-21", version.ref = "openrewrite" }
 vaadin-server                 = { module = "com.vaadin:vaadin-server", version.ref = "vaadin-server" }
+vaadin-spring-boot-starter    = { module = "com.vaadin:vaadin-spring-boot-starter" }
+vaadin-bom                    = { module = "com.vaadin:vaadin-bom", version.ref = "vaadin" }
 
 [plugins]
 spring-boot            = { id = "org.springframework.boot", version.ref = "spring-boot" }
 spring-dependency-mgmt = { id = "io.spring.dependency-management", version = "1.1.7" }
 spotless               = { id = "com.diffplug.spotless", version.ref = "spotless" }
+vaadin                 = { id = "com.vaadin", version.ref = "vaadin" }
