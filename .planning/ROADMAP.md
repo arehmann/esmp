@@ -126,7 +126,11 @@ Plans:
   3. Every class node is flagged for DB write operations (INSERT/UPDATE/DELETE) detected in its method bodies
   4. Every class node has a composite structural risk score combining complexity, fan-in, fan-out, and DB write presence
   5. User can call a REST endpoint and receive a list of classes sorted by descending structural risk score
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 06-01-PLAN.md — ComplexityVisitor for cyclomatic complexity + DB write detection, accumulator/model/mapper extensions, ExtractionService pipeline wiring
+- [ ] 06-02-PLAN.md — RiskService (fan-in/out Cypher + composite score), RiskController REST API, RiskWeightConfig, RiskValidationQueryRegistry, integration tests
 
 ### Phase 7: Domain-Aware Risk Analysis
 **Goal**: Risk scoring is enhanced with domain criticality, security sensitivity, and financial involvement for more accurate migration prioritization
@@ -227,7 +231,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 3. Code Knowledge Graph | 6/6 | Complete   | 2026-03-04 |
 | 4. Graph Validation & Canonical Queries | 1/2 | In Progress|  |
 | 5. Domain Lexicon | 3/3 | Complete   | 2026-03-05 |
-| 6. Structural Risk Analysis | 0/TBD | Not started | - |
+| 6. Structural Risk Analysis | 0/2 | Not started | - |
 | 7. Domain-Aware Risk Analysis | 0/TBD | Not started | - |
 | 8. Smart Chunking and Vector Indexing | 0/TBD | Not started | - |
 | 9. Golden Module Pilot | 0/TBD | Not started | - |
