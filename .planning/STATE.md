@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 05-domain-lexicon 05-02-PLAN.md
-last_updated: "2026-03-05T09:37:27.518Z"
+stopped_at: "Checkpoint: 05-domain-lexicon 05-03 awaiting human-verify"
+last_updated: "2026-03-05T09:44:56.917Z"
 last_activity: 2026-03-04 — Roadmap created, project initialized
 progress:
   total_phases: 13
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 16
-  completed_plans: 15
+  completed_plans: 16
 ---
 
 ---
@@ -127,6 +127,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 04-graph-validation-canonical-queries P01 | 6min | 2 tasks | 9 files |
 | Phase 05-domain-lexicon P01 | 37min | 2 tasks | 14 files |
 | Phase 05-domain-lexicon P02 | 31min | 2 tasks | 10 files |
+| Phase 05-domain-lexicon P03 | 6min | 1 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -178,6 +179,8 @@ Recent decisions affecting current work:
 - [Phase 05-domain-lexicon]: maxDepth(1) in existing fixture walkers prevents lexicon fixtures from contaminating general AST test counts
 - [Phase 05-domain-lexicon]: Test class exclusion uses /src/test/ or /test/java/ path patterns — /test/ alone matches package segments like com/test/ in source paths
 - [Phase 05-domain-lexicon]: ValidationQueryRegistry protected List constructor added for extensibility — LexiconValidationQueryRegistry extends it with super(queries)
+- [Phase 05-domain-lexicon]: SerializablePredicate is in com.vaadin.flow.function package (not .server) — ListDataProvider.setFilter() requires the Vaadin-serializable subtype, not java.util.function.Predicate
+- [Phase 05-domain-lexicon]: LexiconService.findAll() returns List<BusinessTermNode> (not List<BusinessTermResponse>) for Vaadin in-memory ListDataProvider — mutable setters needed for grid item refresh after edit
 
 ### Pending Todos
 
@@ -190,6 +193,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-05T09:37:27.513Z
-Stopped at: Completed 05-domain-lexicon 05-02-PLAN.md
+Last session: 2026-03-05T09:44:56.910Z
+Stopped at: Checkpoint: 05-domain-lexicon 05-03 awaiting human-verify
 Resume file: None
