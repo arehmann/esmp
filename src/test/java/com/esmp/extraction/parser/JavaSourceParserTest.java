@@ -185,7 +185,9 @@ class JavaSourceParserTest {
   // --- Helpers ---
 
   private List<Path> collectJavaSources(Path dir) throws IOException {
-    try (var stream = Files.walk(dir)) {
+    // maxDepth(1) to scan only the top-level fixtures directory, not subdirectories
+    // (subdirectories like fixtures/lexicon/ contain lexicon-specific fixtures)
+    try (var stream = Files.walk(dir, 1)) {
       return stream.filter(p -> p.toString().endsWith(".java")).toList();
     }
   }
