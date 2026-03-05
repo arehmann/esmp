@@ -26,10 +26,10 @@
 
 ### Graph Validation & Canonical Queries
 
-- [ ] **GVAL-01**: 20 canonical validation queries defined and passing against populated graph
+- [x] **GVAL-01**: 20 canonical validation queries defined and passing against populated graph
 - [x] **GVAL-02**: Dependency cone accuracy verified against manually confirmed architectural expectations
-- [ ] **GVAL-03**: No orphan nodes or duplicate structural nodes exist in graph
-- [ ] **GVAL-04**: Inheritance chains complete and transitive repository dependencies correctly resolved
+- [x] **GVAL-03**: No orphan nodes or duplicate structural nodes exist in graph
+- [x] **GVAL-04**: Inheritance chains complete and transitive repository dependencies correctly resolved
 
 ### Domain Lexicon
 

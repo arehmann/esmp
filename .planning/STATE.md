@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 04-graph-validation-canonical-queries 04-02-PLAN.md
-last_updated: "2026-03-05T00:04:55.177Z"
+stopped_at: Completed 04-graph-validation-canonical-queries 04-01-PLAN.md
+last_updated: "2026-03-05T00:08:14.912Z"
 last_activity: 2026-03-04 — Roadmap created, project initialized
 progress:
   total_phases: 13
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 13
-  completed_plans: 12
+  completed_plans: 13
 ---
 
 ---
@@ -109,6 +109,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 03-code-knowledge-graph P05 | 13min | 2 tasks | 4 files |
 | Phase 03-code-knowledge-graph P06 | 20min | 2 tasks | 6 files |
 | Phase 04-graph-validation-canonical-queries P02 | 3min | 2 tasks | 4 files |
+| Phase 04-graph-validation-canonical-queries P01 | 6min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -152,6 +153,8 @@ Recent decisions affecting current work:
 - [Phase 03-code-knowledge-graph]: BINDS_TO simple-name fallback: BeanItemContainer excluded from fallback set; entity FQN falls back to 'Unknown' when generics unresolvable without Vaadin JARs
 - [Phase 04-graph-validation-canonical-queries]: DECLARES_METHOD excluded from dependency cone's 7 relationship types (DEPENDS_ON|EXTENDS|IMPLEMENTS|CALLS|BINDS_TO|QUERIES|MAPS_TO_TABLE) — cone traverses semantic/structural edges only, not containment edges
 - [Phase 04-graph-validation-canonical-queries]: OPTIONAL MATCH + collect(DISTINCT reachable) handles isolated classes natively in Cypher — null rows filtered, coneSize 0, list empty without Java null checks
+- [Phase 04-graph-validation-canonical-queries]: ValidationService accepts List<ValidationQueryRegistry> for extensibility — future phases add their own @Component registry beans without modifying core service
+- [Phase 04-graph-validation-canonical-queries]: CALLS_EDGE_COVERAGE uses inverted pass/fail logic: count > 0 = PASS (coverage sanity check, not a violation query)
 
 ### Pending Todos
 
@@ -164,6 +167,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-05T00:04:55.172Z
-Stopped at: Completed 04-graph-validation-canonical-queries 04-02-PLAN.md
+Last session: 2026-03-05T00:08:14.906Z
+Stopped at: Completed 04-graph-validation-canonical-queries 04-01-PLAN.md
 Resume file: None
