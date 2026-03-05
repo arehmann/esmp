@@ -143,7 +143,11 @@ Plans:
   3. Classes involved in financial transactions (payment, billing, ledger) are flagged with financial involvement scores
   4. Business rule density is computed per class based on DEFINES_RULE edge count and rule complexity
   5. Enhanced composite risk score combines structural risk, domain criticality, security sensitivity, financial involvement, and business rule density
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 07-01-PLAN.md — Domain risk model extensions (ClassNode, RiskWeightConfig, application.yml) and 5 Cypher-based domain score computation methods in RiskService
+- [ ] 07-02-PLAN.md — API record extensions, sortBy heatmap parameter, DomainRiskValidationQueryRegistry, integration tests for all DRISK requirements
 
 ### Phase 8: Smart Chunking and Vector Indexing
 **Goal**: Enriched semantic code chunks are indexed in Qdrant and incremental re-indexing updates only changed files
