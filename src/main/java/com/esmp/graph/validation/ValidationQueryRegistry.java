@@ -30,6 +30,17 @@ public class ValidationQueryRegistry {
 
   private final List<ValidationQuery> queries;
 
+  /**
+   * Protected constructor allowing subclasses to provide their own query list without going
+   * through the Phase 4 hardcoded list. Used by {@link LexiconValidationQueryRegistry} and any
+   * future phase-specific registry subclasses.
+   *
+   * @param queries the queries this registry provides
+   */
+  protected ValidationQueryRegistry(List<ValidationQuery> queries) {
+    this.queries = List.copyOf(queries);
+  }
+
   public ValidationQueryRegistry() {
     this.queries = List.of(
 

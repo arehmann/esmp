@@ -23,17 +23,22 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * Integration tests for {@link ValidationController} proving all 20 validation queries work
+ * Integration tests for {@link ValidationController} proving all validation queries work
  * against a real Neo4j instance via Testcontainers.
  *
  * <p>Tests cover:
  * <ol>
- *   <li>Well-formed graph produces 20 PASS results
+ *   <li>Well-formed graph produces all-PASS results
  *   <li>Orphan and dangling nodes are detected
  *   <li>Broken inheritance chain is detected
  *   <li>Architectural pattern violations are detected
- *   <li>Report structure is valid (generatedAt, 20 results, counts sum to 20)
+ *   <li>Report structure is valid (generatedAt, results list, counts sum to total)
  * </ol>
+ *
+ * <p>Note: The total query count is intentionally not hardcoded at 20. {@link
+ * com.esmp.graph.validation.ValidationService} accepts a {@code List<ValidationQueryRegistry>}
+ * for extensibility — future phases add their own registry beans. Tests assert relative/qualitative
+ * conditions rather than absolute query counts.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
@@ -298,7 +303,8 @@ class ValidationControllerIntegrationTest {
     assertThat(response.getBody()).isNotNull();
 
     ValidationReport report = response.getBody();
-    assertThat(report.results()).hasSize(20);
+    // Registry is extensible — at least 20 Phase-4 queries must be present
+    assertThat(report.results()).hasSizeGreaterThanOrEqualTo(20);
 
     // All queries should pass on a well-formed graph
     List<ValidationQueryResult> failing = report.results().stream()
@@ -306,7 +312,7 @@ class ValidationControllerIntegrationTest {
         .toList();
 
     assertThat(failing)
-        .as("Expected all 20 queries to PASS on well-formed graph, but these failed/warned: %s",
+        .as("Expected all queries to PASS on well-formed graph, but these failed/warned: %s",
             failing.stream().map(r -> r.name() + "=" + r.status() + "(count=" + r.count() + ")").toList())
         .isEmpty();
   }
@@ -461,8 +467,8 @@ class ValidationControllerIntegrationTest {
     // Basic ISO-8601 check: contains 'T' and 'Z' or '+' offset
     assertThat(report.generatedAt()).contains("T");
 
-    // Exactly 20 results
-    assertThat(report.results()).hasSize(20);
+    // At least 20 results (registry is extensible, Phase 4 provides 20, Phase 5 adds more)
+    assertThat(report.results()).hasSizeGreaterThanOrEqualTo(20);
 
     // Each result has required fields
     for (ValidationQueryResult result : report.results()) {
@@ -474,9 +480,10 @@ class ValidationControllerIntegrationTest {
       assertThat(result.details()).isNotNull();
     }
 
-    // errorCount + warnCount + passCount == 20
+    // errorCount + warnCount + passCount == total results
+    int totalResults = report.results().size();
     assertThat(report.errorCount() + report.warnCount() + report.passCount())
-        .isEqualTo(20);
+        .isEqualTo(totalResults);
   }
 
   // --- helpers ---
