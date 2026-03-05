@@ -35,8 +35,8 @@
 
 - [x] **LEX-01**: System extracts business terms from class names, enums, DB schema, Javadoc, and comments
 - [x] **LEX-02**: System stores terms with definition, synonyms, related classes, related tables, criticality, and migration sensitivity
-- [ ] **LEX-03**: System creates USES_TERM and DEFINES_RULE graph edges connecting terms to code
-- [ ] **LEX-04**: User can view and curate the domain lexicon
+- [x] **LEX-03**: System creates USES_TERM and DEFINES_RULE graph edges connecting terms to code
+- [x] **LEX-04**: User can view and curate the domain lexicon
 
 ### Structural Risk Analysis
 

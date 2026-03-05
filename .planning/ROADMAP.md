@@ -108,7 +108,7 @@ Plans:
   3. USES_TERM edges connect Code nodes to their relevant domain terms; DEFINES_RULE edges connect rule-implementing classes to their business rules
   4. Developer can open a lexicon UI, view all extracted terms, edit a term's definition and criticality, and save the change
   5. After curation, re-running extraction does not overwrite hand-edited term definitions
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 - [ ] 05-01-PLAN.md — BusinessTermNode model, LexiconVisitor for term extraction from class names/enums/Javadoc/DB schema, accumulator/mapper/service wiring
@@ -226,7 +226,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 2. AST Extraction | 3/3 | Complete   | 2026-03-04 |
 | 3. Code Knowledge Graph | 6/6 | Complete   | 2026-03-04 |
 | 4. Graph Validation & Canonical Queries | 1/2 | In Progress|  |
-| 5. Domain Lexicon | 1/3 | In Progress|  |
+| 5. Domain Lexicon | 2/3 | In Progress|  |
 | 6. Structural Risk Analysis | 0/TBD | Not started | - |
 | 7. Domain-Aware Risk Analysis | 0/TBD | Not started | - |
 | 8. Smart Chunking and Vector Indexing | 0/TBD | Not started | - |
