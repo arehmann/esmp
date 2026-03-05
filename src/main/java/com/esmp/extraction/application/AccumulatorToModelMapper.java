@@ -15,8 +15,10 @@ import com.esmp.extraction.visitor.ExtractionAccumulator.AnnotationData;
 import com.esmp.extraction.visitor.ExtractionAccumulator.BusinessTermData;
 import com.esmp.extraction.visitor.ExtractionAccumulator.CallEdge;
 import com.esmp.extraction.visitor.ExtractionAccumulator.ClassNodeData;
+import com.esmp.extraction.visitor.ExtractionAccumulator.ClassWriteData;
 import com.esmp.extraction.visitor.ExtractionAccumulator.ComponentEdge;
 import com.esmp.extraction.visitor.ExtractionAccumulator.FieldNodeData;
+import com.esmp.extraction.visitor.ExtractionAccumulator.MethodComplexityData;
 import com.esmp.extraction.visitor.ExtractionAccumulator.MethodNodeData;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -59,6 +61,13 @@ public class AccumulatorToModelMapper {
       methodNode.setAnnotations(new ArrayList<>(mData.annotations()));
       methodNode.setModifiers(new ArrayList<>(mData.modifiers()));
       methodNode.setConstructor(mData.isConstructor());
+
+      // Phase 6: map cyclomatic complexity from ComplexityVisitor output
+      MethodComplexityData complexityData = acc.getMethodComplexities().get(mData.methodId());
+      if (complexityData != null) {
+        methodNode.setCyclomaticComplexity(complexityData.cyclomaticComplexity());
+      }
+
       methodNodesByMethodId.put(mData.methodId(), methodNode);
     }
 
@@ -146,10 +155,30 @@ public class AccumulatorToModelMapper {
       classNode.setExtraLabels(extraLabels);
 
       // Attach method children
-      classNode.setMethods(methodsByClass.getOrDefault(cData.fqn(), new ArrayList<>()));
+      List<MethodNode> classMethods = methodsByClass.getOrDefault(cData.fqn(), new ArrayList<>());
+      classNode.setMethods(classMethods);
 
       // Attach field children
       classNode.setFields(fieldsByClass.getOrDefault(cData.fqn(), new ArrayList<>()));
+
+      // Phase 6: compute class-level complexity aggregates from method CCs
+      int complexitySum = classMethods.stream()
+          .mapToInt(MethodNode::getCyclomaticComplexity)
+          .sum();
+      int complexityMax = classMethods.stream()
+          .mapToInt(MethodNode::getCyclomaticComplexity)
+          .max()
+          .orElse(0);
+      classNode.setComplexitySum(complexitySum);
+      classNode.setComplexityMax(complexityMax);
+
+      // Phase 6: map DB write data from accumulator
+      ClassWriteData writeData = acc.getClassWriteData().get(cData.fqn());
+      classNode.setHasDbWrites(writeData != null && writeData.writeCount() > 0);
+      classNode.setDbWriteCount(writeData != null ? writeData.writeCount() : 0);
+
+      // Structural risk score is computed via Cypher in Plan 02 after fan-in/out are available
+      classNode.setStructuralRiskScore(0.0);
 
       classNodesByFqn.put(cData.fqn(), classNode);
     }

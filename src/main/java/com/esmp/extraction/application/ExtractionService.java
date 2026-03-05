@@ -18,6 +18,7 @@ import com.esmp.extraction.persistence.ModuleNodeRepository;
 import com.esmp.extraction.persistence.PackageNodeRepository;
 import com.esmp.extraction.visitor.CallGraphVisitor;
 import com.esmp.extraction.visitor.ClassMetadataVisitor;
+import com.esmp.extraction.visitor.ComplexityVisitor;
 import com.esmp.extraction.visitor.DependencyVisitor;
 import com.esmp.extraction.visitor.ExtractionAccumulator;
 import com.esmp.extraction.visitor.JpaPatternVisitor;
@@ -135,6 +136,8 @@ public class ExtractionService {
     JpaPatternVisitor jpaPatternVisitor = new JpaPatternVisitor();
     // LexiconVisitor runs after jpaPatternVisitor so table mappings are available in accumulator
     LexiconVisitor lexiconVisitor = new LexiconVisitor();
+    // ComplexityVisitor runs last to compute CC and detect DB writes for Phase 6 risk metrics
+    ComplexityVisitor complexityVisitor = new ComplexityVisitor();
 
     for (SourceFile sourceFile : sourceFiles) {
       try {
@@ -144,6 +147,7 @@ public class ExtractionService {
         dependencyVisitor.visit(sourceFile, accumulator);
         jpaPatternVisitor.visit(sourceFile, accumulator);
         lexiconVisitor.visit(sourceFile, accumulator);
+        complexityVisitor.visit(sourceFile, accumulator);
       } catch (Exception e) {
         errorCount++;
         String error = "Error visiting " + sourceFile.getSourcePath() + ": " + e.getMessage();
