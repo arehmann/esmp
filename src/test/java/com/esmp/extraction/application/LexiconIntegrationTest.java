@@ -176,7 +176,7 @@ class LexiconIntegrationTest {
   void linkBusinessTermUsages_excludesTestClasses() {
     // Arrange: test class should not get a USES_TERM edge
     createClassNode("com.test.InvoiceServiceTest", "InvoiceServiceTest",
-        "/test/com/test/InvoiceServiceTest.java");
+        "/src/test/java/com/test/InvoiceServiceTest.java");
     createBusinessTermNode("invoice", "Invoice");
 
     // Make the test class a dependent of the primary source
