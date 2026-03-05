@@ -52,7 +52,7 @@
 - [x] **DRISK-02**: System scores security sensitivity for classes handling authentication, authorization, or encryption
 - [x] **DRISK-03**: System scores financial involvement for classes in payment, billing, or ledger operations
 - [x] **DRISK-04**: System computes business rule density per class from DEFINES_RULE edge count and rule complexity
-- [ ] **DRISK-05**: System produces enhanced composite risk score combining structural risk, domain criticality, security sensitivity, financial involvement, and business rule density
+- [x] **DRISK-05**: System produces enhanced composite risk score combining structural risk, domain criticality, security sensitivity, financial involvement, and business rule density
 
 ### Smart Chunking & Vector Indexing
 
