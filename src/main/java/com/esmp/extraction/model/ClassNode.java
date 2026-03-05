@@ -111,6 +111,43 @@ public class ClassNode {
    */
   private double structuralRiskScore;
 
+  // ---------- Phase 7: domain risk metrics ----------
+
+  /**
+   * Domain criticality score (0.0–1.0) derived from USES_TERM edges to BusinessTerm nodes.
+   * Classes linked to High-criticality terms score 1.0; Medium-criticality terms score 0.5;
+   * no USES_TERM edges score 0.0.
+   */
+  private double domainCriticality;
+
+  /**
+   * Security sensitivity score (0.0–1.0) computed from name keywords, security annotations,
+   * and package-name heuristics. Graduated: name hit=0.3, annotation hit=0.5, both=+0.2 bonus,
+   * package match=+0.2 boost. Clamped to [0.0, 1.0].
+   */
+  private double securitySensitivity;
+
+  /**
+   * Financial involvement score (0.0–1.0) computed from name keywords, package-name heuristics,
+   * and USES_TERM edges to financial domain terms. Same graduated weighting as security sensitivity.
+   */
+  private double financialInvolvement;
+
+  /**
+   * Business rule density: log-normalized count of outgoing DEFINES_RULE edges. Value is
+   * log(1 + ruleCount), giving 0.0 for classes with no business-rule methods and increasing
+   * unboundedly for highly rule-dense classes.
+   */
+  private double businessRuleDensity;
+
+  /**
+   * Enhanced composite risk score combining all 8 dimensions: the 4 structural raw metrics
+   * (complexitySum, fanIn, fanOut, hasDbWrites) plus the 4 domain dimensions
+   * (domainCriticality, securitySensitivity, financialInvolvement, businessRuleDensity).
+   * Weights are configurable via {@link com.esmp.extraction.config.RiskWeightConfig}.
+   */
+  private double enhancedRiskScore;
+
   public ClassNode() {}
 
   public ClassNode(String fullyQualifiedName) {
@@ -315,5 +352,45 @@ public class ClassNode {
 
   public void setStructuralRiskScore(double structuralRiskScore) {
     this.structuralRiskScore = structuralRiskScore;
+  }
+
+  public double getDomainCriticality() {
+    return domainCriticality;
+  }
+
+  public void setDomainCriticality(double domainCriticality) {
+    this.domainCriticality = domainCriticality;
+  }
+
+  public double getSecuritySensitivity() {
+    return securitySensitivity;
+  }
+
+  public void setSecuritySensitivity(double securitySensitivity) {
+    this.securitySensitivity = securitySensitivity;
+  }
+
+  public double getFinancialInvolvement() {
+    return financialInvolvement;
+  }
+
+  public void setFinancialInvolvement(double financialInvolvement) {
+    this.financialInvolvement = financialInvolvement;
+  }
+
+  public double getBusinessRuleDensity() {
+    return businessRuleDensity;
+  }
+
+  public void setBusinessRuleDensity(double businessRuleDensity) {
+    this.businessRuleDensity = businessRuleDensity;
+  }
+
+  public double getEnhancedRiskScore() {
+    return enhancedRiskScore;
+  }
+
+  public void setEnhancedRiskScore(double enhancedRiskScore) {
+    this.enhancedRiskScore = enhancedRiskScore;
   }
 }

@@ -75,6 +75,12 @@ public class Neo4jSchemaInitializer implements ApplicationRunner {
         "CREATE INDEX java_class_risk_score IF NOT EXISTS"
             + " FOR (n:JavaClass) ON (n.structuralRiskScore)");
 
+    // Phase 7: enhanced risk score range index for domain-aware heatmap ORDER BY queries
+    createConstraint(
+        "java_class_enhanced_risk_score",
+        "CREATE INDEX java_class_enhanced_risk_score IF NOT EXISTS"
+            + " FOR (n:JavaClass) ON (n.enhancedRiskScore)");
+
     log.info("Neo4j uniqueness constraints for AST node types are in place.");
   }
 
