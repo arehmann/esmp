@@ -159,7 +159,7 @@ Plans:
   3. Chunks are embedded using a local ONNX model and stored in Qdrant with their enriched payloads
   4. When a source file changes, only its affected chunks are re-embedded and updated in Qdrant (not a full collection rebuild)
   5. Qdrant collection is queryable by embedding similarity and returns chunks with their enrichment payloads
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 08-01-PLAN.md — Spring AI transformer dependency, CodeChunk domain model, QdrantCollectionInitializer, VectorConfig, ChunkIdGenerator, ChunkingService with Neo4j enrichment
@@ -241,7 +241,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 5. Domain Lexicon | 3/3 | Complete   | 2026-03-05 |
 | 6. Structural Risk Analysis | 2/2 | Complete   | 2026-03-05 |
 | 7. Domain-Aware Risk Analysis | 2/2 | Complete   | 2026-03-05 |
-| 8. Smart Chunking and Vector Indexing | 0/2 | Not started | - |
+| 8. Smart Chunking and Vector Indexing | 1/2 | In Progress|  |
 | 9. Golden Module Pilot | 0/TBD | Not started | - |
 | 10. Continuous Indexing | 0/TBD | Not started | - |
 | 11. RAG Pipeline | 0/TBD | Not started | - |
