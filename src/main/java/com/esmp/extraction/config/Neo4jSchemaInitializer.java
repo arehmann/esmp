@@ -64,6 +64,11 @@ public class Neo4jSchemaInitializer implements ApplicationRunner {
         "CREATE CONSTRAINT db_table_name_unique IF NOT EXISTS"
             + " FOR (n:DBTable) REQUIRE n.tableName IS UNIQUE");
 
+    createConstraint(
+        "business_term_id_unique",
+        "CREATE CONSTRAINT business_term_id_unique IF NOT EXISTS"
+            + " FOR (n:BusinessTerm) REQUIRE n.termId IS UNIQUE");
+
     log.info("Neo4j uniqueness constraints for AST node types are in place.");
   }
 

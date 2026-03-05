@@ -156,7 +156,7 @@ class LexiconVisitorTest {
     // pending comes from PENDING_APPROVAL constant — source may vary by first occurrence
     // Either CLASS_NAME (if Payment came first and seeds 'pending') or ENUM_CONSTANT
     // Just confirm it's present and has a primarySourceFqn
-    assertThat(pendingData.primarySourceFqn()).isNotBlank();
+    assertThat(pendingData.primarySourceFqn).isNotBlank();
   }
 
   // ---------------------------------------------------------------------------
@@ -196,7 +196,7 @@ class LexiconVisitorTest {
     Map<String, ExtractionAccumulator.BusinessTermData> terms = localAcc.getBusinessTerms();
     assertThat(terms).containsKey("order");
     ExtractionAccumulator.BusinessTermData orderTerm = terms.get("order");
-    assertThat(orderTerm.javadocSeed()).isNullOrEmpty();
+    assertThat(orderTerm.javadocSeed).isNullOrEmpty();
   }
 
   // ---------------------------------------------------------------------------
@@ -205,13 +205,41 @@ class LexiconVisitorTest {
 
   @Test
   void deduplication_sameTermFromTwoSources_onlyOneEntry() {
-    // Both SampleInvoiceService and PaymentStatusEnum contain "payment" -> deduplicated
+    // "invoice" appears in SampleInvoiceService (class name split) - one source
+    // Both "payment" and "status" come from PaymentStatusEnum name split - one source each
+    // Deduplication: only one entry per termId, regardless of how many times term is visited
     Map<String, ExtractionAccumulator.BusinessTermData> terms = acc.getBusinessTerms();
-    // There should be exactly one entry for "payment" (deduplication by termId)
-    assertThat(terms).containsKey("payment");
-    // allSourceFqns should track both source FQNs
-    ExtractionAccumulator.BusinessTermData paymentTerm = terms.get("payment");
-    assertThat(paymentTerm.allSourceFqns().size()).isGreaterThanOrEqualTo(2);
+
+    // "invoice" comes from SampleInvoiceService (class name)
+    assertThat(terms).containsKey("invoice");
+    ExtractionAccumulator.BusinessTermData invoiceTerm = terms.get("invoice");
+    assertThat(invoiceTerm).isNotNull();
+    assertThat(invoiceTerm.allSourceFqns).hasSize(1);
+  }
+
+  @Test
+  void deduplication_sameTermFromInlineMultiSource_allSourceFqnsTracked() {
+    // Parse two classes that both have "invoice" in their name — same term, two sources
+    InMemoryExecutionContext ctx = new InMemoryExecutionContext(t -> {});
+    JavaParser parser = JavaParser.fromJavaVersion()
+        .typeCache(new JavaTypeCache())
+        .logCompilationWarningsAndErrors(false)
+        .build();
+
+    List<SourceFile> sources = parser.parse(ctx,
+        "package com.example; public class InvoiceService {}",
+        "package com.example; public class InvoiceRepository {}")
+        .toList();
+
+    ExtractionAccumulator localAcc = new ExtractionAccumulator();
+    LexiconVisitor visitor = new LexiconVisitor();
+    for (SourceFile sf : sources) {
+      visitor.visit(sf, localAcc);
+    }
+
+    ExtractionAccumulator.BusinessTermData invoiceTerm = localAcc.getBusinessTerms().get("invoice");
+    assertThat(invoiceTerm).isNotNull();
+    assertThat(invoiceTerm.allSourceFqns).hasSize(2);
   }
 
   @Test
@@ -227,7 +255,7 @@ class LexiconVisitorTest {
     Map<String, ExtractionAccumulator.BusinessTermData> terms = localAcc.getBusinessTerms();
     ExtractionAccumulator.BusinessTermData invoiceTerm = terms.get("invoice");
     assertThat(invoiceTerm).isNotNull();
-    assertThat(invoiceTerm.primarySourceFqn()).isEqualTo("com.example.InvoiceService");
+    assertThat(invoiceTerm.primarySourceFqn).isEqualTo("com.example.InvoiceService");
   }
 
   @Test
@@ -252,7 +280,7 @@ class LexiconVisitorTest {
 
     ExtractionAccumulator.BusinessTermData orderTerm = localAcc.getBusinessTerms().get("order");
     assertThat(orderTerm).isNotNull();
-    assertThat(orderTerm.allSourceFqns()).hasSize(2);
+    assertThat(orderTerm.allSourceFqns).hasSize(2);
   }
 
   // ---------------------------------------------------------------------------

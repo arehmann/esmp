@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.LinkedHashSet;
 
 /**
  * Accumulates all extracted AST data from visitor traversal of OpenRewrite LSTs.
@@ -59,6 +60,10 @@ public class ExtractionAccumulator {
   private final List<DependencyEdge> dependencyEdges = new ArrayList<>();
   private final List<QueryMethodRecord> queryMethods = new ArrayList<>();
   private final List<BindsToRecord> bindsToEdges = new ArrayList<>();
+
+  // ---------- Phase 5: domain lexicon ----------
+
+  private final Map<String, BusinessTermData> businessTerms = new HashMap<>();
 
   // =========================================================================
   // Mutation methods
@@ -301,6 +306,34 @@ public class ExtractionAccumulator {
   }
 
   // =========================================================================
+  // Phase 5: Domain lexicon mutation methods
+  // =========================================================================
+
+  /**
+   * Adds a business term extracted from the given source. Deduplicates by termId (lowercase
+   * normalized form) — first occurrence wins for {@code displayName}, {@code primarySourceFqn}, and
+   * {@code sourceType}. Every call always records the {@code sourceFqn} in the term's
+   * {@code allSourceFqns} set.
+   *
+   * @param word the raw term word (will be lowercased to form the termId)
+   * @param sourceFqn FQN of the class/type where this term was found
+   * @param sourceType extraction source category (e.g., "CLASS_NAME", "ENUM_CONSTANT", "DB_TABLE")
+   * @param javadoc class-level Javadoc text to use as a definition seed; null if not present
+   */
+  public void addBusinessTerm(String word, String sourceFqn, String sourceType, String javadoc) {
+    String termId = word.toLowerCase().trim();
+    businessTerms.computeIfAbsent(
+        termId, id -> new BusinessTermData(id, capitalize(word), sourceFqn, sourceType, javadoc));
+    // Always add sourceFqn to the set regardless of whether it was just created
+    businessTerms.get(termId).allSourceFqns.add(sourceFqn);
+  }
+
+  private static String capitalize(String word) {
+    if (word == null || word.isEmpty()) return word;
+    return Character.toUpperCase(word.charAt(0)) + word.substring(1).toLowerCase();
+  }
+
+  // =========================================================================
   // Read accessors
   // =========================================================================
 
@@ -376,6 +409,11 @@ public class ExtractionAccumulator {
     return Collections.unmodifiableList(bindsToEdges);
   }
 
+  /** Returns an unmodifiable view of all extracted business terms, keyed by termId. */
+  public Map<String, BusinessTermData> getBusinessTerms() {
+    return Collections.unmodifiableMap(businessTerms);
+  }
+
   // =========================================================================
   // Inner record types
   // =========================================================================
@@ -442,4 +480,35 @@ public class ExtractionAccumulator {
    */
   public record BindsToRecord(
       String viewClassFqn, String entityClassFqn, String bindingMechanism) {}
+
+  /**
+   * Holds extracted data for a single domain business term.
+   *
+   * <p>Uses a mutable class (not a record) because {@code allSourceFqns} must be updated each time
+   * the same term is encountered in a new source class. The {@code termId}, {@code displayName},
+   * {@code primarySourceFqn}, {@code sourceType}, and {@code javadocSeed} are set on first
+   * occurrence only (first-occurrence-wins policy for deduplication).
+   */
+  public static class BusinessTermData {
+    public final String termId;
+    public final String displayName;
+    public final String primarySourceFqn;
+    public final String sourceType;
+    public final String javadocSeed;
+    /** All class/type FQNs that reference this term. Updated on each occurrence. */
+    public final Set<String> allSourceFqns = new LinkedHashSet<>();
+
+    public BusinessTermData(
+        String termId,
+        String displayName,
+        String primarySourceFqn,
+        String sourceType,
+        String javadocSeed) {
+      this.termId = termId;
+      this.displayName = displayName;
+      this.primarySourceFqn = primarySourceFqn;
+      this.sourceType = sourceType;
+      this.javadocSeed = javadocSeed;
+    }
+  }
 }

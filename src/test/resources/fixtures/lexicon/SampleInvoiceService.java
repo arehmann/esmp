@@ -5,15 +5,9 @@ import java.util.List;
 /**
  * Handles invoice payment processing for customer orders.
  */
-public class SampleInvoiceService extends AbstractBaseService {
+public class SampleInvoiceService {
 
-  private final CustomerOrderRepository customerOrderRepository;
-
-  public SampleInvoiceService(CustomerOrderRepository customerOrderRepository) {
-    this.customerOrderRepository = customerOrderRepository;
-  }
-
-  public List<Object> findAllInvoices() {
+  public List<String> findAllInvoices() {
     return List.of();
   }
 
