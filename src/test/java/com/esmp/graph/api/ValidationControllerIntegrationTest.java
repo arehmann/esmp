@@ -262,6 +262,25 @@ class ValidationControllerIntegrationTest {
         + "CREATE (view)-[:HAS_ANNOTATION]->(a)"
     ).run();
 
+    // Annotate BaseService and SampleRepository so ANNOTATION_COVERAGE passes
+    // (every class in well-formed graph should have at least one annotation)
+    neo4jClient.query(
+        "CREATE (a:JavaAnnotation {fullyQualifiedName: 'org.springframework.stereotype.Component'})"
+    ).run();
+    neo4jClient.query(
+        "MATCH (c:JavaClass {fullyQualifiedName: 'com.example.service.BaseService'}), "
+        + "(a:JavaAnnotation {fullyQualifiedName: 'org.springframework.stereotype.Component'}) "
+        + "CREATE (c)-[:HAS_ANNOTATION]->(a)"
+    ).run();
+    neo4jClient.query(
+        "CREATE (a:JavaAnnotation {fullyQualifiedName: 'org.springframework.stereotype.Repository'})"
+    ).run();
+    neo4jClient.query(
+        "MATCH (c:JavaClass {fullyQualifiedName: 'com.example.repo.SampleRepository'}), "
+        + "(a:JavaAnnotation {fullyQualifiedName: 'org.springframework.stereotype.Repository'}) "
+        + "CREATE (c)-[:HAS_ANNOTATION]->(a)"
+    ).run();
+
     // CALLS: doWork -> findAll
     neo4jClient.query(
         "MATCH (caller:JavaMethod {methodId: 'com.example.service.SampleService#doWork()'}), "
