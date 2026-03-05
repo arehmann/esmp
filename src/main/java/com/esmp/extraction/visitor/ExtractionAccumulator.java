@@ -65,6 +65,11 @@ public class ExtractionAccumulator {
 
   private final Map<String, BusinessTermData> businessTerms = new HashMap<>();
 
+  // ---------- Phase 6: structural risk metrics ----------
+
+  private final Map<String, MethodComplexityData> methodComplexities = new HashMap<>();
+  private final Map<String, ClassWriteData> classWriteData = new HashMap<>();
+
   // =========================================================================
   // Mutation methods
   // =========================================================================
@@ -334,6 +339,34 @@ public class ExtractionAccumulator {
   }
 
   // =========================================================================
+  // Phase 6: Structural risk mutation methods
+  // =========================================================================
+
+  /**
+   * Records the cyclomatic complexity for a single method.
+   *
+   * @param methodId stable method identifier in the form {@code FQN#method(ParamTypes...)}
+   * @param declaringClassFqn FQN of the class that declares this method
+   * @param cc computed cyclomatic complexity value (must be >= 1)
+   */
+  public void addMethodComplexity(String methodId, String declaringClassFqn, int cc) {
+    methodComplexities.put(methodId, new MethodComplexityData(methodId, declaringClassFqn, cc));
+  }
+
+  /**
+   * Increments the DB write method count for the given class. Each call indicates one additional
+   * method in the class that performs a database write operation.
+   *
+   * @param classFqn fully qualified name of the class containing the write method
+   */
+  public void incrementClassDbWrites(String classFqn) {
+    classWriteData.merge(
+        classFqn,
+        new ClassWriteData(classFqn, 1),
+        (existing, increment) -> new ClassWriteData(classFqn, existing.writeCount() + 1));
+  }
+
+  // =========================================================================
   // Read accessors
   // =========================================================================
 
@@ -414,6 +447,16 @@ public class ExtractionAccumulator {
     return Collections.unmodifiableMap(businessTerms);
   }
 
+  /** Returns an unmodifiable view of per-method complexity data, keyed by methodId. */
+  public Map<String, MethodComplexityData> getMethodComplexities() {
+    return Collections.unmodifiableMap(methodComplexities);
+  }
+
+  /** Returns an unmodifiable view of per-class DB write data, keyed by class FQN. */
+  public Map<String, ClassWriteData> getClassWriteData() {
+    return Collections.unmodifiableMap(classWriteData);
+  }
+
   // =========================================================================
   // Inner record types
   // =========================================================================
@@ -480,6 +523,13 @@ public class ExtractionAccumulator {
    */
   public record BindsToRecord(
       String viewClassFqn, String entityClassFqn, String bindingMechanism) {}
+
+  /** Cyclomatic complexity data for a single method. */
+  public record MethodComplexityData(
+      String methodId, String declaringClassFqn, int cyclomaticComplexity) {}
+
+  /** DB write count data for a single class. */
+  public record ClassWriteData(String classFqn, int writeCount) {}
 
   /**
    * Holds extracted data for a single domain business term.

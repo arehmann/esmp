@@ -79,6 +79,38 @@ public class ClassNode {
   @Relationship(type = "CONTAINS_COMPONENT", direction = Relationship.Direction.OUTGOING)
   private List<ContainsComponentRelationship> componentChildren = new ArrayList<>();
 
+  // ---------- Phase 6: structural risk metrics ----------
+
+  /** Sum of cyclomatic complexity values across all methods in this class. */
+  private int complexitySum;
+
+  /** Maximum cyclomatic complexity of any single method in this class. */
+  private int complexityMax;
+
+  /**
+   * Fan-in: number of other classes that depend on this class (computed post-extraction via
+   * Cypher in Plan 02).
+   */
+  private int fanIn;
+
+  /**
+   * Fan-out: number of classes this class depends on (computed post-extraction via Cypher in Plan
+   * 02).
+   */
+  private int fanOut;
+
+  /** True if any method in this class performs a database write operation. */
+  private boolean hasDbWrites;
+
+  /** Count of DB write methods detected in this class. */
+  private int dbWriteCount;
+
+  /**
+   * Composite structural risk score (0.0–1.0), computed from complexity, fan-in/out, and DB writes
+   * via Cypher in Plan 02.
+   */
+  private double structuralRiskScore;
+
   public ClassNode() {}
 
   public ClassNode(String fullyQualifiedName) {
@@ -227,5 +259,61 @@ public class ClassNode {
 
   public void setComponentChildren(List<ContainsComponentRelationship> componentChildren) {
     this.componentChildren = componentChildren;
+  }
+
+  public int getComplexitySum() {
+    return complexitySum;
+  }
+
+  public void setComplexitySum(int complexitySum) {
+    this.complexitySum = complexitySum;
+  }
+
+  public int getComplexityMax() {
+    return complexityMax;
+  }
+
+  public void setComplexityMax(int complexityMax) {
+    this.complexityMax = complexityMax;
+  }
+
+  public int getFanIn() {
+    return fanIn;
+  }
+
+  public void setFanIn(int fanIn) {
+    this.fanIn = fanIn;
+  }
+
+  public int getFanOut() {
+    return fanOut;
+  }
+
+  public void setFanOut(int fanOut) {
+    this.fanOut = fanOut;
+  }
+
+  public boolean isHasDbWrites() {
+    return hasDbWrites;
+  }
+
+  public void setHasDbWrites(boolean hasDbWrites) {
+    this.hasDbWrites = hasDbWrites;
+  }
+
+  public int getDbWriteCount() {
+    return dbWriteCount;
+  }
+
+  public void setDbWriteCount(int dbWriteCount) {
+    this.dbWriteCount = dbWriteCount;
+  }
+
+  public double getStructuralRiskScore() {
+    return structuralRiskScore;
+  }
+
+  public void setStructuralRiskScore(double structuralRiskScore) {
+    this.structuralRiskScore = structuralRiskScore;
   }
 }
