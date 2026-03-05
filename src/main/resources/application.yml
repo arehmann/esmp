@@ -50,6 +50,14 @@ esmp:
       fan-in: 0.2
       fan-out: 0.2
       db-writes: 0.2
+      domain-complexity: 0.24
+      domain-fan-in: 0.12
+      domain-fan-out: 0.12
+      domain-db-writes: 0.12
+      domain-criticality: 0.10
+      security-sensitivity: 0.10
+      financial-involvement: 0.10
+      business-rule-density: 0.10
 
 server:
   port: 8080
