@@ -1,5 +1,6 @@
 [versions]
 spring-boot        = "3.5.11"
+spring-ai          = "1.1.2"
 java               = "21"
 testcontainers     = "1.20.4"
 qdrant-client      = "1.13.0"
@@ -30,6 +31,8 @@ openrewrite-java-jdk21        = { module = "org.openrewrite:rewrite-java-21", ve
 vaadin-server                 = { module = "com.vaadin:vaadin-server", version.ref = "vaadin-server" }
 vaadin-spring-boot-starter    = { module = "com.vaadin:vaadin-spring-boot-starter" }
 vaadin-bom                    = { module = "com.vaadin:vaadin-bom", version.ref = "vaadin" }
+spring-ai-bom                 = { module = "org.springframework.ai:spring-ai-bom", version.ref = "spring-ai" }
+spring-ai-starter-transformers = { module = "org.springframework.ai:spring-ai-starter-model-transformers" }
 
 [plugins]
 spring-boot            = { id = "org.springframework.boot", version.ref = "spring-boot" }

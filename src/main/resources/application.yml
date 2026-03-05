@@ -4,6 +4,12 @@ spring:
   threads:
     virtual:
       enabled: true
+  ai:
+    embedding:
+      transformer:
+        tokenizer:
+          options:
+            padding: "true"
   datasource:
     url: jdbc:mysql://localhost:3307/esmp
     username: esmp
@@ -44,6 +50,10 @@ esmp:
   extraction:
     source-root: ""
     classpath-file: ""
+  vector:
+    collection-name: code_chunks
+    vector-dimension: 384
+    batch-size: 64
   risk:
     weight:
       complexity: 0.4
