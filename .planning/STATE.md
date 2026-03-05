@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Phase 7 context gathered
-last_updated: "2026-03-05T13:32:07.752Z"
+stopped_at: Completed 07-domain-aware-risk-analysis 07-01-PLAN.md
+last_updated: "2026-03-05T14:59:08.654Z"
 last_activity: 2026-03-04 — Roadmap created, project initialized
 progress:
   total_phases: 13
   completed_phases: 6
-  total_plans: 18
-  completed_plans: 18
+  total_plans: 20
+  completed_plans: 19
 ---
 
 ---
@@ -145,6 +145,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 05-domain-lexicon P03 | 6min | 1 tasks | 6 files |
 | Phase 06-structural-risk-analysis P01 | 35min | 2 tasks | 7 files |
 | Phase 06-structural-risk-analysis P02 | 50min | 2 tasks | 10 files |
+| Phase 07-domain-aware-risk-analysis P01 | 3min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -204,6 +205,9 @@ Recent decisions affecting current work:
 - [Phase 06-structural-risk-analysis]: Fan-in/out computed via Cypher pattern comprehension (size pattern) - avoids OPTIONAL MATCH grouping complexity
 - [Phase 06-structural-risk-analysis]: Composite risk score uses Neo4j log(1+x) for zero-safe log normalization; RiskService MUST run after LinkingService for DEPENDS_ON edges to exist
 - [Phase 06-structural-risk-analysis]: RiskWeightConfig uses @ConfigurationProperties(prefix='esmp.risk.weight') + @Component; Spring relaxed binding maps fan-in YAML key to fanIn field
+- [Phase 07-domain-aware-risk-analysis]: computeEnhancedRiskScore uses raw structural metrics re-weighted by domain weights — NOT structuralRiskScore — to avoid double-weighting the structural component
+- [Phase 07-domain-aware-risk-analysis]: Financial involvement skips annotation matching (neverMatch regex) since no financial-specific Java security annotations exist — name/package/USES_TERM keywords are sufficient
+- [Phase 07-domain-aware-risk-analysis]: buildPattern() helper centralizes keyword list to Cypher regex conversion — reused by security and financial computation methods
 
 ### Pending Todos
 
@@ -216,6 +220,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-05T13:32:07.746Z
-Stopped at: Phase 7 context gathered
-Resume file: .planning/phases/07-domain-aware-risk-analysis/07-CONTEXT.md
+Last session: 2026-03-05T14:59:02.340Z
+Stopped at: Completed 07-domain-aware-risk-analysis 07-01-PLAN.md
+Resume file: None

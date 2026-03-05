@@ -143,7 +143,7 @@ Plans:
   3. Classes involved in financial transactions (payment, billing, ledger) are flagged with financial involvement scores
   4. Business rule density is computed per class based on DEFINES_RULE edge count and rule complexity
   5. Enhanced composite risk score combines structural risk, domain criticality, security sensitivity, financial involvement, and business rule density
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 07-01-PLAN.md — Domain risk model extensions (ClassNode, RiskWeightConfig, application.yml) and 5 Cypher-based domain score computation methods in RiskService
@@ -236,7 +236,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 4. Graph Validation & Canonical Queries | 1/2 | In Progress|  |
 | 5. Domain Lexicon | 3/3 | Complete   | 2026-03-05 |
 | 6. Structural Risk Analysis | 2/2 | Complete   | 2026-03-05 |
-| 7. Domain-Aware Risk Analysis | 0/TBD | Not started | - |
+| 7. Domain-Aware Risk Analysis | 1/2 | In Progress|  |
 | 8. Smart Chunking and Vector Indexing | 0/TBD | Not started | - |
 | 9. Golden Module Pilot | 0/TBD | Not started | - |
 | 10. Continuous Indexing | 0/TBD | Not started | - |
