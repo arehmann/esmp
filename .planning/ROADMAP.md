@@ -18,7 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 4: Graph Validation & Canonical Queries** - Structural graph correctness verified before building semantic layers
 - [x] **Phase 5: Domain Lexicon** - Business term extraction, curation, and graph edge integration — moved early to prevent downstream rework (completed 2026-03-05)
 - [x] **Phase 6: Structural Risk Analysis** - Cyclomatic complexity, fan-in/out, DB write detection, and composite structural risk scoring (completed 2026-03-05)
-- [ ] **Phase 7: Domain-Aware Risk Analysis** - Domain criticality, security sensitivity, financial involvement, and enhanced composite scoring
+- [x] **Phase 7: Domain-Aware Risk Analysis** - Domain criticality, security sensitivity, financial involvement, and enhanced composite scoring (completed 2026-03-05)
 - [ ] **Phase 8: Smart Chunking and Vector Indexing** - Semantic code chunks embedded and indexed in Qdrant with incremental re-indexing
 - [ ] **Phase 9: Golden Module Pilot** - End-to-end validation of semantic pipeline on one bounded context before scaling
 - [ ] **Phase 10: Continuous Indexing** - CI-triggered incremental graph and vector updates on changed files only
@@ -143,7 +143,7 @@ Plans:
   3. Classes involved in financial transactions (payment, billing, ledger) are flagged with financial involvement scores
   4. Business rule density is computed per class based on DEFINES_RULE edge count and rule complexity
   5. Enhanced composite risk score combines structural risk, domain criticality, security sensitivity, financial involvement, and business rule density
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 07-01-PLAN.md — Domain risk model extensions (ClassNode, RiskWeightConfig, application.yml) and 5 Cypher-based domain score computation methods in RiskService
@@ -236,7 +236,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 4. Graph Validation & Canonical Queries | 1/2 | In Progress|  |
 | 5. Domain Lexicon | 3/3 | Complete   | 2026-03-05 |
 | 6. Structural Risk Analysis | 2/2 | Complete   | 2026-03-05 |
-| 7. Domain-Aware Risk Analysis | 1/2 | In Progress|  |
+| 7. Domain-Aware Risk Analysis | 2/2 | Complete   | 2026-03-05 |
 | 8. Smart Chunking and Vector Indexing | 0/TBD | Not started | - |
 | 9. Golden Module Pilot | 0/TBD | Not started | - |
 | 10. Continuous Indexing | 0/TBD | Not started | - |

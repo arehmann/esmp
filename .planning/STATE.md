@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 07-domain-aware-risk-analysis 07-01-PLAN.md
-last_updated: "2026-03-05T14:59:08.654Z"
+stopped_at: Completed 07-domain-aware-risk-analysis 07-02-PLAN.md
+last_updated: "2026-03-05T15:30:34.745Z"
 last_activity: 2026-03-04 — Roadmap created, project initialized
 progress:
   total_phases: 13
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 20
-  completed_plans: 19
+  completed_plans: 20
 ---
 
 ---
@@ -146,6 +146,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 06-structural-risk-analysis P01 | 35min | 2 tasks | 7 files |
 | Phase 06-structural-risk-analysis P02 | 50min | 2 tasks | 10 files |
 | Phase 07-domain-aware-risk-analysis P01 | 3min | 2 tasks | 5 files |
+| Phase 07-domain-aware-risk-analysis P02 | 28min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -208,6 +209,8 @@ Recent decisions affecting current work:
 - [Phase 07-domain-aware-risk-analysis]: computeEnhancedRiskScore uses raw structural metrics re-weighted by domain weights — NOT structuralRiskScore — to avoid double-weighting the structural component
 - [Phase 07-domain-aware-risk-analysis]: Financial involvement skips annotation matching (neverMatch regex) since no financial-specific Java security annotations exist — name/package/USES_TERM keywords are sufficient
 - [Phase 07-domain-aware-risk-analysis]: buildPattern() helper centralizes keyword list to Cypher regex conversion — reused by security and financial computation methods
+- [Phase 07-domain-aware-risk-analysis]: Cypher min() is an aggregation function — scalar clamping to 1.0 uses CASE WHEN rawScore > 1.0 THEN 1.0 ELSE rawScore END with an intermediate WITH clause
+- [Phase 07-domain-aware-risk-analysis]: sortBy in getHeatmap validates to one of two hardcoded Java strings (structural/enhanced), then uses string concatenation for ORDER BY property name — safe because orderByProp is never user-supplied
 
 ### Pending Todos
 
@@ -220,6 +223,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-05T14:59:02.340Z
-Stopped at: Completed 07-domain-aware-risk-analysis 07-01-PLAN.md
+Last session: 2026-03-05T15:30:34.739Z
+Stopped at: Completed 07-domain-aware-risk-analysis 07-02-PLAN.md
 Resume file: None
