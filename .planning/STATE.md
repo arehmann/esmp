@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 08-smart-chunking-vector-indexing 08-01-PLAN.md
-last_updated: "2026-03-05T17:12:52.014Z"
+stopped_at: Completed 08-smart-chunking-vector-indexing 08-02-PLAN.md
+last_updated: "2026-03-05T19:04:18.363Z"
 last_activity: 2026-03-04 — Roadmap created, project initialized
 progress:
   total_phases: 13
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 22
-  completed_plans: 21
+  completed_plans: 22
 ---
 
 ---
@@ -163,6 +163,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 07-domain-aware-risk-analysis P01 | 3min | 2 tasks | 5 files |
 | Phase 07-domain-aware-risk-analysis P02 | 28min | 2 tasks | 6 files |
 | Phase 08-smart-chunking-vector-indexing P01 | 15min | 2 tasks | 13 files |
+| Phase 08-smart-chunking-vector-indexing P02 | 108min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -228,6 +229,8 @@ Recent decisions affecting current work:
 - [Phase 07-domain-aware-risk-analysis]: Cypher min() is an aggregation function — scalar clamping to 1.0 uses CASE WHEN rawScore > 1.0 THEN 1.0 ELSE rawScore END with an intermediate WITH clause
 - [Phase 07-domain-aware-risk-analysis]: sortBy in getHeatmap validates to one of two hardcoded Java strings (structural/enhanced), then uses string concatenation for ORDER BY property name — safe because orderByProp is never user-supplied
 - [Phase 08-smart-chunking-vector-indexing]: Spring AI 1.1.2 BOM added alongside Vaadin BOM; WebEnvironment.MOCK required for integration tests (Vaadin SpringBootAutoConfiguration needs WebApplicationContext); UUID v5 with DNS namespace for deterministic Qdrant point IDs
+- [Phase 08-smart-chunking-vector-indexing]: Spring AI EmbeddingModel.embed(List<String>) returns List<float[]> in 1.1.2, not List<List<Double>>; VectorsOutput.getVector().getDataCount() returns 0 for single-vector collections — use getCollectionInfoAsync() for dimension verification
+- [Phase 08-smart-chunking-vector-indexing]: retrieveAsync(collection, ids, payloadSel, null, null) throws NPE — must pass WithVectorsSelectorFactory.enable(false) not null; domain terms serialized as compact JSON string to avoid nested-object Qdrant payload limitation
 
 ### Pending Todos
 
@@ -240,6 +243,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-05T17:12:52.009Z
-Stopped at: Completed 08-smart-chunking-vector-indexing 08-01-PLAN.md
+Last session: 2026-03-05T19:04:18.357Z
+Stopped at: Completed 08-smart-chunking-vector-indexing 08-02-PLAN.md
 Resume file: None
