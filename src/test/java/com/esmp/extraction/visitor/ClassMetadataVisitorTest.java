@@ -177,7 +177,9 @@ class ClassMetadataVisitorTest {
     Path projectRoot = fixturesDir.getParent();
 
     List<Path> sources;
-    try (var stream = Files.walk(fixturesDir)) {
+    // maxDepth(1) to scan only the top-level fixtures directory, not subdirectories
+    // (subdirectories like fixtures/lexicon/ contain lexicon-specific fixtures)
+    try (var stream = Files.walk(fixturesDir, 1)) {
       sources = stream.filter(p -> p.toString().endsWith(".java")).toList();
     }
 

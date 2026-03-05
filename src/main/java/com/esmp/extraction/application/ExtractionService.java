@@ -4,12 +4,14 @@ import com.esmp.extraction.audit.VaadinAuditReport;
 import com.esmp.extraction.audit.VaadinAuditService;
 import com.esmp.extraction.config.ExtractionConfig;
 import com.esmp.extraction.model.AnnotationNode;
+import com.esmp.extraction.model.BusinessTermNode;
 import com.esmp.extraction.model.ClassNode;
 import com.esmp.extraction.model.DBTableNode;
 import com.esmp.extraction.model.ModuleNode;
 import com.esmp.extraction.model.PackageNode;
 import com.esmp.extraction.parser.JavaSourceParser;
 import com.esmp.extraction.persistence.AnnotationNodeRepository;
+import com.esmp.extraction.persistence.BusinessTermNodeRepository;
 import com.esmp.extraction.persistence.ClassNodeRepository;
 import com.esmp.extraction.persistence.DBTableNodeRepository;
 import com.esmp.extraction.persistence.ModuleNodeRepository;
@@ -19,16 +21,19 @@ import com.esmp.extraction.visitor.ClassMetadataVisitor;
 import com.esmp.extraction.visitor.DependencyVisitor;
 import com.esmp.extraction.visitor.ExtractionAccumulator;
 import com.esmp.extraction.visitor.JpaPatternVisitor;
+import com.esmp.extraction.visitor.LexiconVisitor;
 import com.esmp.extraction.visitor.VaadinPatternVisitor;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.openrewrite.SourceFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,6 +57,8 @@ public class ExtractionService {
   private final PackageNodeRepository packageNodeRepository;
   private final ModuleNodeRepository moduleNodeRepository;
   private final DBTableNodeRepository dbTableNodeRepository;
+  private final BusinessTermNodeRepository businessTermNodeRepository;
+  private final Neo4jClient neo4jClient;
   private final LinkingService linkingService;
   private final VaadinAuditService vaadinAuditService;
   private final ExtractionConfig extractionConfig;
@@ -64,6 +71,8 @@ public class ExtractionService {
       PackageNodeRepository packageNodeRepository,
       ModuleNodeRepository moduleNodeRepository,
       DBTableNodeRepository dbTableNodeRepository,
+      BusinessTermNodeRepository businessTermNodeRepository,
+      Neo4jClient neo4jClient,
       LinkingService linkingService,
       VaadinAuditService vaadinAuditService,
       ExtractionConfig extractionConfig) {
@@ -74,6 +83,8 @@ public class ExtractionService {
     this.packageNodeRepository = packageNodeRepository;
     this.moduleNodeRepository = moduleNodeRepository;
     this.dbTableNodeRepository = dbTableNodeRepository;
+    this.businessTermNodeRepository = businessTermNodeRepository;
+    this.neo4jClient = neo4jClient;
     this.linkingService = linkingService;
     this.vaadinAuditService = vaadinAuditService;
     this.extractionConfig = extractionConfig;
@@ -122,6 +133,8 @@ public class ExtractionService {
     VaadinPatternVisitor vaadinPatternVisitor = new VaadinPatternVisitor();
     DependencyVisitor dependencyVisitor = new DependencyVisitor();
     JpaPatternVisitor jpaPatternVisitor = new JpaPatternVisitor();
+    // LexiconVisitor runs after jpaPatternVisitor so table mappings are available in accumulator
+    LexiconVisitor lexiconVisitor = new LexiconVisitor();
 
     for (SourceFile sourceFile : sourceFiles) {
       try {
@@ -130,6 +143,7 @@ public class ExtractionService {
         vaadinPatternVisitor.visit(sourceFile, accumulator);
         dependencyVisitor.visit(sourceFile, accumulator);
         jpaPatternVisitor.visit(sourceFile, accumulator);
+        lexiconVisitor.visit(sourceFile, accumulator);
       } catch (Exception e) {
         errorCount++;
         String error = "Error visiting " + sourceFile.getSourcePath() + ": " + e.getMessage();
@@ -144,6 +158,7 @@ public class ExtractionService {
     List<PackageNode> packageNodes = mapper.mapToPackageNodes(accumulator);
     List<ModuleNode> moduleNodes = mapper.mapToModuleNodes(accumulator, resolvedSourceRoot);
     List<DBTableNode> dbTableNodes = mapper.mapToDBTableNodes(accumulator);
+    List<BusinessTermNode> businessTermNodes = mapper.mapToBusinessTermNodes(accumulator);
 
     // Persist all node types — SDN saveAll() performs MERGE via @Id business keys
     classNodeRepository.saveAll(classNodes);
@@ -160,6 +175,10 @@ public class ExtractionService {
 
     dbTableNodeRepository.saveAll(dbTableNodes);
     log.info("Persisted {} DB table nodes to Neo4j", dbTableNodes.size());
+
+    // Persist business term nodes using curated-guard MERGE to protect human-curated definitions
+    // (LEX-02/LEX-04 compliance: curated=true terms are never overwritten by re-extraction)
+    persistBusinessTermNodes(businessTermNodes);
 
     // Run linking pass — creates cross-class relationships via idempotent Cypher MERGE
     LinkingService.LinkingResult linkingResult = linkingService.linkAllRelationships(accumulator);
@@ -181,11 +200,58 @@ public class ExtractionService {
         packageNodes.size(),
         moduleNodes.size(),
         dbTableNodes.size(),
+        businessTermNodes.size(),
         linkingResult,
         errorCount,
         errors,
         auditReport,
         durationMs);
+  }
+
+  /**
+   * Persists business term nodes using a curated-guard MERGE Cypher query.
+   *
+   * <p>ON CREATE: sets all properties for new terms.
+   * ON MATCH: preserves displayName, definition, and criticality for curated terms;
+   * always updates usageCount and status.
+   *
+   * @param businessTermNodes list of BusinessTermNode entities to persist
+   */
+  private void persistBusinessTermNodes(List<BusinessTermNode> businessTermNodes) {
+    String cypher =
+        "MERGE (t:BusinessTerm {termId: $termId}) "
+            + "ON CREATE SET "
+            + "  t.displayName = $displayName, "
+            + "  t.definition = $definition, "
+            + "  t.criticality = $criticality, "
+            + "  t.migrationSensitivity = $sensitivity, "
+            + "  t.curated = false, "
+            + "  t.status = 'auto', "
+            + "  t.sourceType = $sourceType, "
+            + "  t.primarySourceFqn = $fqn, "
+            + "  t.usageCount = $usageCount, "
+            + "  t.synonyms = [] "
+            + "ON MATCH SET "
+            + "  t.displayName = CASE WHEN t.curated THEN t.displayName ELSE $displayName END, "
+            + "  t.definition = CASE WHEN t.curated THEN t.definition ELSE $definition END, "
+            + "  t.criticality = CASE WHEN t.curated THEN t.criticality ELSE $criticality END, "
+            + "  t.usageCount = $usageCount, "
+            + "  t.status = CASE WHEN t.curated THEN 'curated' ELSE 'auto' END";
+
+    for (BusinessTermNode node : businessTermNodes) {
+      neo4jClient.query(cypher)
+          .bindAll(Map.of(
+              "termId", node.getTermId(),
+              "displayName", node.getDisplayName() != null ? node.getDisplayName() : node.getTermId(),
+              "definition", node.getDefinition() != null ? node.getDefinition() : "",
+              "criticality", node.getCriticality(),
+              "sensitivity", node.getMigrationSensitivity(),
+              "sourceType", node.getSourceType() != null ? node.getSourceType() : "UNKNOWN",
+              "fqn", node.getPrimarySourceFqn() != null ? node.getPrimarySourceFqn() : "",
+              "usageCount", node.getUsageCount()))
+          .run();
+    }
+    log.info("Persisted {} business term nodes to Neo4j", businessTermNodes.size());
   }
 
   private List<Path> scanJavaFiles(Path root) {
@@ -216,6 +282,7 @@ public class ExtractionService {
       int packageCount,
       int moduleCount,
       int tableCount,
+      int businessTermCount,
       LinkingService.LinkingResult linkingResult,
       int errorCount,
       List<String> errors,

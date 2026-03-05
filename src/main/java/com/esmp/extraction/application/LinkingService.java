@@ -2,9 +2,15 @@ package com.esmp.extraction.application;
 
 import com.esmp.extraction.visitor.ExtractionAccumulator;
 import com.esmp.extraction.visitor.ExtractionAccumulator.BindsToRecord;
+import com.esmp.extraction.visitor.ExtractionAccumulator.BusinessTermData;
 import com.esmp.extraction.visitor.ExtractionAccumulator.DependencyEdge;
 import com.esmp.extraction.visitor.ExtractionAccumulator.QueryMethodRecord;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.neo4j.core.Neo4jClient;
@@ -32,6 +38,8 @@ import org.springframework.transaction.annotation.Transactional;
  *   <li>{@code CONTAINS_PACKAGE} — from module node to package node
  *   <li>{@code BINDS_TO} — from Vaadin view/form to the entity it binds to (via BeanFieldGroup,
  *       FieldGroup)
+ *   <li>{@code USES_TERM} — from JavaClass to BusinessTerm (primary source + DEPENDS_ON dependents)
+ *   <li>{@code DEFINES_RULE} — from business-rule-pattern classes to BusinessTerm nodes
  * </ul>
  */
 @Service
@@ -60,16 +68,21 @@ public class LinkingService {
     int hasAnnotationCount = linkAnnotations(acc);
     int containsClassCount = linkPackageHierarchy(acc);
     int bindsToCount = linkBindsToEdges(acc);
+    int usesTermCount = linkBusinessTermUsages(acc);
+    int definesRuleCount = linkBusinessRules(acc);
 
     log.info(
         "Linking complete: EXTENDS={}, DEPENDS_ON={}, MAPS_TO_TABLE={}, "
-            + "QUERIES={}, HAS_ANNOTATION={}, CONTAINS_CLASS/PACKAGE={}, BINDS_TO={}",
+            + "QUERIES={}, HAS_ANNOTATION={}, CONTAINS_CLASS/PACKAGE={}, BINDS_TO={}, "
+            + "USES_TERM={}, DEFINES_RULE={}",
         extendsCount, dependsOnCount, mapsToTableCount,
-        queriesCount, hasAnnotationCount, containsClassCount, bindsToCount);
+        queriesCount, hasAnnotationCount, containsClassCount, bindsToCount,
+        usesTermCount, definesRuleCount);
 
     return new LinkingResult(
         extendsCount, dependsOnCount, mapsToTableCount,
-        queriesCount, hasAnnotationCount, containsClassCount, bindsToCount);
+        queriesCount, hasAnnotationCount, containsClassCount, bindsToCount,
+        usesTermCount, definesRuleCount);
   }
 
   // ---------------------------------------------------------------------------
@@ -395,6 +408,183 @@ public class LinkingService {
   }
 
   // ---------------------------------------------------------------------------
+  // Domain lexicon linking: USES_TERM and DEFINES_RULE
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Camel-case split pattern: splits on transitions from lower to upper case and on acronym
+   * boundaries. E.g., "InvoiceService" -> ["Invoice", "Service"].
+   */
+  private static final Pattern CAMEL_SPLIT = Pattern.compile(
+      "(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])");
+
+  /**
+   * Stop suffixes to exclude from term extraction when splitting class simple names.
+   * Mirrors the STOP_SUFFIXES in LexiconVisitor.
+   */
+  private static final Set<String> STOP_SUFFIXES = Set.of(
+      "service", "repository", "controller", "manager", "handler", "factory",
+      "builder", "config", "configuration", "impl", "base", "abstract",
+      "helper", "util", "utils", "test", "validator", "rule", "policy",
+      "constraint", "calculator", "strategy", "enum", "type");
+
+  /**
+   * Business-rule-pattern class name suffixes. Classes whose simpleName ends in one of these
+   * are eligible for DEFINES_RULE edges.
+   */
+  private static final Pattern BUSINESS_RULE_PATTERN = Pattern.compile(
+      ".*(Validator|Rule|Policy|Constraint|Calculator|Strategy).*");
+
+  /**
+   * Creates USES_TERM edges from the primary source JavaClass to its extracted BusinessTerm nodes,
+   * and also from classes that DEPENDS_ON the primary source class. Test classes (sourceFilePath
+   * contains '/test/') are excluded from dependent linking.
+   *
+   * @param acc the accumulator containing extracted business terms
+   * @return total count of USES_TERM edges created (primary + dependent)
+   */
+  @Transactional("neo4jTransactionManager")
+  public int linkBusinessTermUsages(ExtractionAccumulator acc) {
+    if (acc.getBusinessTerms().isEmpty()) {
+      return 0;
+    }
+
+    int count = 0;
+    for (BusinessTermData term : acc.getBusinessTerms().values()) {
+      String termId = term.termId;
+      String primaryFqn = term.primarySourceFqn;
+
+      // 1. Primary source class -> BusinessTerm
+      String primaryCypher = """
+          MATCH (c:JavaClass {fullyQualifiedName: $classFqn})
+          MATCH (t:BusinessTerm {termId: $termId})
+          MERGE (c)-[r:USES_TERM]->(t)
+          RETURN count(r) AS cnt
+          """;
+
+      Long primaryCnt = neo4jClient.query(primaryCypher)
+          .bindAll(Map.of("classFqn", primaryFqn, "termId", termId))
+          .fetchAs(Long.class)
+          .mappedBy((ts, record) -> record.get("cnt").asLong())
+          .one()
+          .orElse(0L);
+      count += primaryCnt.intValue();
+
+      // 2. Classes that DEPENDS_ON the primary source class (excluding test classes)
+      String dependentCypher = """
+          MATCH (c:JavaClass {fullyQualifiedName: $primaryFqn})<-[:DEPENDS_ON]-(dep:JavaClass)
+          WHERE NOT (dep.sourceFilePath CONTAINS '/src/test/' OR dep.sourceFilePath CONTAINS '/test/java/')
+          MATCH (t:BusinessTerm {termId: $termId})
+          MERGE (dep)-[r:USES_TERM]->(t)
+          RETURN count(r) AS cnt
+          """;
+
+      Long depCnt = neo4jClient.query(dependentCypher)
+          .bindAll(Map.of("primaryFqn", primaryFqn, "termId", termId))
+          .fetchAs(Long.class)
+          .mappedBy((ts, record) -> record.get("cnt").asLong())
+          .one()
+          .orElse(0L);
+      count += depCnt.intValue();
+    }
+
+    return count;
+  }
+
+  /**
+   * Creates DEFINES_RULE edges from JavaClass nodes matching business-rule naming patterns
+   * (Validator, Rule, Policy, Constraint, Calculator, Strategy) to their extracted BusinessTerm
+   * nodes. Terms are derived by splitting the class simpleName with camelCase split logic and
+   * filtering stop suffixes, then matching against existing BusinessTerm nodes.
+   *
+   * <p>Also creates DEFINES_RULE edges for classes with validation annotations
+   * (javax/jakarta.validation.Constraint).
+   *
+   * @param acc the accumulator (used for context but not for term lookup — queries graph directly)
+   * @return count of DEFINES_RULE edges created
+   */
+  @Transactional("neo4jTransactionManager")
+  public int linkBusinessRules(ExtractionAccumulator acc) {
+    // Query for all JavaClass nodes matching the business-rule naming pattern
+    String queryClassesCypher = """
+        MATCH (c:JavaClass)
+        WHERE c.simpleName =~ '.*(Validator|Rule|Policy|Constraint|Calculator|Strategy).*'
+           OR EXISTS {
+             MATCH (c)-[:HAS_ANNOTATION]->(a:JavaAnnotation)
+             WHERE a.fullyQualifiedName IN
+               ['javax.validation.Constraint', 'jakarta.validation.Constraint']
+           }
+        RETURN c.fullyQualifiedName AS fqn, c.simpleName AS simpleName
+        """;
+
+    // Collect matching classes from the graph
+    List<Map<String, String>> matchedClasses = new ArrayList<>();
+    neo4jClient.query(queryClassesCypher)
+        .fetchAs(Map.class)
+        .mappedBy((ts, record) -> {
+          Map<String, String> row = new java.util.HashMap<>();
+          row.put("fqn", record.get("fqn").asString(""));
+          row.put("simpleName", record.get("simpleName").asString(""));
+          return row;
+        })
+        .all()
+        .forEach(row -> matchedClasses.add(row));
+
+    int count = 0;
+    for (Map<String, String> classRow : matchedClasses) {
+      String classFqn = classRow.get("fqn");
+      String simpleName = classRow.get("simpleName");
+
+      // Extract term IDs from simpleName using camelCase split + stop suffix filter
+      List<String> termIds = extractTermIds(simpleName);
+
+      if (termIds.isEmpty()) {
+        continue;
+      }
+
+      String createEdgesCypher = """
+          MATCH (c:JavaClass {fullyQualifiedName: $classFqn})
+          MATCH (t:BusinessTerm)
+          WHERE t.termId IN $termIds
+          MERGE (c)-[r:DEFINES_RULE]->(t)
+          RETURN count(r) AS cnt
+          """;
+
+      Long cnt = neo4jClient.query(createEdgesCypher)
+          .bindAll(Map.of("classFqn", classFqn, "termIds", termIds))
+          .fetchAs(Long.class)
+          .mappedBy((ts, record) -> record.get("cnt").asLong())
+          .one()
+          .orElse(0L);
+      count += cnt.intValue();
+    }
+
+    return count;
+  }
+
+  /**
+   * Splits a PascalCase/camelCase class simpleName into lowercase term IDs, filtering out
+   * stop suffixes (technical terms that don't represent domain concepts).
+   *
+   * @param simpleName the class simple name
+   * @return list of lowercase term IDs
+   */
+  private List<String> extractTermIds(String simpleName) {
+    if (simpleName == null || simpleName.isBlank()) {
+      return List.of();
+    }
+    String[] parts = CAMEL_SPLIT.split(simpleName);
+    List<String> termIds = new ArrayList<>();
+    for (String part : parts) {
+      String lower = part.toLowerCase();
+      if (!lower.isBlank() && !STOP_SUFFIXES.contains(lower) && lower.length() > 1) {
+        termIds.add(lower);
+      }
+    }
+    return termIds;
+  }
+
+  // ---------------------------------------------------------------------------
   // Result record
   // ---------------------------------------------------------------------------
 
@@ -406,5 +596,7 @@ public class LinkingService {
       int queriesCount,
       int hasAnnotationCount,
       int containsHierarchyCount,
-      int bindsToCount) {}
+      int bindsToCount,
+      int usesTermCount,
+      int definesRuleCount) {}
 }

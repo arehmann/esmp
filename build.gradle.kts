@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.spring.boot)
     alias(libs.plugins.spring.dependency.mgmt)
     alias(libs.plugins.spotless)
+    alias(libs.plugins.vaadin)
     java
 }
 
@@ -16,6 +17,13 @@ java {
 
 repositories {
     mavenCentral()
+    maven { url = uri("https://maven.vaadin.com/vaadin-addons") }
+}
+
+dependencyManagement {
+    imports {
+        mavenBom(libs.vaadin.bom.get().toString())
+    }
 }
 
 dependencies {
@@ -31,6 +39,7 @@ dependencies {
     implementation(libs.grpc.stub)
     implementation(libs.openrewrite.java)
     implementation(libs.openrewrite.java.jdk21)
+    implementation(libs.vaadin.spring.boot.starter)
 
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.vaadin.server)

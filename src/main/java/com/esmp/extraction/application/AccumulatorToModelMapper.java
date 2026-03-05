@@ -1,6 +1,7 @@
 package com.esmp.extraction.application;
 
 import com.esmp.extraction.model.AnnotationNode;
+import com.esmp.extraction.model.BusinessTermNode;
 import com.esmp.extraction.model.CallsRelationship;
 import com.esmp.extraction.model.ClassNode;
 import com.esmp.extraction.model.ContainsComponentRelationship;
@@ -11,6 +12,7 @@ import com.esmp.extraction.model.ModuleNode;
 import com.esmp.extraction.model.PackageNode;
 import com.esmp.extraction.visitor.ExtractionAccumulator;
 import com.esmp.extraction.visitor.ExtractionAccumulator.AnnotationData;
+import com.esmp.extraction.visitor.ExtractionAccumulator.BusinessTermData;
 import com.esmp.extraction.visitor.ExtractionAccumulator.CallEdge;
 import com.esmp.extraction.visitor.ExtractionAccumulator.ClassNodeData;
 import com.esmp.extraction.visitor.ExtractionAccumulator.ComponentEdge;
@@ -257,5 +259,95 @@ public class AccumulatorToModelMapper {
       byTableName.computeIfAbsent(tableName, name -> new DBTableNode(name));
     }
     return new ArrayList<>(byTableName.values());
+  }
+
+  /**
+   * Maps business term data from the accumulator into {@link BusinessTermNode} entities.
+   *
+   * <p>Terms from the visitor pass (class names, enum names/constants, Javadoc) are merged with
+   * terms derived from DB table names (from {@code acc.getTableMappings()}, populated by
+   * JpaPatternVisitor). DB table terms are added with {@code "DB_TABLE"} source type; existing
+   * terms from the visitor pass take precedence (termId deduplication).
+   *
+   * <p>Heuristic criticality seeding: financial and security terms get {@code "High"} criticality
+   * and {@code "Moderate"} migration sensitivity; all others default to {@code "Low"} / {@code
+   * "None"}.
+   *
+   * @param acc the accumulator populated by visitor traversal
+   * @return list of BusinessTermNode entities ready for curated-guard MERGE persistence
+   */
+  public List<BusinessTermNode> mapToBusinessTermNodes(ExtractionAccumulator acc) {
+    // Use a map to merge visitor-extracted terms with DB table terms (visitor wins on conflict)
+    Map<String, BusinessTermNode> byTermId = new HashMap<>();
+
+    // Step 1 — map visitor-extracted terms (class names, enum names/constants)
+    for (BusinessTermData data : acc.getBusinessTerms().values()) {
+      BusinessTermNode node = createBusinessTermNode(data);
+      byTermId.put(data.termId, node);
+    }
+
+    // Step 2 — add DB table name terms (skip if already present from visitor pass)
+    for (Map.Entry<String, String> entry : acc.getTableMappings().entrySet()) {
+      String entityFqn = entry.getKey();
+      String tableName = entry.getValue(); // already lowercased
+      for (String part : tableName.split("_")) {
+        String termId = part.toLowerCase().trim();
+        if (termId.length() <= 2) continue;
+        if (!byTermId.containsKey(termId)) {
+          BusinessTermNode node = new BusinessTermNode(termId);
+          node.setDisplayName(capitalize(part));
+          node.setDefinition(null);
+          node.setCriticality(seedCriticality(termId));
+          node.setMigrationSensitivity(seedCriticality(termId).equals("High") ? "Moderate" : "None");
+          node.setCurated(false);
+          node.setStatus("auto");
+          node.setSourceType("DB_TABLE");
+          node.setPrimarySourceFqn(entityFqn);
+          node.setUsageCount(1);
+          byTermId.put(termId, node);
+        }
+      }
+    }
+
+    return new ArrayList<>(byTermId.values());
+  }
+
+  private BusinessTermNode createBusinessTermNode(BusinessTermData data) {
+    BusinessTermNode node = new BusinessTermNode(data.termId);
+    node.setDisplayName(data.displayName);
+    node.setDefinition(data.javadocSeed);
+    String criticality = seedCriticality(data.termId);
+    node.setCriticality(criticality);
+    node.setMigrationSensitivity(criticality.equals("High") ? "Moderate" : "None");
+    node.setCurated(false);
+    node.setStatus("auto");
+    node.setSourceType(data.sourceType);
+    node.setPrimarySourceFqn(data.primarySourceFqn);
+    node.setUsageCount(data.allSourceFqns.size());
+    return node;
+  }
+
+  /**
+   * Heuristic criticality seed: returns "High" for financial and security-related terms, "Low" for
+   * all others.
+   *
+   * @param termId lowercased term identifier
+   * @return "High" or "Low"
+   */
+  static String seedCriticality(String termId) {
+    // Financial keywords
+    Set<String> financial = Set.of(
+        "payment", "invoice", "billing", "ledger", "transaction", "price", "cost",
+        "fee", "amount", "currency", "refund", "credit", "debit");
+    // Auth/security keywords
+    Set<String> security = Set.of(
+        "auth", "login", "password", "credential", "token", "session", "permission",
+        "role", "encrypt", "decrypt", "security", "access");
+    return (financial.contains(termId) || security.contains(termId)) ? "High" : "Low";
+  }
+
+  private static String capitalize(String word) {
+    if (word == null || word.isEmpty()) return word;
+    return Character.toUpperCase(word.charAt(0)) + word.substring(1).toLowerCase();
   }
 }

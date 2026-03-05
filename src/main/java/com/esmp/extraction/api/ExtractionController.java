@@ -65,6 +65,7 @@ public class ExtractionController {
             result.packageCount(),
             result.moduleCount(),
             result.tableCount(),
+            result.businessTermCount(),
             result.errorCount(),
             result.errors(),
             result.auditReport(),
