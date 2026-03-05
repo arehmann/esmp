@@ -11,10 +11,11 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * REST controller for querying the code knowledge graph.
  *
- * <p>Exposes 4 read-only endpoints:
+ * <p>Exposes 5 read-only endpoints:
  * <ol>
  *   <li>GET /api/graph/class/{fqn} — structural context (methods, fields, dependencies, annotations)
  *   <li>GET /api/graph/class/{fqn}/inheritance — full inheritance chain via EXTENDS traversal
+ *   <li>GET /api/graph/class/{fqn}/dependency-cone — transitive closure via all 7 structural edges
  *   <li>GET /api/graph/repository/{fqn}/service-dependents — transitive service dependents
  *   <li>GET /api/graph/search?name=X — class search by simple name substring
  * </ol>
@@ -61,6 +62,31 @@ public class GraphQueryController {
   public ResponseEntity<InheritanceChainResponse> getInheritanceChain(
       @PathVariable String fqn) {
     return ResponseEntity.ok(graphQueryService.findInheritanceChain(fqn));
+  }
+
+  /**
+   * Returns all nodes transitively reachable from the focal class via any structural relationship.
+   *
+   * <p>Traverses all 7 structural relationship types (DEPENDS_ON, EXTENDS, IMPLEMENTS, CALLS,
+   * BINDS_TO, QUERIES, MAPS_TO_TABLE) up to 10 hops.
+   *
+   * <p>Returns 404 if the focal class does not exist. Returns 200 with empty coneNodes and
+   * coneSize 0 if the focal class exists but has no outgoing structural edges.
+   *
+   * <p>This endpoint is designed for reuse by Phase 11 (RAG Pipeline) for retrieval context
+   * scoping — the cone defines the set of nodes whose embeddings should be included when answering
+   * queries about the focal class.
+   *
+   * @param fqn fully qualified class name of the focal node
+   * @return 200 with {@link DependencyConeResponse}, or 404 if no class with that FQN exists
+   */
+  @GetMapping("/class/{fqn:.+}/dependency-cone")
+  public ResponseEntity<DependencyConeResponse> getDependencyCone(
+      @PathVariable String fqn) {
+    return graphQueryService
+        .findDependencyCone(fqn)
+        .map(ResponseEntity::ok)
+        .orElse(ResponseEntity.notFound().build());
   }
 
   /**

@@ -4,6 +4,8 @@ import com.esmp.graph.api.ClassStructureResponse;
 import com.esmp.graph.api.ClassStructureResponse.DependencySummary;
 import com.esmp.graph.api.ClassStructureResponse.FieldSummary;
 import com.esmp.graph.api.ClassStructureResponse.MethodSummary;
+import com.esmp.graph.api.DependencyConeResponse;
+import com.esmp.graph.api.DependencyConeResponse.ConeNode;
 import com.esmp.graph.api.DependencyResponse;
 import com.esmp.graph.api.DependencyResponse.ServiceEntry;
 import com.esmp.graph.api.InheritanceChainResponse;
@@ -310,6 +312,85 @@ public class GraphQueryService {
             .collect(Collectors.toList());
 
     return new SearchResponse(name, results);
+  }
+
+  /**
+   * Finds all nodes transitively reachable from the focal class via any structural relationship.
+   *
+   * <p>Traverses all 7 structural relationship types (DEPENDS_ON, EXTENDS, IMPLEMENTS, CALLS,
+   * BINDS_TO, QUERIES, MAPS_TO_TABLE) up to 10 hops using a single variable-length multi-
+   * relationship Cypher path — native Neo4j 5.x syntax, no APOC required.
+   *
+   * <p>If the focal class exists but has no outgoing edges, the OPTIONAL MATCH produces null
+   * reachable nodes. {@code collect(DISTINCT reachable)} filters those nulls, so coneSize will be
+   * 0 and coneNodes will be empty — this is correct behaviour for isolated classes.
+   *
+   * @param fqn fully qualified name of the focal class
+   * @return dependency cone response, or empty Optional if the focal class does not exist
+   */
+  public Optional<DependencyConeResponse> findDependencyCone(String fqn) {
+    String cypher =
+        """
+        MATCH (focal:JavaClass {fullyQualifiedName: $fqn})
+        OPTIONAL MATCH (focal)-[:DEPENDS_ON|EXTENDS|IMPLEMENTS|CALLS|BINDS_TO|QUERIES|MAPS_TO_TABLE*1..10]->(reachable)
+        WITH focal, collect(DISTINCT reachable) AS reachableNodes
+        RETURN focal.fullyQualifiedName AS focalFqn,
+               [n IN reachableNodes |
+                   CASE
+                       WHEN n:JavaClass      THEN {fqn: n.fullyQualifiedName, labels: labels(n)}
+                       WHEN n:JavaMethod     THEN {fqn: n.methodId,           labels: labels(n)}
+                       WHEN n:JavaField      THEN {fqn: n.fieldId,            labels: labels(n)}
+                       WHEN n:JavaAnnotation THEN {fqn: n.fullyQualifiedName, labels: labels(n)}
+                       WHEN n:JavaPackage    THEN {fqn: n.packageName,        labels: labels(n)}
+                       WHEN n:JavaModule     THEN {fqn: n.moduleName,         labels: labels(n)}
+                       WHEN n:DBTable        THEN {fqn: n.tableName,          labels: labels(n)}
+                       ELSE                       {fqn: 'unknown',            labels: labels(n)}
+                   END
+               ] AS coneNodes,
+               size(reachableNodes) AS coneSize
+        """;
+
+    Collection<Map<String, Object>> rows = neo4jClient
+        .query(cypher)
+        .bind(fqn).to("fqn")
+        .fetch()
+        .all();
+
+    if (rows.isEmpty()) {
+      // Focal class does not exist in the graph
+      return Optional.empty();
+    }
+
+    Map<String, Object> row = rows.iterator().next();
+
+    String focalFqn = (String) row.get("focalFqn");
+
+    // coneNodes is a List<Map<String, Object>> where each map has "fqn" (String) and "labels" (List)
+    @SuppressWarnings("unchecked")
+    List<Map<String, Object>> rawConeNodes =
+        row.get("coneNodes") instanceof List<?> list
+            ? (List<Map<String, Object>>) list
+            : List.of();
+
+    List<ConeNode> coneNodes = rawConeNodes.stream()
+        .filter(nodeMap -> nodeMap != null && nodeMap.get("fqn") != null)
+        .map(nodeMap -> {
+          String nodeFqn = (String) nodeMap.get("fqn");
+          @SuppressWarnings("unchecked")
+          List<String> labels =
+              nodeMap.get("labels") instanceof List<?> labelList
+                  ? labelList.stream()
+                      .filter(l -> l instanceof String)
+                      .map(l -> (String) l)
+                      .collect(Collectors.toList())
+                  : new ArrayList<>();
+          return new ConeNode(nodeFqn, labels);
+        })
+        .collect(Collectors.toList());
+
+    int coneSize = row.get("coneSize") instanceof Long l ? l.intValue() : coneNodes.size();
+
+    return Optional.of(new DependencyConeResponse(focalFqn, coneNodes, coneSize));
   }
 
   // --- helper methods ---
