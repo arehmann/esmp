@@ -56,9 +56,9 @@
 
 ### Smart Chunking & Vector Indexing
 
-- [ ] **VEC-01**: System chunks code by semantic unit (class, service method, validation block, UI block, business rule)
-- [ ] **VEC-02**: Each chunk is enriched with graph neighbors, domain terms, risk score (structural + domain-aware), and migration state
-- [ ] **VEC-03**: System indexes enriched chunks into Qdrant using open-source embedding model
+- [x] **VEC-01**: System chunks code by semantic unit (class, service method, validation block, UI block, business rule)
+- [x] **VEC-02**: Each chunk is enriched with graph neighbors, domain terms, risk score (structural + domain-aware), and migration state
+- [x] **VEC-03**: System indexes enriched chunks into Qdrant using open-source embedding model
 - [ ] **VEC-04**: System supports incremental re-indexing of changed files
 
 ### Golden Module Pilot
