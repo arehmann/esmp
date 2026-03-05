@@ -69,6 +69,12 @@ public class Neo4jSchemaInitializer implements ApplicationRunner {
         "CREATE CONSTRAINT business_term_id_unique IF NOT EXISTS"
             + " FOR (n:BusinessTerm) REQUIRE n.termId IS UNIQUE");
 
+    // Phase 6: structural risk score range index for efficient heatmap ORDER BY queries
+    createConstraint(
+        "java_class_risk_score",
+        "CREATE INDEX java_class_risk_score IF NOT EXISTS"
+            + " FOR (n:JavaClass) ON (n.structuralRiskScore)");
+
     log.info("Neo4j uniqueness constraints for AST node types are in place.");
   }
 
