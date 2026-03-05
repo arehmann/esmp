@@ -40,9 +40,9 @@
 
 ### Structural Risk Analysis
 
-- [ ] **RISK-01**: System computes cyclomatic complexity per class/method
+- [x] **RISK-01**: System computes cyclomatic complexity per class/method
 - [ ] **RISK-02**: System computes fan-in and fan-out metrics per class
-- [ ] **RISK-03**: System detects DB write operations per class
+- [x] **RISK-03**: System detects DB write operations per class
 - [ ] **RISK-04**: System produces composite structural risk score per class
 - [ ] **RISK-05**: User can view dependency heatmap sorted by structural risk score
 

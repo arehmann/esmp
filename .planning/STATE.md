@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Phase 6 context gathered
-last_updated: "2026-03-05T10:10:49.278Z"
+stopped_at: Completed 06-structural-risk-analysis 06-01-PLAN.md
+last_updated: "2026-03-05T11:14:31.326Z"
 last_activity: 2026-03-04 — Roadmap created, project initialized
 progress:
   total_phases: 13
   completed_phases: 5
-  total_plans: 16
-  completed_plans: 16
+  total_plans: 18
+  completed_plans: 17
 ---
 
 ---
@@ -143,6 +143,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 05-domain-lexicon P01 | 37min | 2 tasks | 14 files |
 | Phase 05-domain-lexicon P02 | 31min | 2 tasks | 10 files |
 | Phase 05-domain-lexicon P03 | 6min | 1 tasks | 6 files |
+| Phase 06-structural-risk-analysis P01 | 35min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -196,6 +197,9 @@ Recent decisions affecting current work:
 - [Phase 05-domain-lexicon]: ValidationQueryRegistry protected List constructor added for extensibility — LexiconValidationQueryRegistry extends it with super(queries)
 - [Phase 05-domain-lexicon]: SerializablePredicate is in com.vaadin.flow.function package (not .server) — ListDataProvider.setFilter() requires the Vaadin-serializable subtype, not java.util.function.Predicate
 - [Phase 05-domain-lexicon]: LexiconService.findAll() returns List<BusinessTermNode> (not List<BusinessTermResponse>) for Vaadin in-memory ListDataProvider — mutable setters needed for grid item refresh after edit
+- [Phase 06-structural-risk-analysis]: ComplexityVisitor uses Deque<int[]> counter stack for safe per-method CC tracking without leaking state across source files
+- [Phase 06-structural-risk-analysis]: J.Case.getCaseLabels() returns List<J> in OpenRewrite 8.74.3 (not List<Expression>); isDefaultCase() iterates using J type directly
+- [Phase 06-structural-risk-analysis]: structuralRiskScore initialized to 0.0 in mapper; fan-in/out and final score computed via Cypher in Plan 02
 
 ### Pending Todos
 
@@ -208,6 +212,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-05T10:10:49.274Z
-Stopped at: Phase 6 context gathered
-Resume file: .planning/phases/06-structural-risk-analysis/06-CONTEXT.md
+Last session: 2026-03-05T11:14:31.321Z
+Stopped at: Completed 06-structural-risk-analysis 06-01-PLAN.md
+Resume file: None
