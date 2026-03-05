@@ -227,13 +227,15 @@ public class RiskService {
              CASE WHEN toLower(coalesce(c.simpleName, '')) =~ $namePattern THEN 1 ELSE 0 END AS nameHit,
              CASE WHEN ANY(a IN coalesce(c.annotations, []) WHERE toLower(a) =~ $annotPattern) THEN 1 ELSE 0 END AS annotHit,
              CASE WHEN toLower(coalesce(c.packageName, '')) =~ $pkgPattern THEN 1 ELSE 0 END AS pkgHit
+        WITH c, nameHit, annotHit, pkgHit,
+             nameHit  * $nameWeight +
+             annotHit * $annotWeight +
+             CASE WHEN nameHit = 1 AND annotHit = 1 THEN $bothBonus ELSE 0.0 END +
+             pkgHit   * $pkgBoost AS rawScore
         SET c.securitySensitivity = CASE
             WHEN toFloat(nameHit) + toFloat(annotHit) = 0.0 AND pkgHit = 0 THEN 0.0
-            ELSE min(1.0,
-                nameHit  * $nameWeight +
-                annotHit * $annotWeight +
-                CASE WHEN nameHit = 1 AND annotHit = 1 THEN $bothBonus ELSE 0.0 END +
-                pkgHit   * $pkgBoost)
+            WHEN rawScore > 1.0 THEN 1.0
+            ELSE rawScore
             END
         """;
     neo4jClient.query(cypher)
@@ -273,14 +275,16 @@ public class RiskService {
                  WHERE toLower(coalesce(t.termId, '')) =~ $termPattern
                     OR toLower(coalesce(t.displayName, '')) =~ $termPattern
              } THEN 1 ELSE 0 END AS termHit
+        WITH c, nameHit, annotHit, pkgHit, termHit,
+             nameHit  * $nameWeight +
+             annotHit * $annotWeight +
+             CASE WHEN nameHit = 1 AND annotHit = 1 THEN $bothBonus ELSE 0.0 END +
+             pkgHit   * $pkgBoost +
+             termHit  * $termBoost AS rawScore
         SET c.financialInvolvement = CASE
             WHEN toFloat(nameHit) + toFloat(annotHit) + toFloat(pkgHit) + toFloat(termHit) = 0.0 THEN 0.0
-            ELSE min(1.0,
-                nameHit  * $nameWeight +
-                annotHit * $annotWeight +
-                CASE WHEN nameHit = 1 AND annotHit = 1 THEN $bothBonus ELSE 0.0 END +
-                pkgHit   * $pkgBoost +
-                termHit  * $termBoost)
+            WHEN rawScore > 1.0 THEN 1.0
+            ELSE rawScore
             END
         """;
     neo4jClient.query(cypher)
