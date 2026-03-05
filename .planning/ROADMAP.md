@@ -91,7 +91,7 @@ Plans:
   3. No orphan nodes (unreachable from any module root) or duplicate structural nodes exist in the graph
   4. Inheritance chains are complete and transitive repository dependencies are correctly resolved
   5. Graph answers for a known sample module match senior engineer expectations
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 04-01-PLAN.md — Validation framework with 20 canonical Cypher queries, execution service, REST endpoint, and integration tests
@@ -220,7 +220,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 1. Infrastructure | 2/2 | Complete   | 2026-03-04 |
 | 2. AST Extraction | 3/3 | Complete   | 2026-03-04 |
 | 3. Code Knowledge Graph | 6/6 | Complete   | 2026-03-04 |
-| 4. Graph Validation & Canonical Queries | 0/2   | Planning   | - |
+| 4. Graph Validation & Canonical Queries | 1/2 | In Progress|  |
 | 5. Domain Lexicon | 0/TBD | Not started | - |
 | 6. Structural Risk Analysis | 0/TBD | Not started | - |
 | 7. Domain-Aware Risk Analysis | 0/TBD | Not started | - |
