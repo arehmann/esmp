@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 06-structural-risk-analysis 06-01-PLAN.md
-last_updated: "2026-03-05T11:14:31.326Z"
+stopped_at: Completed 06-structural-risk-analysis 06-02-PLAN.md
+last_updated: "2026-03-05T11:54:03.909Z"
 last_activity: 2026-03-04 — Roadmap created, project initialized
 progress:
   total_phases: 13
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 18
-  completed_plans: 17
+  completed_plans: 18
 ---
 
 ---
@@ -144,6 +144,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 05-domain-lexicon P02 | 31min | 2 tasks | 10 files |
 | Phase 05-domain-lexicon P03 | 6min | 1 tasks | 6 files |
 | Phase 06-structural-risk-analysis P01 | 35min | 2 tasks | 7 files |
+| Phase 06-structural-risk-analysis P02 | 50min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -200,6 +201,9 @@ Recent decisions affecting current work:
 - [Phase 06-structural-risk-analysis]: ComplexityVisitor uses Deque<int[]> counter stack for safe per-method CC tracking without leaking state across source files
 - [Phase 06-structural-risk-analysis]: J.Case.getCaseLabels() returns List<J> in OpenRewrite 8.74.3 (not List<Expression>); isDefaultCase() iterates using J type directly
 - [Phase 06-structural-risk-analysis]: structuralRiskScore initialized to 0.0 in mapper; fan-in/out and final score computed via Cypher in Plan 02
+- [Phase 06-structural-risk-analysis]: Fan-in/out computed via Cypher pattern comprehension (size pattern) - avoids OPTIONAL MATCH grouping complexity
+- [Phase 06-structural-risk-analysis]: Composite risk score uses Neo4j log(1+x) for zero-safe log normalization; RiskService MUST run after LinkingService for DEPENDS_ON edges to exist
+- [Phase 06-structural-risk-analysis]: RiskWeightConfig uses @ConfigurationProperties(prefix='esmp.risk.weight') + @Component; Spring relaxed binding maps fan-in YAML key to fanIn field
 
 ### Pending Todos
 
@@ -212,6 +216,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-05T11:14:31.321Z
-Stopped at: Completed 06-structural-risk-analysis 06-01-PLAN.md
+Last session: 2026-03-05T11:54:03.904Z
+Stopped at: Completed 06-structural-risk-analysis 06-02-PLAN.md
 Resume file: None

@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Code Knowledge Graph** - Full structural graph populated with all node types and relationship edges (gap closure in progress) (completed 2026-03-04)
 - [ ] **Phase 4: Graph Validation & Canonical Queries** - Structural graph correctness verified before building semantic layers
 - [x] **Phase 5: Domain Lexicon** - Business term extraction, curation, and graph edge integration — moved early to prevent downstream rework (completed 2026-03-05)
-- [ ] **Phase 6: Structural Risk Analysis** - Cyclomatic complexity, fan-in/out, DB write detection, and composite structural risk scoring
+- [x] **Phase 6: Structural Risk Analysis** - Cyclomatic complexity, fan-in/out, DB write detection, and composite structural risk scoring (completed 2026-03-05)
 - [ ] **Phase 7: Domain-Aware Risk Analysis** - Domain criticality, security sensitivity, financial involvement, and enhanced composite scoring
 - [ ] **Phase 8: Smart Chunking and Vector Indexing** - Semantic code chunks embedded and indexed in Qdrant with incremental re-indexing
 - [ ] **Phase 9: Golden Module Pilot** - End-to-end validation of semantic pipeline on one bounded context before scaling
@@ -126,7 +126,7 @@ Plans:
   3. Every class node is flagged for DB write operations (INSERT/UPDATE/DELETE) detected in its method bodies
   4. Every class node has a composite structural risk score combining complexity, fan-in, fan-out, and DB write presence
   5. User can call a REST endpoint and receive a list of classes sorted by descending structural risk score
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 06-01-PLAN.md — ComplexityVisitor for cyclomatic complexity + DB write detection, accumulator/model/mapper extensions, ExtractionService pipeline wiring
@@ -231,7 +231,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 3. Code Knowledge Graph | 6/6 | Complete   | 2026-03-04 |
 | 4. Graph Validation & Canonical Queries | 1/2 | In Progress|  |
 | 5. Domain Lexicon | 3/3 | Complete   | 2026-03-05 |
-| 6. Structural Risk Analysis | 1/2 | In Progress|  |
+| 6. Structural Risk Analysis | 2/2 | Complete   | 2026-03-05 |
 | 7. Domain-Aware Risk Analysis | 0/TBD | Not started | - |
 | 8. Smart Chunking and Vector Indexing | 0/TBD | Not started | - |
 | 9. Golden Module Pilot | 0/TBD | Not started | - |
