@@ -42,7 +42,7 @@ created: 2026-03-05
 | 06-01-02 | 01 | 1 | RISK-03 | unit | `./gradlew test --tests "*ComplexityVisitorTest"` | ❌ W0 | ⬜ pending |
 | 06-02-01 | 02 | 2 | RISK-02 | integration | `./gradlew test --tests "*RiskServiceIntegrationTest"` | ❌ W0 | ⬜ pending |
 | 06-02-02 | 02 | 2 | RISK-04 | integration | `./gradlew test --tests "*RiskServiceIntegrationTest"` | ❌ W0 | ⬜ pending |
-| 06-03-01 | 03 | 2 | RISK-05 | integration | `./gradlew test --tests "*RiskControllerIntegrationTest"` | ❌ W0 | ⬜ pending |
+| 06-02-03 | 02 | 2 | RISK-05 | integration | `./gradlew test --tests "*RiskServiceIntegrationTest"` | ❌ W0 | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -51,8 +51,7 @@ created: 2026-03-05
 ## Wave 0 Requirements
 
 - [ ] `src/test/java/com/esmp/extraction/visitor/ComplexityVisitorTest.java` — stubs for RISK-01, RISK-03
-- [ ] `src/test/java/com/esmp/graph/application/RiskServiceIntegrationTest.java` — stubs for RISK-02, RISK-04
-- [ ] `src/test/java/com/esmp/graph/api/RiskControllerIntegrationTest.java` — stubs for RISK-05
+- [ ] `src/test/java/com/esmp/graph/application/RiskServiceIntegrationTest.java` — stubs for RISK-02, RISK-04, RISK-05
 
 *All three follow established patterns: ComplexityVisitorTest follows JpaPatternVisitorTest (inline fixtures), integration tests follow LexiconIntegrationTest (@SpringBootTest + Testcontainers).*
 
