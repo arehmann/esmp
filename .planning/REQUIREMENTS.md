@@ -63,9 +63,9 @@
 
 ### Golden Module Pilot
 
-- [ ] **GMP-01**: One bounded context selected and fully processed through chunking, domain enrichment, and vector indexing
-- [ ] **GMP-02**: RAG retrieval for pilot module returns contextually relevant results validated by senior engineers
-- [ ] **GMP-03**: Risk computation and migration recommendation for pilot module aligns with expert expectations
+- [x] **GMP-01**: One bounded context selected and fully processed through chunking, domain enrichment, and vector indexing
+- [x] **GMP-02**: RAG retrieval for pilot module returns contextually relevant results validated by senior engineers
+- [x] **GMP-03**: Risk computation and migration recommendation for pilot module aligns with expert expectations
 
 ### Continuous Indexing
 
