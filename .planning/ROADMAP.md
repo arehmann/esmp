@@ -175,7 +175,11 @@ Plans:
   2. RAG retrieval for the pilot module returns contextually relevant results validated by senior engineers
   3. Risk computation and migration recommendation for the pilot module aligns with expert expectations
   4. Any pipeline issues discovered are documented and fixed before proceeding to full-scale execution
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 09-01-PLAN.md — Synthetic pilot fixtures (20 classes), PilotService (recommendation + validation), VectorSearchService, PilotValidationQueryRegistry, response records
+- [ ] 09-02-PLAN.md — PilotController + VectorSearchController REST endpoints, full pipeline integration tests, golden regression tests
 
 ### Phase 10: Continuous Indexing
 **Goal**: As the legacy codebase undergoes active development, the knowledge graph and vector store stay current without requiring manual re-runs
@@ -242,7 +246,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 6. Structural Risk Analysis | 2/2 | Complete   | 2026-03-05 |
 | 7. Domain-Aware Risk Analysis | 2/2 | Complete   | 2026-03-05 |
 | 8. Smart Chunking and Vector Indexing | 1/2 | In Progress|  |
-| 9. Golden Module Pilot | 0/TBD | Not started | - |
+| 9. Golden Module Pilot | 0/2 | Not started | - |
 | 10. Continuous Indexing | 0/TBD | Not started | - |
 | 11. RAG Pipeline | 0/TBD | Not started | - |
 | 12. Governance Dashboard | 0/TBD | Not started | - |
