@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Code Knowledge Graph** - Full structural graph populated with all node types and relationship edges (gap closure in progress) (completed 2026-03-04)
 - [ ] **Phase 4: Graph Validation & Canonical Queries** - Structural graph correctness verified before building semantic layers
 - [x] **Phase 5: Domain Lexicon** - Business term extraction, curation, and graph edge integration — moved early to prevent downstream rework (completed 2026-03-05)
-- [x] **Phase 6: Structural Risk Analysis** - Cyclomatic complexity, fan-in/out, DB write detection, and composite structural risk scoring (completed 2026-03-05)
+- [x] **Phase 6: Structural Risk Analysis** - Cyclomatic complexity, fan-in/out, DB write detection, and composite structural risk scoring (completed 2026-03-05)
 - [x] **Phase 7: Domain-Aware Risk Analysis** - Domain criticality, security sensitivity, financial involvement, and enhanced composite scoring (completed 2026-03-05)
 - [ ] **Phase 8: Smart Chunking and Vector Indexing** - Semantic code chunks embedded and indexed in Qdrant with incremental re-indexing
 - [ ] **Phase 9: Golden Module Pilot** - End-to-end validation of semantic pipeline on one bounded context before scaling
@@ -159,7 +159,11 @@ Plans:
   3. Chunks are embedded using a local ONNX model and stored in Qdrant with their enriched payloads
   4. When a source file changes, only its affected chunks are re-embedded and updated in Qdrant (not a full collection rebuild)
   5. Qdrant collection is queryable by embedding similarity and returns chunks with their enrichment payloads
-**Plans**: TBD
+**Plans:** 1/2 plans executed
+
+Plans:
+- [ ] 08-01-PLAN.md — Spring AI transformer dependency, CodeChunk domain model, QdrantCollectionInitializer, VectorConfig, ChunkIdGenerator, ChunkingService with Neo4j enrichment
+- [ ] 08-02-PLAN.md — VectorIndexingService (embed + upsert + incremental reindex), VectorIndexController REST API, VectorValidationQueryRegistry, integration tests
 
 ### Phase 9: Golden Module Pilot
 **Goal**: Semantic pipeline is validated end-to-end on one bounded context before scaling to the full codebase
@@ -237,7 +241,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 5. Domain Lexicon | 3/3 | Complete   | 2026-03-05 |
 | 6. Structural Risk Analysis | 2/2 | Complete   | 2026-03-05 |
 | 7. Domain-Aware Risk Analysis | 2/2 | Complete   | 2026-03-05 |
-| 8. Smart Chunking and Vector Indexing | 0/TBD | Not started | - |
+| 8. Smart Chunking and Vector Indexing | 1/2 | In Progress|  |
 | 9. Golden Module Pilot | 0/TBD | Not started | - |
 | 10. Continuous Indexing | 0/TBD | Not started | - |
 | 11. RAG Pipeline | 0/TBD | Not started | - |

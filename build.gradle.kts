@@ -23,6 +23,7 @@ repositories {
 dependencyManagement {
     imports {
         mavenBom(libs.vaadin.bom.get().toString())
+        mavenBom(libs.spring.ai.bom.get().toString())
     }
 }
 
@@ -40,6 +41,7 @@ dependencies {
     implementation(libs.openrewrite.java)
     implementation(libs.openrewrite.java.jdk21)
     implementation(libs.vaadin.spring.boot.starter)
+    implementation(libs.spring.ai.starter.transformers)
 
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.vaadin.server)
