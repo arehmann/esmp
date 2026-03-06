@@ -15,11 +15,11 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Infrastructure** - Docker Compose environment with Neo4j, Qdrant, MySQL, and Spring Boot skeleton running (completed 2026-03-04)
 - [x] **Phase 2: AST Extraction** - Parse Java/Vaadin 7 source into structured graph nodes using OpenRewrite LST (completed 2026-03-04)
 - [x] **Phase 3: Code Knowledge Graph** - Full structural graph populated with all node types and relationship edges (gap closure in progress) (completed 2026-03-04)
-- [ ] **Phase 4: Graph Validation & Canonical Queries** - Structural graph correctness verified before building semantic layers
+- [x] **Phase 4: Graph Validation & Canonical Queries** - Structural graph correctness verified before building semantic layers (completed 2026-03-05)
 - [x] **Phase 5: Domain Lexicon** - Business term extraction, curation, and graph edge integration — moved early to prevent downstream rework (completed 2026-03-05)
 - [x] **Phase 6: Structural Risk Analysis** - Cyclomatic complexity, fan-in/out, DB write detection, and composite structural risk scoring (completed 2026-03-05)
 - [x] **Phase 7: Domain-Aware Risk Analysis** - Domain criticality, security sensitivity, financial involvement, and enhanced composite scoring (completed 2026-03-05)
-- [ ] **Phase 8: Smart Chunking and Vector Indexing** - Semantic code chunks embedded and indexed in Qdrant with incremental re-indexing
+- [x] **Phase 8: Smart Chunking and Vector Indexing** - Semantic code chunks embedded and indexed in Qdrant with incremental re-indexing (completed 2026-03-06)
 - [ ] **Phase 9: Golden Module Pilot** - End-to-end validation of semantic pipeline on one bounded context before scaling
 - [ ] **Phase 10: Continuous Indexing** - CI-triggered incremental graph and vector updates on changed files only
 - [ ] **Phase 11: RAG Pipeline** - Multi-layer GraphRAG retrieval combining graph expansion and embedding similarity
@@ -78,8 +78,8 @@ Plans:
 - [x] 03-02-PLAN.md — DependencyVisitor, JpaPatternVisitor, stereotype detection, mapper extensions, LinkingService, ExtractionService wiring
 - [x] 03-03-PLAN.md — Graph query REST API (structural context, inheritance chain, transitive dependencies, search)
 - [x] 03-04-PLAN.md — Gap closure: BINDS_TO edge detection in VaadinPatternVisitor and materialization in LinkingService
-- [ ] 03-05-PLAN.md — Gap closure: Stereotype label simple-name fallback and searchByName label hydration fix
-- [ ] 03-06-PLAN.md — Gap closure: HAS_ANNOTATION FQN mismatch, QUERIES repository-to-entity resolution, BINDS_TO simple-name fallback
+- [x] 03-05-PLAN.md — Gap closure: Stereotype label simple-name fallback and searchByName label hydration fix
+- [x] 03-06-PLAN.md — Gap closure: HAS_ANNOTATION FQN mismatch, QUERIES repository-to-entity resolution, BINDS_TO simple-name fallback
 
 ### Phase 4: Graph Validation & Canonical Queries
 **Goal**: Structural graph is verified correct before building semantic layers on top of it
@@ -91,11 +91,11 @@ Plans:
   3. No orphan nodes (unreachable from any module root) or duplicate structural nodes exist in the graph
   4. Inheritance chains are complete and transitive repository dependencies are correctly resolved
   5. Graph answers for a known sample module match senior engineer expectations
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 04-01-PLAN.md — Validation framework with 20 canonical Cypher queries, execution service, REST endpoint, and integration tests
-- [ ] 04-02-PLAN.md — Dependency cone REST endpoint with multi-relationship transitive traversal and integration tests
+- [x] 04-01-PLAN.md — Validation framework with 20 canonical Cypher queries, execution service, REST endpoint, and integration tests
+- [x] 04-02-PLAN.md — Dependency cone REST endpoint with multi-relationship transitive traversal and integration tests
 
 ### Phase 5: Domain Lexicon
 **Goal**: Business terms extracted from the codebase are stored in the graph with curated definitions, and developers can view and edit the lexicon
@@ -111,9 +111,9 @@ Plans:
 **Plans:** 3/3 plans complete
 
 Plans:
-- [ ] 05-01-PLAN.md — BusinessTermNode model, LexiconVisitor for term extraction from class names/enums/Javadoc/DB schema, accumulator/mapper/service wiring
-- [ ] 05-02-PLAN.md — USES_TERM and DEFINES_RULE graph edges via LinkingService, LexiconService, LexiconController REST API, LexiconValidationQueryRegistry
-- [ ] 05-03-PLAN.md — Vaadin 24 Gradle setup, LexiconView grid UI with TermEditorDialog for inline curation
+- [x] 05-01-PLAN.md — BusinessTermNode model, LexiconVisitor for term extraction from class names/enums/Javadoc/DB schema, accumulator/mapper/service wiring
+- [x] 05-02-PLAN.md — USES_TERM and DEFINES_RULE graph edges via LinkingService, LexiconService, LexiconController REST API, LexiconValidationQueryRegistry
+- [x] 05-03-PLAN.md — Vaadin 24 Gradle setup, LexiconView grid UI with TermEditorDialog for inline curation
 
 ### Phase 6: Structural Risk Analysis
 **Goal**: Every class in the graph has structural risk metrics and a composite structural risk score
@@ -129,8 +129,8 @@ Plans:
 **Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 06-01-PLAN.md — ComplexityVisitor for cyclomatic complexity + DB write detection, accumulator/model/mapper extensions, ExtractionService pipeline wiring
-- [ ] 06-02-PLAN.md — RiskService (fan-in/out Cypher + composite score), RiskController REST API, RiskWeightConfig, RiskValidationQueryRegistry, integration tests
+- [x] 06-01-PLAN.md — ComplexityVisitor for cyclomatic complexity + DB write detection, accumulator/model/mapper extensions, ExtractionService pipeline wiring
+- [x] 06-02-PLAN.md — RiskService (fan-in/out Cypher + composite score), RiskController REST API, RiskWeightConfig, RiskValidationQueryRegistry, integration tests
 
 ### Phase 7: Domain-Aware Risk Analysis
 **Goal**: Risk scoring is enhanced with domain criticality, security sensitivity, and financial involvement for more accurate migration prioritization
@@ -146,8 +146,8 @@ Plans:
 **Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 07-01-PLAN.md — Domain risk model extensions (ClassNode, RiskWeightConfig, application.yml) and 5 Cypher-based domain score computation methods in RiskService
-- [ ] 07-02-PLAN.md — API record extensions, sortBy heatmap parameter, DomainRiskValidationQueryRegistry, integration tests for all DRISK requirements
+- [x] 07-01-PLAN.md — Domain risk model extensions (ClassNode, RiskWeightConfig, application.yml) and 5 Cypher-based domain score computation methods in RiskService
+- [x] 07-02-PLAN.md — API record extensions, sortBy heatmap parameter, DomainRiskValidationQueryRegistry, integration tests for all DRISK requirements
 
 ### Phase 8: Smart Chunking and Vector Indexing
 **Goal**: Enriched semantic code chunks are indexed in Qdrant and incremental re-indexing updates only changed files
@@ -159,11 +159,11 @@ Plans:
   3. Chunks are embedded using a local ONNX model and stored in Qdrant with their enriched payloads
   4. When a source file changes, only its affected chunks are re-embedded and updated in Qdrant (not a full collection rebuild)
   5. Qdrant collection is queryable by embedding similarity and returns chunks with their enrichment payloads
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 08-01-PLAN.md — Spring AI transformer dependency, CodeChunk domain model, QdrantCollectionInitializer, VectorConfig, ChunkIdGenerator, ChunkingService with Neo4j enrichment
-- [ ] 08-02-PLAN.md — VectorIndexingService (embed + upsert + incremental reindex), VectorIndexController REST API, VectorValidationQueryRegistry, integration tests
+- [x] 08-01-PLAN.md — Spring AI transformer dependency, CodeChunk domain model, QdrantCollectionInitializer, VectorConfig, ChunkIdGenerator, ChunkingService with Neo4j enrichment
+- [x] 08-02-PLAN.md — VectorIndexingService (embed + upsert + incremental reindex), VectorIndexController REST API, VectorValidationQueryRegistry, integration tests
 
 ### Phase 9: Golden Module Pilot
 **Goal**: Semantic pipeline is validated end-to-end on one bounded context before scaling to the full codebase
@@ -238,15 +238,15 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Infrastructure | 2/2 | Complete   | 2026-03-04 |
-| 2. AST Extraction | 3/3 | Complete   | 2026-03-04 |
-| 3. Code Knowledge Graph | 6/6 | Complete   | 2026-03-04 |
-| 4. Graph Validation & Canonical Queries | 1/2 | In Progress|  |
-| 5. Domain Lexicon | 3/3 | Complete   | 2026-03-05 |
-| 6. Structural Risk Analysis | 2/2 | Complete   | 2026-03-05 |
-| 7. Domain-Aware Risk Analysis | 2/2 | Complete   | 2026-03-05 |
-| 8. Smart Chunking and Vector Indexing | 1/2 | In Progress|  |
-| 9. Golden Module Pilot | 0/2 | Not started | - |
+| 1. Infrastructure | 2/2 | Complete | 2026-03-04 |
+| 2. AST Extraction | 3/3 | Complete | 2026-03-04 |
+| 3. Code Knowledge Graph | 6/6 | Complete | 2026-03-04 |
+| 4. Graph Validation & Canonical Queries | 2/2 | Complete | 2026-03-05 |
+| 5. Domain Lexicon | 3/3 | Complete | 2026-03-05 |
+| 6. Structural Risk Analysis | 2/2 | Complete | 2026-03-05 |
+| 7. Domain-Aware Risk Analysis | 2/2 | Complete | 2026-03-05 |
+| 8. Smart Chunking and Vector Indexing | 2/2 | Complete | 2026-03-06 |
+| 9. Golden Module Pilot | 0/2 | Planned | - |
 | 10. Continuous Indexing | 0/TBD | Not started | - |
 | 11. RAG Pipeline | 0/TBD | Not started | - |
 | 12. Governance Dashboard | 0/TBD | Not started | - |
