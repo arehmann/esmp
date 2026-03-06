@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 09-golden-module-pilot 09-01-PLAN.md
-last_updated: "2026-03-06T09:24:37.361Z"
+stopped_at: Completed 09-golden-module-pilot 09-02-PLAN.md
+last_updated: "2026-03-06T09:36:48.204Z"
 last_activity: 2026-03-04 — Roadmap created, project initialized
 progress:
   total_phases: 13
-  completed_phases: 8
+  completed_phases: 9
   total_plans: 24
-  completed_plans: 23
+  completed_plans: 24
   percent: 96
 ---
 
@@ -196,6 +196,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 08-smart-chunking-vector-indexing P01 | 15min | 2 tasks | 13 files |
 | Phase 08-smart-chunking-vector-indexing P02 | 108min | 2 tasks | 5 files |
 | Phase 09-golden-module-pilot P01 | 6min | 2 tasks | 29 files |
+| Phase 09-golden-module-pilot P02 | 35min | 1 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -266,6 +267,8 @@ Recent decisions affecting current work:
 - [Phase 09-golden-module-pilot]: Synthetic pilot fixtures use package com.esmp.pilot so ChunkingService.deriveModule() returns 'pilot'
 - [Phase 09-golden-module-pilot]: Module-scoped validation checks use PilotService.Neo4jClient.bind() not static registry Cypher — registry only holds global violation queries
 - [Phase 09-golden-module-pilot]: Qdrant module chunk count uses scroll-based pagination with module payload filter — countAsync not available in this codebase
+- [Phase 09-golden-module-pilot]: VectorSearchController validates blank query inline (returns 400) not via exception propagation
+- [Phase 09-golden-module-pilot]: Integration tests use static setUpDone flag + @BeforeEach guard to avoid @TestInstance(PER_CLASS) + @TempDir + Testcontainers context startup ordering issue
 
 ### Pending Todos
 
@@ -278,6 +281,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-06T09:24:37.355Z
-Stopped at: Completed 09-golden-module-pilot 09-01-PLAN.md
+Last session: 2026-03-06T09:36:48.199Z
+Stopped at: Completed 09-golden-module-pilot 09-02-PLAN.md
 Resume file: None
