@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 10-continuous-indexing 10-01-PLAN.md
-last_updated: "2026-03-18T09:24:26.402Z"
+stopped_at: Completed 10-continuous-indexing 10-02-PLAN.md
+last_updated: "2026-03-18T09:52:24.596Z"
 last_activity: 2026-03-04 — Roadmap created, project initialized
 progress:
   total_phases: 13
-  completed_phases: 9
+  completed_phases: 10
   total_plans: 26
-  completed_plans: 25
+  completed_plans: 26
 ---
 
 ---
@@ -213,6 +213,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 09-golden-module-pilot P01 | 6min | 2 tasks | 29 files |
 | Phase 09-golden-module-pilot P02 | 35min | 1 tasks | 4 files |
 | Phase 10-continuous-indexing P01 | 5min | 2 tasks | 5 files |
+| Phase 10-continuous-indexing P02 | 24min | 2 tasks | 106 files |
 
 ## Accumulated Context
 
@@ -287,6 +288,8 @@ Recent decisions affecting current work:
 - [Phase 09-golden-module-pilot]: Integration tests use static setUpDone flag + @BeforeEach guard to avoid @TestInstance(PER_CLASS) + @TempDir + Testcontainers context startup ordering issue
 - [Phase 10-continuous-indexing]: Separate @Transactional methods for delete and extract-persist steps to avoid SDN session-cache version conflicts
 - [Phase 10-continuous-indexing]: chunkByFqns() limits Neo4j Cypher to WHERE c.fullyQualifiedName IN $fqns for SLO-03 selective re-embedding
+- [Phase Phase 10-continuous-indexing]: Raw Cypher MERGE bypasses SDN @Version conflict for shared nodes (Annotation/Package/Module/DBTable) in incremental re-extractions
+- [Phase Phase 10-continuous-indexing]: Pre-delete stale ClassNode before re-extraction prevents OptimisticLockingFailureException on @Version fields
 
 ### Pending Todos
 
@@ -299,6 +302,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T09:24:26.396Z
-Stopped at: Completed 10-continuous-indexing 10-01-PLAN.md
+Last session: 2026-03-18T09:52:24.590Z
+Stopped at: Completed 10-continuous-indexing 10-02-PLAN.md
 Resume file: None
