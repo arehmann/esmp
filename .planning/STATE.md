@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Phase 10 context gathered
-last_updated: "2026-03-06T12:18:58.695Z"
+stopped_at: Completed 10-continuous-indexing 10-01-PLAN.md
+last_updated: "2026-03-18T09:24:26.402Z"
 last_activity: 2026-03-04 — Roadmap created, project initialized
 progress:
   total_phases: 13
   completed_phases: 9
-  total_plans: 24
-  completed_plans: 24
+  total_plans: 26
+  completed_plans: 25
 ---
 
 ---
@@ -212,6 +212,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 08-smart-chunking-vector-indexing P02 | 108min | 2 tasks | 5 files |
 | Phase 09-golden-module-pilot P01 | 6min | 2 tasks | 29 files |
 | Phase 09-golden-module-pilot P02 | 35min | 1 tasks | 4 files |
+| Phase 10-continuous-indexing P01 | 5min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -284,6 +285,8 @@ Recent decisions affecting current work:
 - [Phase 09-golden-module-pilot]: Qdrant module chunk count uses scroll-based pagination with module payload filter — countAsync not available in this codebase
 - [Phase 09-golden-module-pilot]: VectorSearchController validates blank query inline (returns 400) not via exception propagation
 - [Phase 09-golden-module-pilot]: Integration tests use static setUpDone flag + @BeforeEach guard to avoid @TestInstance(PER_CLASS) + @TempDir + Testcontainers context startup ordering issue
+- [Phase 10-continuous-indexing]: Separate @Transactional methods for delete and extract-persist steps to avoid SDN session-cache version conflicts
+- [Phase 10-continuous-indexing]: chunkByFqns() limits Neo4j Cypher to WHERE c.fullyQualifiedName IN $fqns for SLO-03 selective re-embedding
 
 ### Pending Todos
 
@@ -296,6 +299,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-06T12:18:58.689Z
-Stopped at: Phase 10 context gathered
-Resume file: .planning/phases/10-continuous-indexing/10-CONTEXT.md
+Last session: 2026-03-18T09:24:26.396Z
+Stopped at: Completed 10-continuous-indexing 10-01-PLAN.md
+Resume file: None
