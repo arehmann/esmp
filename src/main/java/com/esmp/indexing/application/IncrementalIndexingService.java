@@ -272,6 +272,26 @@ public class IncrementalIndexingService {
         "Hash filter: {} files to extract, {} skipped (unchanged), {} deleted.",
         trulyChangedPaths.size(), classesSkipped, classesDeleted);
 
+    // Step 3b — Delete stale ClassNodes for changed files before re-extracting.
+    // This prevents SDN @Version OptimisticLockingFailureException when a ClassNode already
+    // exists in Neo4j (version > 0) and saveAll() tries to MERGE a new transient entity
+    // (version = null) that the session cache interprets as a CREATE rather than an UPDATE.
+    if (!trulyChangedPaths.isEmpty()) {
+      List<String> changedRelativePaths = trulyChangedPaths.stream()
+          .map(p -> FileHashUtil.relativize(sourceRootPath, p))
+          .toList();
+      List<String> changedFqnsToDelete = resolveFqnsForPaths(changedRelativePaths);
+      if (!changedFqnsToDelete.isEmpty()) {
+        log.info("Pre-deleting {} stale ClassNodes for changed files before re-extraction: {}",
+            changedFqnsToDelete.size(), changedFqnsToDelete);
+        DeleteResult preDeleteResult = deleteClassesTransactional(changedFqnsToDelete);
+        errors.addAll(preDeleteResult.errors());
+        log.info("Pre-delete complete: {} nodes removed.", preDeleteResult.deletedCount());
+      } else {
+        log.info("No stale ClassNodes found for changed relative paths: {}", changedRelativePaths);
+      }
+    }
+
     // Step 4 — Parse and persist (separate TX)
     ExtractionAccumulator accumulator = new ExtractionAccumulator();
     int nodesCreated = 0;
@@ -466,7 +486,15 @@ public class IncrementalIndexingService {
       }
     }
 
-    // Persist all entity types via SDN MERGE
+    // Persist all entity types.
+    //
+    // ClassNode: pre-deleted in Step 3b, so always new — SDN saveAll() is safe.
+    //
+    // AnnotationNode, PackageNode, ModuleNode, DBTableNode: these are shared entities that may
+    // already exist in Neo4j from prior extractions (with @Version > 0). Using SDN saveAll() on a
+    // new transient instance (version=null) triggers an OptimisticLockingFailureException at TX
+    // commit time (SDN's version check: WHERE version = coalesce($v, 0) fails for version > 0).
+    // Fix: use neo4jClient raw Cypher MERGE for shared entity types to bypass the @Version check.
     int nodesCreated = 0;
     int nodesUpdated = 0;
 
@@ -474,20 +502,68 @@ public class IncrementalIndexingService {
     log.info("Persisted {} class nodes", classNodes.size());
     nodesCreated += classNodes.size();
 
-    annotationNodeRepository.saveAll(annotationNodes);
-    log.info("Persisted {} annotation nodes", annotationNodes.size());
+    // AnnotationNode MERGE via raw Cypher — bypasses @Version conflict for existing annotations
+    for (AnnotationNode node : annotationNodes) {
+      neo4jClient.query(
+              "MERGE (a:JavaAnnotation {fullyQualifiedName: $fqn}) "
+                  + "ON CREATE SET a.simpleName = $simpleName, a.packageName = $pkg, "
+                  + "  a.retention = $retention "
+                  + "ON MATCH SET a.simpleName = $simpleName, a.packageName = $pkg, "
+                  + "  a.retention = $retention")
+          .bindAll(Map.of(
+              "fqn", node.getFullyQualifiedName() != null ? node.getFullyQualifiedName() : "",
+              "simpleName", node.getSimpleName() != null ? node.getSimpleName() : "",
+              "pkg", node.getPackageName() != null ? node.getPackageName() : "",
+              "retention", node.getRetention() != null ? node.getRetention() : ""))
+          .run();
+    }
+    log.info("Persisted {} annotation nodes (Cypher MERGE)", annotationNodes.size());
     nodesCreated += annotationNodes.size();
 
-    packageNodeRepository.saveAll(packageNodes);
-    log.info("Persisted {} package nodes", packageNodes.size());
+    // PackageNode MERGE via raw Cypher — bypasses @Version conflict for existing packages
+    for (PackageNode node : packageNodes) {
+      neo4jClient.query(
+              "MERGE (p:JavaPackage {packageName: $name}) "
+                  + "ON CREATE SET p.simpleName = $simpleName, p.moduleName = $moduleName "
+                  + "ON MATCH SET p.simpleName = $simpleName, p.moduleName = $moduleName")
+          .bindAll(Map.of(
+              "name", node.getPackageName() != null ? node.getPackageName() : "",
+              "simpleName", node.getSimpleName() != null ? node.getSimpleName() : "",
+              "moduleName", node.getModuleName() != null ? node.getModuleName() : ""))
+          .run();
+    }
+    log.info("Persisted {} package nodes (Cypher MERGE)", packageNodes.size());
     nodesCreated += packageNodes.size();
 
-    moduleNodeRepository.saveAll(moduleNodes);
-    log.info("Persisted {} module nodes", moduleNodes.size());
+    // ModuleNode MERGE via raw Cypher — bypasses @Version conflict for existing modules
+    for (ModuleNode node : moduleNodes) {
+      neo4jClient.query(
+              "MERGE (m:JavaModule {moduleName: $name}) "
+                  + "ON CREATE SET m.sourceRoot = $sourceRoot, "
+                  + "  m.isMultiModuleSubproject = $multi "
+                  + "ON MATCH SET m.sourceRoot = $sourceRoot, "
+                  + "  m.isMultiModuleSubproject = $multi")
+          .bindAll(Map.of(
+              "name", node.getModuleName() != null ? node.getModuleName() : "",
+              "sourceRoot", node.getSourceRoot() != null ? node.getSourceRoot() : "",
+              "multi", node.isMultiModuleSubproject()))
+          .run();
+    }
+    log.info("Persisted {} module nodes (Cypher MERGE)", moduleNodes.size());
     nodesCreated += moduleNodes.size();
 
-    dbTableNodeRepository.saveAll(dbTableNodes);
-    log.info("Persisted {} DB table nodes", dbTableNodes.size());
+    // DBTableNode MERGE via raw Cypher — bypasses @Version conflict for existing table nodes
+    for (DBTableNode node : dbTableNodes) {
+      neo4jClient.query(
+              "MERGE (t:DBTable {tableName: $name}) "
+                  + "ON CREATE SET t.schemaName = $schema "
+                  + "ON MATCH SET t.schemaName = $schema")
+          .bindAll(Map.of(
+              "name", node.getTableName() != null ? node.getTableName() : "",
+              "schema", node.getSchemaName() != null ? node.getSchemaName() : ""))
+          .run();
+    }
+    log.info("Persisted {} DB table nodes (Cypher MERGE)", dbTableNodes.size());
     nodesCreated += dbTableNodes.size();
 
     // Persist business terms using curated-guard MERGE (LEX-02/LEX-04 compliance)
