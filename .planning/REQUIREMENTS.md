@@ -82,12 +82,12 @@
 
 ### Governance Dashboard
 
-- [ ] **DASH-01**: Dashboard shows % Vaadin 7 APIs remaining per module
-- [ ] **DASH-02**: Dashboard shows dependency graph explorer (interactive)
-- [ ] **DASH-03**: Dashboard shows business concept graph visualization
-- [ ] **DASH-04**: Dashboard shows risk hotspot clusters
-- [ ] **DASH-05**: Dashboard shows lexicon coverage percentage
-- [ ] **DASH-06**: Dashboard shows migration progress heatmap
+- [x] **DASH-01**: Dashboard shows % Vaadin 7 APIs remaining per module
+- [x] **DASH-02**: Dashboard shows dependency graph explorer (interactive)
+- [x] **DASH-03**: Dashboard shows business concept graph visualization
+- [x] **DASH-04**: Dashboard shows risk hotspot clusters
+- [x] **DASH-05**: Dashboard shows lexicon coverage percentage
+- [x] **DASH-06**: Dashboard shows migration progress heatmap
 
 ### Risk-Prioritized Scheduling
 
