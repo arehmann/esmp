@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 12-governance-dashboard 12-01-PLAN.md
-last_updated: "2026-03-18T14:21:44.029Z"
+stopped_at: Completed 12-governance-dashboard 12-02-PLAN.md
+last_updated: "2026-03-18T14:57:57.015Z"
 last_activity: 2026-03-04 — Roadmap created, project initialized
 progress:
   total_phases: 13
   completed_phases: 11
   total_plans: 31
-  completed_plans: 29
+  completed_plans: 30
 ---
 
 ---
@@ -247,6 +247,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 11-rag-pipeline P01 | 2min | 2 tasks | 10 files |
 | Phase 11-rag-pipeline P02 | 35min | 2 tasks | 5 files |
 | Phase 12-governance-dashboard P01 | 7min | 2 tasks | 8 files |
+| Phase 12-governance-dashboard P02 | 34min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -330,6 +331,8 @@ Recent decisions affecting current work:
 - [Phase 11-rag-pipeline]: NL fallback merges cones from top-3 Qdrant hits with Math.min for overlapping FQNs
 - [Phase 12-governance-dashboard]: DashboardService uses Neo4jClient Cypher aggregation exclusively — no Java-side grouping loops
 - [Phase 12-governance-dashboard]: getBusinessTermGraph ORDER BY aliases usageCount in RETURN clause — cannot reference pre-aggregation variable t after collect(DISTINCT)
+- [Phase 12-governance-dashboard]: DashboardView stub created in Plan 02 so MainLayout.class compiles — full implementation in Plan 03
+- [Phase 12-governance-dashboard]: CytoscapeGraph uses executeJs with window.__setCytoscapeData passing element ref for WeakMap lookup instead of callJsFunction
 
 ### Pending Todos
 
@@ -342,6 +345,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T14:21:44.023Z
-Stopped at: Completed 12-governance-dashboard 12-01-PLAN.md
+Last session: 2026-03-18T14:57:57.005Z
+Stopped at: Completed 12-governance-dashboard 12-02-PLAN.md
 Resume file: None

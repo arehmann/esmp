@@ -226,7 +226,7 @@ Plans:
   4. Dashboard highlights risk hotspot clusters (groups of high-risk, highly-coupled classes)
   5. Dashboard shows lexicon coverage percentage (terms with curated definitions vs total extracted terms)
   6. Dashboard shows a migration progress heatmap across all modules with color encoding for migration state
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 - [ ] 12-01-PLAN.md — DashboardService with 6 Neo4j Cypher aggregation queries, DTO records, integration tests
@@ -262,5 +262,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 9. Golden Module Pilot | 2/2 | Complete   | 2026-03-06 |
 | 10. Continuous Indexing | 2/2 | Complete    | 2026-03-18 |
 | 11. RAG Pipeline | 2/2 | Complete    | 2026-03-18 |
-| 12. Governance Dashboard | 1/3 | In Progress|  |
+| 12. Governance Dashboard | 2/3 | In Progress|  |
 | 13. Risk-Prioritized Scheduling | 0/TBD | Not started | - |
