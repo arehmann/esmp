@@ -89,13 +89,24 @@ completed: 2026-03-19
 
 None — plan executed exactly as written. All acceptance criteria met on first attempt.
 
-## Checkpoint: Awaiting Human Verification
+## Checkpoint: Human Verification — APPROVED
 
-Task 2 is a `checkpoint:human-verify` gate. The UI has been built and compiles cleanly. Human verification of the running application is required before this plan can be marked complete.
+Task 2 was a `checkpoint:human-verify` gate. The UI was built and compiles cleanly. Human verification confirmed the full scheduling system works end-to-end:
+- /schedule page loads with Generate Schedule button
+- Wave lanes appear with module cards colored by risk
+- Table view toggle shows sortable grid with all required columns
+- Module drill-down shows score breakdown and CytoscapeGraph with wave-colored nodes
+- Sidebar shows Dashboard, Lexicon, Schedule
+- REST API returns valid ScheduleResponse JSON
+
+## Task Commits
+
+1. **Task 1: ScheduleView and MainLayout update** - `cc62b9e` (feat)
+2. **Task 2: End-to-end verification** - human-approved (no code commit)
 
 ---
 *Phase: 13-risk-prioritized-scheduling*
-*Completed: 2026-03-19 (pending checkpoint approval)*
+*Completed: 2026-03-19*
 
 ## Self-Check
 
