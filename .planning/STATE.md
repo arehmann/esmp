@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Phase 11 context gathered
-last_updated: "2026-03-18T11:06:46.431Z"
+stopped_at: Completed 11-rag-pipeline 11-01-PLAN.md
+last_updated: "2026-03-18T11:33:03.678Z"
 last_activity: 2026-03-04 — Roadmap created, project initialized
 progress:
   total_phases: 13
   completed_phases: 10
-  total_plans: 26
-  completed_plans: 26
+  total_plans: 28
+  completed_plans: 27
 ---
 
 ---
@@ -229,6 +229,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 09-golden-module-pilot P02 | 35min | 1 tasks | 4 files |
 | Phase 10-continuous-indexing P01 | 5min | 2 tasks | 5 files |
 | Phase 10-continuous-indexing P02 | 24min | 2 tasks | 106 files |
+| Phase 11-rag-pipeline P01 | 2min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -305,6 +306,8 @@ Recent decisions affecting current work:
 - [Phase 10-continuous-indexing]: chunkByFqns() limits Neo4j Cypher to WHERE c.fullyQualifiedName IN $fqns for SLO-03 selective re-embedding
 - [Phase Phase 10-continuous-indexing]: Raw Cypher MERGE bypasses SDN @Version conflict for shared nodes (Annotation/Package/Module/DBTable) in incremental re-extractions
 - [Phase Phase 10-continuous-indexing]: Pre-delete stale ClassNode before re-extraction prevents OptimisticLockingFailureException on @Version fields
+- [Phase 11-rag-pipeline]: searchByCone accepts pre-computed float[] so RagService can embed once and reuse for parallelism with Neo4j cone traversal
+- [Phase 11-rag-pipeline]: matchKeywords (plural ConditionFactory variant) used for List<String> cone FQN filter vs matchKeyword (singular) for single values
 
 ### Pending Todos
 
@@ -317,6 +320,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T11:06:46.425Z
-Stopped at: Phase 11 context gathered
-Resume file: .planning/phases/11-rag-pipeline/11-CONTEXT.md
+Last session: 2026-03-18T11:33:03.672Z
+Stopped at: Completed 11-rag-pipeline 11-01-PLAN.md
+Resume file: None

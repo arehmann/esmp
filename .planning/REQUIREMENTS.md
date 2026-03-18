@@ -76,9 +76,9 @@
 ### RAG Pipeline
 
 - [ ] **RAG-01**: System performs graph expansion from a focal class to retrieve related nodes
-- [ ] **RAG-02**: System performs embedding similarity search against Qdrant
-- [ ] **RAG-03**: System combines graph and vector results into ranked retrieval context
-- [ ] **RAG-04**: User can query "what classes/services relate to X?" and get structured results
+- [x] **RAG-02**: System performs embedding similarity search against Qdrant
+- [x] **RAG-03**: System combines graph and vector results into ranked retrieval context
+- [x] **RAG-04**: User can query "what classes/services relate to X?" and get structured results
 
 ### Governance Dashboard
 

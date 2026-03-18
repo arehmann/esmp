@@ -209,7 +209,7 @@ Plans:
   4. Developer queries "what classes relate to CustomerOrderService?" via REST and receives a structured, ranked list with relationship context
   5. Retrieval context for a known Vaadin 7 view correctly includes its backing service, repository, and domain entities
   6. Graph dependency cone query completes in under 200ms; RAG context assembly completes in under 1.5 seconds for a 50-node cone
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 11-01-PLAN.md — RAG API records (RagRequest, RagResponse, FocalClassDetail, ContextChunk, ScoreBreakdown, ConeSummary, DisambiguationResponse), RagWeightConfig, VectorSearchService cone-constrained search extension
@@ -256,6 +256,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 8. Smart Chunking and Vector Indexing | 2/2 | Complete | 2026-03-06 |
 | 9. Golden Module Pilot | 2/2 | Complete   | 2026-03-06 |
 | 10. Continuous Indexing | 2/2 | Complete    | 2026-03-18 |
-| 11. RAG Pipeline | 0/2 | Planned | - |
+| 11. RAG Pipeline | 1/2 | In Progress|  |
 | 12. Governance Dashboard | 0/TBD | Not started | - |
 | 13. Risk-Prioritized Scheduling | 0/TBD | Not started | - |
