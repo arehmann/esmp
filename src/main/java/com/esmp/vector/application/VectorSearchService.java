@@ -1,6 +1,7 @@
 package com.esmp.vector.application;
 
 import static io.qdrant.client.ConditionFactory.matchKeyword;
+import static io.qdrant.client.ConditionFactory.matchKeywords;
 import static io.qdrant.client.WithPayloadSelectorFactory.enable;
 
 import com.esmp.vector.api.ChunkSearchResult;
@@ -117,6 +118,59 @@ public class VectorSearchService {
 
     log.debug("Search returned {} results for query='{}'", results.size(), request.query());
     return new SearchResponse(results, results.size(), request.query());
+  }
+
+  /**
+   * Searches Qdrant for chunks whose classFqn is in the provided cone FQN list.
+   *
+   * <p>Uses a pre-computed embedding vector (caller is responsible for embedding text).
+   * The {@code classFqn} payload field is filtered using Qdrant's {@code matchKeywords}
+   * condition, which leverages the existing payload index created by
+   * {@link com.esmp.vector.config.QdrantCollectionInitializer}.
+   *
+   * @param queryVector pre-computed embedding vector (384 dimensions)
+   * @param coneFqns list of fully-qualified class names to restrict search to
+   * @param limit maximum number of results
+   * @return ranked chunk results within the cone boundary
+   */
+  public List<ChunkSearchResult> searchByCone(float[] queryVector, List<String> coneFqns, int limit) {
+    if (coneFqns == null || coneFqns.isEmpty()) {
+      return List.of();
+    }
+
+    log.debug("Searching cone of {} FQNs, limit={}", coneFqns.size(), limit);
+
+    // Build filter: restrict to chunks whose classFqn is in the cone FQN list
+    Filter.Builder filterBuilder = Filter.newBuilder();
+    filterBuilder.addMust(matchKeywords("classFqn", coneFqns));
+
+    // Build SearchPoints
+    SearchPoints.Builder builder = SearchPoints.newBuilder()
+        .setCollectionName(vectorConfig.getCollectionName())
+        .setLimit(limit)
+        .setWithPayload(enable(true))
+        .setFilter(filterBuilder.build());
+
+    for (float v : queryVector) {
+      builder.addVector(v);
+    }
+
+    // Execute similarity search
+    List<ScoredPoint> scoredPoints;
+    try {
+      scoredPoints = qdrantClient.searchAsync(builder.build()).get(30, TimeUnit.SECONDS);
+    } catch (Exception e) {
+      log.error("Qdrant cone search failed for {} FQNs: {}", coneFqns.size(), e.getMessage(), e);
+      throw new RuntimeException("Vector cone search failed: " + e.getMessage(), e);
+    }
+
+    List<ChunkSearchResult> results = new ArrayList<>(scoredPoints.size());
+    for (ScoredPoint point : scoredPoints) {
+      results.add(mapToResult(point));
+    }
+
+    log.debug("Cone search returned {} results for {} FQNs", results.size(), coneFqns.size());
+    return results;
   }
 
   /**

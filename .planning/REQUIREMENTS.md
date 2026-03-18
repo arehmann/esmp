@@ -75,10 +75,10 @@
 
 ### RAG Pipeline
 
-- [ ] **RAG-01**: System performs graph expansion from a focal class to retrieve related nodes
-- [ ] **RAG-02**: System performs embedding similarity search against Qdrant
-- [ ] **RAG-03**: System combines graph and vector results into ranked retrieval context
-- [ ] **RAG-04**: User can query "what classes/services relate to X?" and get structured results
+- [x] **RAG-01**: System performs graph expansion from a focal class to retrieve related nodes
+- [x] **RAG-02**: System performs embedding similarity search against Qdrant
+- [x] **RAG-03**: System combines graph and vector results into ranked retrieval context
+- [x] **RAG-04**: User can query "what classes/services relate to X?" and get structured results
 
 ### Governance Dashboard
 
@@ -96,8 +96,8 @@
 
 ### Performance SLOs (Cross-Cutting)
 
-- [ ] **SLO-01**: Graph dependency cone query completes in under 200ms
-- [ ] **SLO-02**: RAG context assembly completes in under 1.5 seconds for a 50-node cone
+- [x] **SLO-01**: Graph dependency cone query completes in under 200ms
+- [x] **SLO-02**: RAG context assembly completes in under 1.5 seconds for a 50-node cone
 - [x] **SLO-03**: Incremental re-index of 5 changed files completes in under 30 seconds
 - [x] **SLO-04**: Full re-index of 100-class module completes in under 5 minutes
 

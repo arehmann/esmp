@@ -68,6 +68,11 @@ esmp:
       security-sensitivity: 0.10
       financial-involvement: 0.10
       business-rule-density: 0.10
+  rag:
+    weight:
+      vector-similarity: 0.40
+      graph-proximity: 0.35
+      risk-score: 0.25
 
 server:
   port: 8080
