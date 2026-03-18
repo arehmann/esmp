@@ -67,8 +67,10 @@ public class DashboardService {
 
     String cypher = """
         MATCH (c:JavaClass)
-        WHERE c.module IS NOT NULL AND c.module <> ''
-        WITH c.module AS module,
+        WHERE c.packageName IS NOT NULL AND size(c.packageName) > 0
+        WITH split(c.packageName, '.')[2] AS module, c
+        WHERE module IS NOT NULL
+        WITH module,
              count(c) AS classCount,
              sum(CASE WHEN ANY(l IN labels(c) WHERE l IN ['VaadinView','VaadinComponent','VaadinDataBinding'])
                       THEN 1 ELSE 0 END) AS vaadin7Count,
@@ -145,8 +147,10 @@ public class DashboardService {
 
     String cypher = """
         MATCH (c:JavaClass)
-        WHERE c.module IS NOT NULL AND c.module <> ''
-        WITH c.module AS module,
+        WHERE c.packageName IS NOT NULL AND size(c.packageName) > 0
+        WITH split(c.packageName, '.')[2] AS module, c
+        WHERE module IS NOT NULL
+        WITH module,
              count(c) AS classCount,
              avg(coalesce(c.enhancedRiskScore, 0.0)) AS avgRisk,
              max(coalesce(c.enhancedRiskScore, 0.0)) AS maxRisk,
@@ -186,8 +190,12 @@ public class DashboardService {
 
     String cypher = """
         MATCH (c1:JavaClass)-[:DEPENDS_ON]->(c2:JavaClass)
-        WHERE c1.module IS NOT NULL AND c2.module IS NOT NULL AND c1.module <> c2.module
-        WITH c1.module AS sourceModule, c2.module AS targetModule, count(*) AS edgeWeight
+        WHERE c1.packageName IS NOT NULL AND c2.packageName IS NOT NULL
+        WITH split(c1.packageName, '.')[2] AS sourceModule,
+             split(c2.packageName, '.')[2] AS targetModule,
+             c1, c2
+        WHERE sourceModule IS NOT NULL AND targetModule IS NOT NULL AND sourceModule <> targetModule
+        WITH sourceModule, targetModule, count(*) AS edgeWeight
         RETURN sourceModule, targetModule, edgeWeight
         ORDER BY edgeWeight DESC LIMIT 200
         """;
@@ -222,9 +230,9 @@ public class DashboardService {
 
     String cypher = """
         MATCH (c:JavaClass)
-        WHERE c.module = $module
+        WHERE c.packageName IS NOT NULL AND split(c.packageName, '.')[2] = $module
         OPTIONAL MATCH (c)-[:DEPENDS_ON]->(dep:JavaClass)
-        WHERE dep.module = $module
+        WHERE dep.packageName IS NOT NULL AND split(dep.packageName, '.')[2] = $module
         RETURN c.fullyQualifiedName AS fqn,
                c.simpleName AS simpleName,
                coalesce(c.enhancedRiskScore, 0.0) AS riskScore,

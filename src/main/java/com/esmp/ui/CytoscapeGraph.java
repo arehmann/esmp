@@ -27,19 +27,35 @@ import com.vaadin.flow.shared.Registration;
 @JsModule("./cytoscape-graph.js")
 public class CytoscapeGraph extends Component implements HasSize {
 
+  private String pendingData;
+  private boolean initialized;
+
   public CytoscapeGraph() {
     setHeight("500px");
     setWidth("100%");
-    addAttachListener(e -> getElement().executeJs("window.__initCytoscape($0)", getElement()));
+    addAttachListener(e -> {
+      getElement().executeJs("window.__initCytoscape($0)", getElement());
+      initialized = true;
+      if (pendingData != null) {
+        getElement()
+            .executeJs("window.__setCytoscapeData($0, $1)", getElement(), pendingData);
+        pendingData = null;
+      }
+    });
   }
 
   /**
-   * Pushes graph data to the browser as a Cytoscape.js elements JSON array string.
+   * Pushes graph data to the browser as a Cytoscape.js elements JSON array string. If called
+   * before the component is attached, the data is queued and applied on attach.
    *
    * @param elementsJson JSON array of Cytoscape.js node and edge element descriptors
    */
   public void setGraphData(String elementsJson) {
-    getElement().executeJs("window.__setCytoscapeData($0, $1)", getElement(), elementsJson);
+    if (initialized) {
+      getElement().executeJs("window.__setCytoscapeData($0, $1)", getElement(), elementsJson);
+    } else {
+      pendingData = elementsJson;
+    }
   }
 
   /**
