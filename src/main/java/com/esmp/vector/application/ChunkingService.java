@@ -168,6 +168,125 @@ public class ChunkingService {
     return result;
   }
 
+  /**
+   * Chunks only the specified JavaClass FQNs. Identical to {@link #chunkClasses(String)} but
+   * limits the Neo4j query to the supplied FQN list.
+   *
+   * <p>This is the performance-critical overload used by the incremental indexing pipeline
+   * (SLO-03): instead of chunking all classes, only the changed classes are re-chunked and
+   * re-embedded.
+   *
+   * @param fqns       list of fully-qualified class names to chunk; if empty, returns an empty list
+   * @param sourceRoot base path prepended to relative sourcePaths (may be empty string)
+   * @return class-header + method chunks for the specified classes only
+   */
+  public List<CodeChunk> chunkByFqns(List<String> fqns, String sourceRoot) {
+    if (fqns == null || fqns.isEmpty()) {
+      return List.of();
+    }
+    log.info("Starting selective chunking pass for {} FQNs (sourceRoot='{}')", fqns.size(), sourceRoot);
+
+    Collection<Map<String, Object>> classRows = queryClassesByFqns(fqns);
+    log.info("Found {} JavaClass nodes for FQN-filtered chunking.", classRows.size());
+
+    List<CodeChunk> result = new ArrayList<>();
+
+    for (Map<String, Object> row : classRows) {
+      String fqn = (String) row.get("fqn");
+      String simpleName = (String) row.get("simpleName");
+      String pkg = (String) row.get("pkg");
+      String sourcePath = (String) row.get("sourcePath");
+      String contentHash = (String) row.get("hash");
+      double srs = toDouble(row.get("srs"));
+      double ers = toDouble(row.get("ers"));
+      double dc = toDouble(row.get("dc"));
+      double ss = toDouble(row.get("ss"));
+      double fi = toDouble(row.get("fi"));
+      double brd = toDouble(row.get("brd"));
+      @SuppressWarnings("unchecked")
+      List<String> labels = (List<String>) row.getOrDefault("labels", List.of());
+
+      // Guard: skip if source file is missing
+      Path path = resolveSourcePath(sourceRoot, sourcePath);
+      if (!Files.exists(path)) {
+        log.debug("Skipping '{}' — source file not found: {}", fqn, path);
+        continue;
+      }
+
+      String source;
+      try {
+        source = Files.readString(path);
+      } catch (IOException e) {
+        log.warn("Could not read source file for '{}' at '{}': {}", fqn, path, e.getMessage());
+        continue;
+      }
+
+      // Enrich from graph
+      Map<String, Object> enrichment = queryEnrichment(fqn);
+      @SuppressWarnings("unchecked")
+      List<String> callers = nullSafeList((List<String>) enrichment.get("callers"));
+      @SuppressWarnings("unchecked")
+      List<String> dependencies = nullSafeList((List<String>) enrichment.get("dependencies"));
+      @SuppressWarnings("unchecked")
+      List<String> implementors = nullSafeList((List<String>) enrichment.get("implementors"));
+      @SuppressWarnings("unchecked")
+      List<Map<String, Object>> termMaps =
+          nullSafeList((List<Map<String, Object>>) enrichment.get("terms"));
+      @SuppressWarnings("unchecked")
+      List<String> methodIds = nullSafeList((List<String>) enrichment.get("methodIds"));
+
+      List<String> callees = queryCallees(fqn);
+
+      List<DomainTermRef> domainTerms = termMaps.stream()
+          .filter(t -> t != null && t.get("termId") != null)
+          .map(t -> new DomainTermRef((String) t.get("termId"), (String) t.get("displayName")))
+          .collect(Collectors.toList());
+
+      // Vaadin detection
+      List<String> vaadinPatterns = labels.stream()
+          .filter(VAADIN7_LABELS::contains)
+          .collect(Collectors.toList());
+      boolean vaadin7Detected = !vaadinPatterns.isEmpty();
+
+      // Stereotype + module
+      String stereotype = labels.stream()
+          .filter(STEREOTYPE_PRIORITY::contains)
+          .findFirst()
+          .orElse("");
+      String module = deriveModule(pkg);
+
+      // Build CLASS_HEADER chunk
+      UUID headerId = ChunkIdGenerator.chunkId(fqn, "__HEADER__");
+      String headerText = buildClassHeaderText(simpleName, pkg, source);
+
+      CodeChunk header = new CodeChunk(
+          headerId, ChunkType.CLASS_HEADER, fqn, null, null,
+          headerText, module, stereotype, contentHash,
+          srs, ers, dc, ss, fi, brd,
+          vaadin7Detected, vaadinPatterns,
+          callers, callees, dependencies, implementors, domainTerms);
+      result.add(header);
+
+      // Build METHOD chunks
+      for (String methodId : methodIds) {
+        String methodSignature = methodSignatureFrom(methodId);
+        UUID methodPointId = ChunkIdGenerator.chunkId(fqn, methodSignature);
+        String methodText = buildMethodText(simpleName, methodSignature, source);
+
+        CodeChunk method = new CodeChunk(
+            methodPointId, ChunkType.METHOD, fqn, methodId, headerId.toString(),
+            methodText, module, stereotype, contentHash,
+            srs, ers, dc, ss, fi, brd,
+            vaadin7Detected, vaadinPatterns,
+            callers, callees, dependencies, implementors, domainTerms);
+        result.add(method);
+      }
+    }
+
+    log.info("Selective chunking complete: {} total chunks produced for {} FQNs.", result.size(), fqns.size());
+    return result;
+  }
+
   // -------------------------------------------------------------------------
   // Neo4j queries
   // -------------------------------------------------------------------------
@@ -183,6 +302,30 @@ public class ChunkingService {
             + "c.financialInvolvement AS fi, c.businessRuleDensity AS brd, "
             + "labels(c) AS labels";
     return neo4jClient.query(cypher).fetch().all();
+  }
+
+  /**
+   * Returns class rows for only the specified FQN list. Mirrors {@link #queryAllClasses()} but
+   * adds a {@code WHERE c.fullyQualifiedName IN $fqns} filter for selective chunking.
+   *
+   * @param fqns non-empty list of fully-qualified class names
+   * @return rows containing the same columns as {@link #queryAllClasses()}
+   */
+  private Collection<Map<String, Object>> queryClassesByFqns(List<String> fqns) {
+    String cypher =
+        "MATCH (c:JavaClass) "
+            + "WHERE c.sourceFilePath IS NOT NULL AND c.fullyQualifiedName IN $fqns "
+            + "RETURN c.fullyQualifiedName AS fqn, c.simpleName AS simpleName, "
+            + "c.packageName AS pkg, c.sourceFilePath AS sourcePath, "
+            + "c.contentHash AS hash, "
+            + "c.structuralRiskScore AS srs, c.enhancedRiskScore AS ers, "
+            + "c.domainCriticality AS dc, c.securitySensitivity AS ss, "
+            + "c.financialInvolvement AS fi, c.businessRuleDensity AS brd, "
+            + "labels(c) AS labels";
+    return neo4jClient.query(cypher)
+        .bind(fqns).to("fqns")
+        .fetch()
+        .all();
   }
 
   private Map<String, Object> queryEnrichment(String fqn) {

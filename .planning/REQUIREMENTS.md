@@ -69,9 +69,9 @@
 
 ### Continuous Indexing
 
-- [ ] **CI-01**: CI hook re-extracts changed files on each build
-- [ ] **CI-02**: Graph nodes and edges update incrementally (not full rebuild)
-- [ ] **CI-03**: Vector embeddings update incrementally for changed chunks
+- [x] **CI-01**: CI hook re-extracts changed files on each build
+- [x] **CI-02**: Graph nodes and edges update incrementally (not full rebuild)
+- [x] **CI-03**: Vector embeddings update incrementally for changed chunks
 
 ### RAG Pipeline
 
@@ -98,8 +98,8 @@
 
 - [ ] **SLO-01**: Graph dependency cone query completes in under 200ms
 - [ ] **SLO-02**: RAG context assembly completes in under 1.5 seconds for a 50-node cone
-- [ ] **SLO-03**: Incremental re-index of 5 changed files completes in under 30 seconds
-- [ ] **SLO-04**: Full re-index of 100-class module completes in under 5 minutes
+- [x] **SLO-03**: Incremental re-index of 5 changed files completes in under 30 seconds
+- [x] **SLO-04**: Full re-index of 100-class module completes in under 5 minutes
 
 ## v2 Requirements
 
