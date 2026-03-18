@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 11-rag-pipeline 11-01-PLAN.md
-last_updated: "2026-03-18T11:33:03.678Z"
+stopped_at: Completed 11-rag-pipeline 11-02-PLAN.md
+last_updated: "2026-03-18T11:42:40.172Z"
 last_activity: 2026-03-04 — Roadmap created, project initialized
 progress:
   total_phases: 13
-  completed_phases: 10
+  completed_phases: 11
   total_plans: 28
-  completed_plans: 27
+  completed_plans: 28
 ---
 
 ---
@@ -230,6 +230,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 10-continuous-indexing P01 | 5min | 2 tasks | 5 files |
 | Phase 10-continuous-indexing P02 | 24min | 2 tasks | 106 files |
 | Phase 11-rag-pipeline P01 | 2min | 2 tasks | 10 files |
+| Phase 11-rag-pipeline P02 | 35min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -308,6 +309,9 @@ Recent decisions affecting current work:
 - [Phase Phase 10-continuous-indexing]: Pre-delete stale ClassNode before re-extraction prevents OptimisticLockingFailureException on @Version fields
 - [Phase 11-rag-pipeline]: searchByCone accepts pre-computed float[] so RagService can embed once and reuse for parallelism with Neo4j cone traversal
 - [Phase 11-rag-pipeline]: matchKeywords (plural ConditionFactory variant) used for List<String> cone FQN filter vs matchKeyword (singular) for single values
+- [Phase 11-rag-pipeline]: RagService is NOT @Transactional — pure read orchestrator using Neo4jClient directly, no write paths
+- [Phase 11-rag-pipeline]: CompletableFuture.supplyAsync parallelizes Neo4j cone traversal and EmbeddingModel.embed() for RagService
+- [Phase 11-rag-pipeline]: NL fallback merges cones from top-3 Qdrant hits with Math.min for overlapping FQNs
 
 ### Pending Todos
 
@@ -320,6 +324,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T11:33:03.672Z
-Stopped at: Completed 11-rag-pipeline 11-01-PLAN.md
+Last session: 2026-03-18T11:42:40.167Z
+Stopped at: Completed 11-rag-pipeline 11-02-PLAN.md
 Resume file: None
