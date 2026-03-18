@@ -269,8 +269,9 @@ public class DashboardService {
                t.displayName AS displayName,
                t.criticality AS criticality,
                t.curated AS curated,
+               coalesce(t.usageCount, 0) AS usageCount,
                collect(DISTINCT c.fullyQualifiedName) AS classFqns
-        ORDER BY t.usageCount DESC LIMIT 100
+        ORDER BY usageCount DESC LIMIT 100
         """;
 
     Collection<BusinessTermSummary> results = neo4jClient.query(cypher)
