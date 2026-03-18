@@ -60,6 +60,7 @@ public class DashboardView extends VerticalLayout {
   private List<ModuleDependencyEdge> moduleDependencyEdges;
   private Div depSidePanel;
   private Button backToModulesBtn;
+  private Map<String, ClassDetail> classDetailCache = new LinkedHashMap<>();
 
   /**
    * Constructs the full governance dashboard, loading all data once from {@link DashboardService}.
@@ -471,6 +472,10 @@ public class DashboardView extends VerticalLayout {
   private void loadClassLevelGraph(String module) {
     try {
       List<ClassDetail> classes = dashboardService.getClassesInModule(module);
+      classDetailCache.clear();
+      for (ClassDetail cd : classes) {
+        classDetailCache.put(cd.fqn(), cd);
+      }
 
       List<Map<String, Object>> elements = new ArrayList<>();
 
@@ -519,15 +524,26 @@ public class DashboardView extends VerticalLayout {
   private void showClassDetail(String fqn) {
     depSidePanel.removeAll();
 
-    // Extract simple name from FQN
-    String simpleName = fqn.contains(".") ? fqn.substring(fqn.lastIndexOf('.') + 1) : fqn;
-
-    // Find ClassDetail from current module's data (re-query or use cached — re-query for accuracy)
-    // The side panel shows: simpleName, fqn, risk, labels, dependsOn — we store these in graph data
-    // For detail display, show what we know from the click event (fqn + simpleName)
-    depSidePanel.add(new H4(simpleName));
-    depSidePanel.add(styledSpan(fqn));
-    depSidePanel.add(new Span("(Click a module node and then select a class for risk details)"));
+    ClassDetail cd = classDetailCache.get(fqn);
+    if (cd != null) {
+      depSidePanel.add(new H4(cd.simpleName()));
+      depSidePanel.add(styledSpan(cd.fqn()));
+      depSidePanel.add(styledSpan(String.format("Risk: %.3f", cd.riskScore())));
+      if (!cd.labels().isEmpty()) {
+        depSidePanel.add(styledSpan("Stereotype: " + String.join(", ", cd.labels())));
+      }
+      if (!cd.dependsOn().isEmpty()) {
+        depSidePanel.add(styledSpan("Depends on:"));
+        for (String dep : cd.dependsOn()) {
+          String depSimple = dep.contains(".") ? dep.substring(dep.lastIndexOf('.') + 1) : dep;
+          depSidePanel.add(styledSpan("  - " + depSimple));
+        }
+      }
+    } else {
+      String simpleName = fqn.contains(".") ? fqn.substring(fqn.lastIndexOf('.') + 1) : fqn;
+      depSidePanel.add(new H4(simpleName));
+      depSidePanel.add(styledSpan(fqn));
+    }
   }
 
   // ---------------------------------------------------------------------------
