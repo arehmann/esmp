@@ -33,7 +33,7 @@ import java.util.List;
  *   <li>Edit a term's definition, criticality, and synonyms inline
  * </ul>
  */
-@Route("lexicon")
+@Route(value = "lexicon", layout = MainLayout.class)
 @PageTitle("Domain Lexicon")
 public class LexiconView extends VerticalLayout {
 
