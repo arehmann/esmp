@@ -24,7 +24,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 10: Continuous Indexing** - CI-triggered incremental graph and vector updates on changed files only (completed 2026-03-18)
 - [x] **Phase 11: RAG Pipeline** - Multi-layer GraphRAG retrieval combining graph expansion and embedding similarity (completed 2026-03-18)
 - [x] **Phase 12: Governance Dashboard** - Migration progress, risk clusters, dependency explorer, and lexicon coverage metrics (completed 2026-03-18)
-- [ ] **Phase 13: Risk-Prioritized Scheduling** - Data-driven module migration order recommendations
+- [x] **Phase 13: Risk-Prioritized Scheduling** - Data-driven module migration order recommendations (completed 2026-03-18)
 
 ## Phase Details
 
@@ -242,7 +242,7 @@ Plans:
   2. Recommendation score incorporates composite risk score (structural + domain-aware), number of dependents, recent change frequency from git history, and cyclomatic complexity distribution
   3. Developer can view the rationale for each module's position in the recommendation list (which factors dominate its score)
   4. Re-running the recommendation after ingesting new modules produces an updated ordered list reflecting the new dependency landscape
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 13-01-PLAN.md — SchedulingWeightConfig, GitFrequencyService, API records, SchedulingService (Neo4j aggregation + topological sort + composite scoring), SchedulingController, SchedulingValidationQueryRegistry, integration tests
@@ -267,4 +267,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 10. Continuous Indexing | 2/2 | Complete    | 2026-03-18 |
 | 11. RAG Pipeline | 2/2 | Complete    | 2026-03-18 |
 | 12. Governance Dashboard | 3/3 | Complete    | 2026-03-18 |
-| 13. Risk-Prioritized Scheduling | 1/2 | In Progress|  |
+| 13. Risk-Prioritized Scheduling | 2/2 | Complete   | 2026-03-18 |

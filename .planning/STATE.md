@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 13-risk-prioritized-scheduling 13-01-PLAN.md
-last_updated: "2026-03-18T23:06:24.168Z"
+stopped_at: "Checkpoint reached: 13-02 Task 2 human-verify — ScheduleView built, awaiting manual UI verification"
+last_updated: "2026-03-18T23:10:24.822Z"
 last_activity: 2026-03-04 — Roadmap created, project initialized
 progress:
   total_phases: 13
-  completed_phases: 12
+  completed_phases: 13
   total_plans: 33
-  completed_plans: 32
+  completed_plans: 33
 ---
 
 ---
@@ -279,6 +279,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 12-governance-dashboard P01 | 7min | 2 tasks | 8 files |
 | Phase 12-governance-dashboard P02 | 34min | 2 tasks | 5 files |
 | Phase 13-risk-prioritized-scheduling P01 | 30min | 2 tasks | 11 files |
+| Phase 13-risk-prioritized-scheduling P02 | 10min | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -367,6 +368,7 @@ Recent decisions affecting current work:
 - [Phase 13-risk-prioritized-scheduling]: SchedulingService is NOT @Transactional — pure read orchestrator like RagService and DashboardService
 - [Phase 13-risk-prioritized-scheduling]: Module index corrected from parts[4] to parts[5] for path src/main/java/com/esmp/<module>/... (parts[4]=esmp, parts[5]=module)
 - [Phase 13-risk-prioritized-scheduling]: Kahn's BFS assigns modules not reached by topo sort to cycleWave=maxWave+1 for circular dep fallback
+- [Phase Phase 13-risk-prioritized-scheduling]: ScheduleView injects both SchedulingService and DashboardService — scheduling for wave data, dashboard for dependency edges used in drill-down CytoscapeGraph
 
 ### Pending Todos
 
@@ -379,6 +381,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T23:06:24.162Z
-Stopped at: Completed 13-risk-prioritized-scheduling 13-01-PLAN.md
+Last session: 2026-03-18T23:10:18.954Z
+Stopped at: Checkpoint reached: 13-02 Task 2 human-verify — ScheduleView built, awaiting manual UI verification
 Resume file: None
