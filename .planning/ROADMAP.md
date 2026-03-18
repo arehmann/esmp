@@ -23,7 +23,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 9: Golden Module Pilot** - End-to-end validation of semantic pipeline on one bounded context before scaling (completed 2026-03-06)
 - [x] **Phase 10: Continuous Indexing** - CI-triggered incremental graph and vector updates on changed files only (completed 2026-03-18)
 - [x] **Phase 11: RAG Pipeline** - Multi-layer GraphRAG retrieval combining graph expansion and embedding similarity (completed 2026-03-18)
-- [x] **Phase 12: Governance Dashboard** - Migration progress, risk clusters, dependency explorer, and lexicon coverage metrics (completed 2026-03-18)
+- [x] **Phase 12: Governance Dashboard** - Migration progress, risk clusters, dependency explorer, and lexicon coverage metrics (completed 2026-03-18)
 - [ ] **Phase 13: Risk-Prioritized Scheduling** - Data-driven module migration order recommendations
 
 ## Phase Details
@@ -178,8 +178,8 @@ Plans:
 **Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 09-01-PLAN.md — Synthetic pilot fixtures (20 classes), PilotService (recommendation + validation), VectorSearchService, PilotValidationQueryRegistry, response records
-- [ ] 09-02-PLAN.md — PilotController + VectorSearchController REST endpoints, full pipeline integration tests, golden regression tests
+- [x] 09-01-PLAN.md — Synthetic pilot fixtures (20 classes), PilotService (recommendation + validation), VectorSearchService, PilotValidationQueryRegistry, response records
+- [x] 09-02-PLAN.md — PilotController + VectorSearchController REST endpoints, full pipeline integration tests, golden regression tests
 
 ### Phase 10: Continuous Indexing
 **Goal**: As the legacy codebase undergoes active development, the knowledge graph and vector store stay current without requiring manual re-runs
@@ -195,8 +195,8 @@ Plans:
 **Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 10-01-PLAN.md — FileHashUtil, IncrementalIndexingService orchestrator, request/response records, ChunkingService FQN-filtered overload
-- [ ] 10-02-PLAN.md — IndexingController REST endpoint, integration tests with synthetic fixtures, SLO verification
+- [x] 10-01-PLAN.md — FileHashUtil, IncrementalIndexingService orchestrator, request/response records, ChunkingService FQN-filtered overload
+- [x] 10-02-PLAN.md — IndexingController REST endpoint, integration tests with synthetic fixtures, SLO verification
 
 ### Phase 11: RAG Pipeline
 **Goal**: Developer can query "what classes/services relate to X?" and receive a ranked, graph-aware retrieval result that assembles correct migration context
@@ -212,8 +212,8 @@ Plans:
 **Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 11-01-PLAN.md — RAG API records (RagRequest, RagResponse, FocalClassDetail, ContextChunk, ScoreBreakdown, ConeSummary, DisambiguationResponse), RagWeightConfig, VectorSearchService cone-constrained search extension
-- [ ] 11-02-PLAN.md — RagService orchestrator (resolve, cone, embed, search, merge, rank), RagController REST endpoint, RagValidationQueryRegistry, integration tests
+- [x] 11-01-PLAN.md — RAG API records (RagRequest, RagResponse, FocalClassDetail, ContextChunk, ScoreBreakdown, ConeSummary, DisambiguationResponse), RagWeightConfig, VectorSearchService cone-constrained search extension
+- [x] 11-02-PLAN.md — RagService orchestrator (resolve, cone, embed, search, merge, rank), RagController REST endpoint, RagValidationQueryRegistry, integration tests
 
 ### Phase 12: Governance Dashboard
 **Goal**: Developer can see the current state of the migration — what is done, what is risky, and what still uses Vaadin 7 APIs — in a single dashboard
@@ -229,9 +229,9 @@ Plans:
 **Plans:** 3/3 plans complete
 
 Plans:
-- [ ] 12-01-PLAN.md — DashboardService with 6 Neo4j Cypher aggregation queries, DTO records, integration tests
-- [ ] 12-02-PLAN.md — MainLayout AppLayout shell, CytoscapeGraph Java/JS wrapper component, LexiconView routing update
-- [ ] 12-03-PLAN.md — DashboardView with metric cards, heatmap, risk clusters, dependency graph explorer, business concept graph
+- [x] 12-01-PLAN.md — DashboardService with 6 Neo4j Cypher aggregation queries, DTO records, integration tests
+- [x] 12-02-PLAN.md — MainLayout AppLayout shell, CytoscapeGraph Java/JS wrapper component, LexiconView routing update
+- [x] 12-03-PLAN.md — DashboardView with metric cards, heatmap, risk clusters, dependency graph explorer, business concept graph
 
 ### Phase 13: Risk-Prioritized Scheduling
 **Goal**: System recommends a migration order for modules that accounts for dependency risk, change frequency, and complexity — so the developer starts with the safest targets
@@ -242,7 +242,11 @@ Plans:
   2. Recommendation score incorporates composite risk score (structural + domain-aware), number of dependents, recent change frequency from git history, and cyclomatic complexity distribution
   3. Developer can view the rationale for each module's position in the recommendation list (which factors dominate its score)
   4. Re-running the recommendation after ingesting new modules produces an updated ordered list reflecting the new dependency landscape
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 13-01-PLAN.md — SchedulingWeightConfig, GitFrequencyService, API records, SchedulingService (Neo4j aggregation + topological sort + composite scoring), SchedulingController, SchedulingValidationQueryRegistry, integration tests
+- [ ] 13-02-PLAN.md — ScheduleView Vaadin UI (wave lanes + sortable table + CytoscapeGraph drill-down), MainLayout sidebar update, human verification
 
 ## Progress
 
@@ -263,4 +267,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 10. Continuous Indexing | 2/2 | Complete    | 2026-03-18 |
 | 11. RAG Pipeline | 2/2 | Complete    | 2026-03-18 |
 | 12. Governance Dashboard | 3/3 | Complete    | 2026-03-18 |
-| 13. Risk-Prioritized Scheduling | 0/TBD | Not started | - |
+| 13. Risk-Prioritized Scheduling | 0/2 | Not started | - |
