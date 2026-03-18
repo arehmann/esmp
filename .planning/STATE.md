@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Phase 13 context gathered
-last_updated: "2026-03-18T22:27:10.620Z"
+stopped_at: Completed 13-risk-prioritized-scheduling 13-01-PLAN.md
+last_updated: "2026-03-18T23:06:24.168Z"
 last_activity: 2026-03-04 — Roadmap created, project initialized
 progress:
   total_phases: 13
   completed_phases: 12
-  total_plans: 31
-  completed_plans: 31
+  total_plans: 33
+  completed_plans: 32
 ---
 
 ---
@@ -278,6 +278,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 11-rag-pipeline P02 | 35min | 2 tasks | 5 files |
 | Phase 12-governance-dashboard P01 | 7min | 2 tasks | 8 files |
 | Phase 12-governance-dashboard P02 | 34min | 2 tasks | 5 files |
+| Phase 13-risk-prioritized-scheduling P01 | 30min | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -363,6 +364,9 @@ Recent decisions affecting current work:
 - [Phase 12-governance-dashboard]: getBusinessTermGraph ORDER BY aliases usageCount in RETURN clause — cannot reference pre-aggregation variable t after collect(DISTINCT)
 - [Phase 12-governance-dashboard]: DashboardView stub created in Plan 02 so MainLayout.class compiles — full implementation in Plan 03
 - [Phase 12-governance-dashboard]: CytoscapeGraph uses executeJs with window.__setCytoscapeData passing element ref for WeakMap lookup instead of callJsFunction
+- [Phase 13-risk-prioritized-scheduling]: SchedulingService is NOT @Transactional — pure read orchestrator like RagService and DashboardService
+- [Phase 13-risk-prioritized-scheduling]: Module index corrected from parts[4] to parts[5] for path src/main/java/com/esmp/<module>/... (parts[4]=esmp, parts[5]=module)
+- [Phase 13-risk-prioritized-scheduling]: Kahn's BFS assigns modules not reached by topo sort to cycleWave=maxWave+1 for circular dep fallback
 
 ### Pending Todos
 
@@ -375,6 +379,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T22:27:10.614Z
-Stopped at: Phase 13 context gathered
-Resume file: .planning/phases/13-risk-prioritized-scheduling/13-CONTEXT.md
+Last session: 2026-03-18T23:06:24.162Z
+Stopped at: Completed 13-risk-prioritized-scheduling 13-01-PLAN.md
+Resume file: None

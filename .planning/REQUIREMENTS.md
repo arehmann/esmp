@@ -91,8 +91,8 @@
 
 ### Risk-Prioritized Scheduling
 
-- [ ] **SCHED-01**: System recommends module migration order based on composite risk score (structural + domain-aware)
-- [ ] **SCHED-02**: Recommendation accounts for dependency risk, change frequency, and complexity
+- [x] **SCHED-01**: System recommends module migration order based on composite risk score (structural + domain-aware)
+- [x] **SCHED-02**: Recommendation accounts for dependency risk, change frequency, and complexity
 
 ### Performance SLOs (Cross-Cutting)
 

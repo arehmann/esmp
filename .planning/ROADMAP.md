@@ -242,7 +242,7 @@ Plans:
   2. Recommendation score incorporates composite risk score (structural + domain-aware), number of dependents, recent change frequency from git history, and cyclomatic complexity distribution
   3. Developer can view the rationale for each module's position in the recommendation list (which factors dominate its score)
   4. Re-running the recommendation after ingesting new modules produces an updated ordered list reflecting the new dependency landscape
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 13-01-PLAN.md — SchedulingWeightConfig, GitFrequencyService, API records, SchedulingService (Neo4j aggregation + topological sort + composite scoring), SchedulingController, SchedulingValidationQueryRegistry, integration tests
@@ -267,4 +267,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 10. Continuous Indexing | 2/2 | Complete    | 2026-03-18 |
 | 11. RAG Pipeline | 2/2 | Complete    | 2026-03-18 |
 | 12. Governance Dashboard | 3/3 | Complete    | 2026-03-18 |
-| 13. Risk-Prioritized Scheduling | 0/2 | Not started | - |
+| 13. Risk-Prioritized Scheduling | 1/2 | In Progress|  |
