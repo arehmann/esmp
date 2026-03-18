@@ -20,7 +20,8 @@ public class MainLayout extends AppLayout {
     SideNav nav = new SideNav();
     nav.addItem(
         new SideNavItem("Dashboard", DashboardView.class, VaadinIcon.DASHBOARD.create()),
-        new SideNavItem("Lexicon", LexiconView.class, VaadinIcon.BOOK.create()));
+        new SideNavItem("Lexicon", LexiconView.class, VaadinIcon.BOOK.create()),
+        new SideNavItem("Schedule", ScheduleView.class, VaadinIcon.CALENDAR.create()));
 
     Scroller scroller = new Scroller(nav);
     scroller.setClassName("drawer-scroller");

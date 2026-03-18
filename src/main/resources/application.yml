@@ -73,6 +73,13 @@ esmp:
       vector-similarity: 0.40
       graph-proximity: 0.35
       risk-score: 0.25
+  scheduling:
+    weight:
+      risk: 0.35
+      dependency: 0.25
+      frequency: 0.20
+      complexity: 0.20
+    git-window-days: 180
 
 server:
   port: 8080
