@@ -10,6 +10,18 @@ spring:
         tokenizer:
           options:
             padding: "true"
+    mcp:
+      server:
+        name: esmp-mcp
+        version: 1.0.0
+        type: SYNC
+        sse-endpoint: /mcp/sse
+        sse-message-endpoint: /mcp/message
+        capabilities:
+          tool: true
+          resource: false
+          prompt: false
+          completion: false
   datasource:
     url: jdbc:mysql://localhost:3307/esmp
     username: esmp
@@ -47,6 +59,14 @@ qdrant:
   port: 6334
 
 esmp:
+  mcp:
+    context:
+      max-tokens: 8000
+    cache:
+      dependency-cone-ttl-minutes: 5
+      domain-terms-ttl-minutes: 10
+      semantic-query-ttl-minutes: 3
+      max-size: 500
   extraction:
     source-root: ""
     classpath-file: ""

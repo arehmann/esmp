@@ -33,6 +33,9 @@ vaadin-spring-boot-starter    = { module = "com.vaadin:vaadin-spring-boot-starte
 vaadin-bom                    = { module = "com.vaadin:vaadin-bom", version.ref = "vaadin" }
 spring-ai-bom                 = { module = "org.springframework.ai:spring-ai-bom", version.ref = "spring-ai" }
 spring-ai-starter-transformers = { module = "org.springframework.ai:spring-ai-starter-model-transformers" }
+spring-ai-starter-mcp-server-webmvc = { module = "org.springframework.ai:spring-ai-starter-mcp-server-webmvc" }
+spring-boot-starter-cache           = { module = "org.springframework.boot:spring-boot-starter-cache" }
+caffeine                            = { module = "com.github.ben-manes.caffeine:caffeine" }
 
 [plugins]
 spring-boot            = { id = "org.springframework.boot", version.ref = "spring-boot" }
