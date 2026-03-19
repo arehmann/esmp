@@ -30,6 +30,7 @@ import com.esmp.extraction.visitor.LexiconVisitor;
 import com.esmp.extraction.visitor.VaadinPatternVisitor;
 import com.esmp.graph.application.RiskService;
 import com.esmp.indexing.api.IncrementalIndexRequest;
+import com.esmp.mcp.application.McpCacheEvictionService;
 import com.esmp.indexing.api.IncrementalIndexResponse;
 import com.esmp.indexing.util.FileHashUtil;
 import com.esmp.vector.application.ChunkingService;
@@ -107,6 +108,7 @@ public class IncrementalIndexingService {
   private final QdrantClient qdrantClient;
   private final VectorConfig vectorConfig;
   private final ExtractionConfig extractionConfig;
+  private final McpCacheEvictionService mcpCacheEvictionService;
 
   public IncrementalIndexingService(
       JavaSourceParser javaSourceParser,
@@ -125,7 +127,8 @@ public class IncrementalIndexingService {
       EmbeddingModel embeddingModel,
       QdrantClient qdrantClient,
       VectorConfig vectorConfig,
-      ExtractionConfig extractionConfig) {
+      ExtractionConfig extractionConfig,
+      McpCacheEvictionService mcpCacheEvictionService) {
     this.javaSourceParser = javaSourceParser;
     this.mapper = mapper;
     this.classNodeRepository = classNodeRepository;
@@ -143,6 +146,7 @@ public class IncrementalIndexingService {
     this.qdrantClient = qdrantClient;
     this.vectorConfig = vectorConfig;
     this.extractionConfig = extractionConfig;
+    this.mcpCacheEvictionService = mcpCacheEvictionService;
   }
 
   // -------------------------------------------------------------------------
@@ -375,6 +379,20 @@ public class IncrementalIndexingService {
         String msg = "Chunking step failed for changed classes: " + e.getMessage();
         log.error(msg, e);
         errors.add(msg);
+      }
+    }
+
+    // Step 7b — MCP cache eviction (after all graph/vector updates complete)
+    if (mcpCacheEvictionService != null) {
+      try {
+        if (!changedFqns.isEmpty()) {
+          mcpCacheEvictionService.evictForClasses(changedFqns);
+        } else if (request.changedFiles().isEmpty() && !request.deletedFiles().isEmpty()) {
+          // Full re-index or delete-only path — clear all caches
+          mcpCacheEvictionService.evictAll();
+        }
+      } catch (Exception e) {
+        log.warn("MCP cache eviction failed (non-fatal): {}", e.getMessage());
       }
     }
 
