@@ -264,7 +264,7 @@ Plans:
   8. Graceful degradation returns partial context with warnings when a downstream service fails
   9. Caffeine cache is hit on repeated calls and evicted after incremental reindex
   10. `get_migration_context` completes in under 1.5s; `search_knowledge` completes in under 500ms
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 14-01-PLAN.md — Dependencies (MCP WebMVC starter, Caffeine), config (McpConfig, McpCacheConfig, McpObservabilityConfig), response records (MigrationContext, AssemblerWarning), MigrationContextAssembler with parallel async assembly and token budgeting
@@ -290,4 +290,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 11. RAG Pipeline | 2/2 | Complete    | 2026-03-18 |
 | 12. Governance Dashboard | 3/3 | Complete    | 2026-03-18 |
 | 13. Risk-Prioritized Scheduling | 2/2 | Complete    | 2026-03-18 |
-| 14. MCP Server | 0/2 | Planning    | - |
+| 14. MCP Server | 1/2 | In Progress|  |

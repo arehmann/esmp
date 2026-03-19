@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Phase 14 context gathered
-last_updated: "2026-03-19T01:15:21.337Z"
+stopped_at: Completed 14-mcp-server-for-ai-powered-migration-context 14-01-PLAN.md
+last_updated: "2026-03-19T08:22:40.035Z"
 last_activity: 2026-03-04 — Roadmap created, project initialized
 progress:
   total_phases: 14
   completed_phases: 13
-  total_plans: 33
-  completed_plans: 33
+  total_plans: 35
+  completed_plans: 34
 ---
 
 ---
@@ -311,6 +311,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 13-risk-prioritized-scheduling P01 | 30min | 2 tasks | 11 files |
 | Phase 13-risk-prioritized-scheduling P02 | 10min | 1 tasks | 2 files |
 | Phase 13-risk-prioritized-scheduling P02 | 10min | 2 tasks | 2 files |
+| Phase 14-mcp-server-for-ai-powered-migration-context P01 | 75min | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -401,6 +402,9 @@ Recent decisions affecting current work:
 - [Phase 13-risk-prioritized-scheduling]: Kahn's BFS assigns modules not reached by topo sort to cycleWave=maxWave+1 for circular dep fallback
 - [Phase Phase 13-risk-prioritized-scheduling]: ScheduleView injects both SchedulingService and DashboardService — scheduling for wave data, dashboard for dependency edges used in drill-down CytoscapeGraph
 - [Phase 13-risk-prioritized-scheduling]: ScheduleView injects both SchedulingService and DashboardService — scheduling for wave data, dashboard for dependency edges used in drill-down CytoscapeGraph
+- [Phase 14-mcp-server-for-ai-powered-migration-context]: SimpleCacheManager used for Caffeine caches to allow different TTLs per cache (5/10/3 min)
+- [Phase 14-mcp-server-for-ai-powered-migration-context]: McpServerStartupTest uses raw TCP socket with SO_TIMEOUT to read SSE status line — TestRestTemplate blocks indefinitely on streaming connections
+- [Phase 14-mcp-server-for-ai-powered-migration-context]: MigrationContextAssembler delegates to RagService.assemble() not EmbeddingModel directly — preserves weighted re-ranking per CONTEXT.md user decision
 
 ### Roadmap Evolution
 
@@ -417,6 +421,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T01:15:21.331Z
-Stopped at: Phase 14 context gathered
-Resume file: .planning/phases/14-mcp-server-for-ai-powered-migration-context/14-CONTEXT.md
+Last session: 2026-03-19T08:22:40.029Z
+Stopped at: Completed 14-mcp-server-for-ai-powered-migration-context 14-01-PLAN.md
+Resume file: None
