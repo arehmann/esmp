@@ -387,6 +387,10 @@ Recent decisions affecting current work:
 - [Phase Phase 13-risk-prioritized-scheduling]: ScheduleView injects both SchedulingService and DashboardService — scheduling for wave data, dashboard for dependency edges used in drill-down CytoscapeGraph
 - [Phase 13-risk-prioritized-scheduling]: ScheduleView injects both SchedulingService and DashboardService — scheduling for wave data, dashboard for dependency edges used in drill-down CytoscapeGraph
 
+### Roadmap Evolution
+
+- Phase 14 added: MCP server for AI-powered migration context
+
 ### Pending Todos
 
 None yet.
