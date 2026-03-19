@@ -412,6 +412,7 @@ Recent decisions affecting current work:
 ### Roadmap Evolution
 
 - Phase 14 added: MCP server for AI-powered migration context
+- Phase 15 added: Docker Deployment & Enterprise Scale
 
 ### Pending Todos
 
