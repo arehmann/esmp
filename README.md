@@ -24,6 +24,7 @@ ESMP analyzes your legacy Java/Vaadin codebase, builds a knowledge graph of ever
   - [8. RAG Context Assembly](#8-rag-context-assembly)
   - [9. Incremental Indexing](#9-incremental-indexing)
   - [10. Migration Scheduling](#10-migration-scheduling)
+  - [11. MCP Server](#11-mcp-server)
 - [REST API Reference](#rest-api-reference)
 - [Vaadin Dashboard Views](#vaadin-dashboard-views)
 - [Configuration Reference](#configuration-reference)
@@ -1130,9 +1131,83 @@ curl "http://localhost:8080/api/scheduling/recommend?sourceRoot=/path/to/project
 
 ---
 
+### 11. MCP Server
+
+**What it does:** Exposes all ESMP knowledge services as [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) tools via SSE transport, so AI assistants like Claude Code can query migration context, search code, explore dependencies, assess risk, browse domain terms, and validate system health — all through a single connection.
+
+```
+  AI Assistant (Claude Code)
+         │
+         │ MCP SSE (Server-Sent Events)
+         │ http://localhost:8080/mcp/sse
+         │
+         ▼
+  ┌─────────────────────────────┐
+  │   MCP Server (Spring AI)    │
+  │                             │
+  │  6 Tools:                   │
+  │  ┌───────────────────────┐  │
+  │  │ getMigrationContext   │──┼──▶ MigrationContextAssembler
+  │  │ searchKnowledge       │──┼──▶ VectorSearchService
+  │  │ getDependencyCone     │──┼──▶ GraphQueryService
+  │  │ getRiskAnalysis       │──┼──▶ RiskService
+  │  │ browseDomainTerms     │──┼──▶ LexiconService
+  │  │ validateSystemHealth  │──┼──▶ ValidationService
+  │  └───────────────────────┘  │
+  │                             │
+  │  Caffeine Cache (3 caches)  │
+  │  Micrometer Metrics         │
+  └─────────────────────────────┘
+```
+
+**Key tool: `getMigrationContext`** — the primary context tool for migration. Assembles a unified `MigrationContext` by calling 5 services in parallel:
+
+1. **Dependency cone** from GraphQueryService (all transitively reachable nodes)
+2. **Risk analysis** from RiskService (complexity, fan-in/out, domain criticality)
+3. **Domain terms** via Neo4j USES_TERM traversal (business terms linked to the class)
+4. **Business rules** via Neo4j DEFINES_RULE traversal (rule/policy/validator classes)
+5. **Code chunks** from RagService (vector search + graph proximity + risk re-ranking)
+
+Features:
+- **Token budgeting**: Truncates code chunks first (then cone nodes) to stay within configurable token limit (default 8000)
+- **Graceful degradation**: If any service fails, returns partial context with warnings and reduced completeness score
+- **Caffeine caching**: Three named caches (dependencyCones 5min, domainTermsByClass 10min, semanticQueries 3min) with automatic eviction when incremental reindexing runs
+- **Observability**: Every tool call is instrumented with `@Timed` metrics and structured logging
+
+**How to connect Claude Code:**
+
+The `.mcp.json` file at the project root auto-configures the connection:
+
+```json
+{
+  "mcpServers": {
+    "esmp": {
+      "type": "sse",
+      "url": "http://localhost:8080/mcp/sse"
+    }
+  }
+}
+```
+
+Start the app, and Claude Code will automatically discover all 6 tools. Example usage:
+
+```
+You: "Get migration context for com.example.PaymentService"
+Claude: [calls getMigrationContext] → returns dependency cone, risk scores,
+        business terms, rules, and relevant code chunks
+
+You: "What classes deal with authentication?"
+Claude: [calls searchKnowledge] → returns ranked code chunks matching the query
+
+You: "Is the knowledge graph healthy?"
+Claude: [calls validateSystemHealth] → returns pass/fail for all 41 validation queries
+```
+
+---
+
 ## REST API Reference
 
-Complete list of all 18 endpoints:
+Complete list of all 19 endpoints:
 
 ### Extraction
 
@@ -1178,6 +1253,12 @@ Complete list of all 18 endpoints:
 | `GET` | `/api/pilot/recommend` | Pilot module recommendations |
 | `GET` | `/api/pilot/validate/{module}` | Module pilot readiness check |
 | `GET` | `/api/scheduling/recommend` | Migration wave schedule |
+
+### MCP (AI Assistant Integration)
+
+| Transport | Endpoint | Description |
+|-----------|----------|-------------|
+| `SSE` | `/mcp/sse` | MCP server — exposes 6 tools (getMigrationContext, searchKnowledge, getDependencyCone, getRiskAnalysis, browseDomainTerms, validateSystemHealth) |
 
 ---
 
@@ -1251,6 +1332,20 @@ esmp:
     git-window-days: 180        # How far back to look at git history
 ```
 
+### MCP Server Settings
+
+```yaml
+esmp:
+  mcp:
+    context:
+      max-tokens: 8000            # Token budget for getMigrationContext
+    cache:
+      dependency-cone-ttl-minutes: 5
+      domain-terms-ttl-minutes: 10
+      semantic-query-ttl-minutes: 3
+      max-size: 500               # Max entries per cache
+```
+
 ### Vector Index Settings
 
 ```yaml
@@ -1297,6 +1392,7 @@ ESMP has comprehensive test coverage with 31 test suites:
 | Incremental Indexing | - | 1 suite (8 tests) |
 | Scheduling | 1 suite (3 tests) | 1 suite (6 tests) |
 | Dashboard | - | 1 suite (7 tests) |
+| MCP Server | 2 suites (5 tests) | 2 suites (11 tests) |
 | Infrastructure | - | 2 suites |
 
 ---
