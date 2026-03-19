@@ -222,16 +222,16 @@ public class McpCacheConfig {
 ```java
 @Cacheable(value = "dependencyCones", key = "#classFqn")
 public Map<String, Integer> getDependencyConeWithHops(String classFqn) { ... }
-
-// Eviction triggered from IncrementalIndexingService after re-index:
-@CacheEvict(value = {"dependencyCones", "domainTermsByClass"}, key = "#classFqn")
-public void evictForClass(String classFqn) { ... }
 ```
 
-**Programmatic eviction (for full cache clear on reindex):**
+**Programmatic eviction (selective + full):**
 ```java
-// Inject CacheManager and call:
-cacheManager.getCache("dependencyCones").clear();
+// Selective eviction for FQN-keyed caches:
+cacheManager.getCache("dependencyCones").evict(classFqn);
+// Full clear for query-keyed caches (domainTermsByClass uses #search + '_' + #criticality as key,
+// so FQN-based eviction would silently no-op):
+cacheManager.getCache("domainTermsByClass").clear();
+cacheManager.getCache("semanticQueries").clear();
 ```
 
 ### Pattern 4: Micrometer Observability
@@ -527,11 +527,11 @@ Place at project root as `.mcp.json`. Checked into version control. Team members
 |----|----------|-----------|-------------------|-------------|
 | MCP-01 | MCP server starts and exposes `/mcp/sse` | integration | `./gradlew test --tests "*.McpServerStartupTest"` | Wave 0 |
 | MCP-02 | `get_migration_context` returns unified context for known FQN | integration | `./gradlew test --tests "*.MigrationContextAssemblerTest"` | Wave 0 |
-| MCP-03 | `search_knowledge` delegates to VectorSearchService | unit | `./gradlew test --tests "*.MigrationToolServiceTest"` | Wave 0 |
-| MCP-04 | `get_dependency_cone` returns nodes+edges for FQN | unit | `./gradlew test --tests "*.MigrationToolServiceTest"` | Wave 0 |
-| MCP-05 | `validate_system_health` returns 41-query report | unit | `./gradlew test --tests "*.MigrationToolServiceTest"` | Wave 0 |
-| MCP-06 | Caffeine cache hit on second call to same FQN | unit | `./gradlew test --tests "*.McpCacheTest"` | Wave 0 |
-| MCP-07 | Cache evicted after `IncrementalIndexingService` reindex | integration | `./gradlew test --tests "*.McpCacheEvictionTest"` | Wave 0 |
+| MCP-03 | `search_knowledge` delegates to VectorSearchService | integration | `./gradlew test --tests "*.MigrationToolServiceIntegrationTest"` | Wave 0 |
+| MCP-04 | `get_dependency_cone` returns nodes+edges for FQN | integration | `./gradlew test --tests "*.MigrationToolServiceIntegrationTest"` | Wave 0 |
+| MCP-05 | `validate_system_health` returns 41-query report | integration | `./gradlew test --tests "*.MigrationToolServiceIntegrationTest"` | Wave 0 |
+| MCP-06 | Caffeine cache hit on second call to same FQN | integration | `./gradlew test --tests "*.MigrationToolServiceIntegrationTest"` | Wave 0 |
+| MCP-07 | Cache evicted after `IncrementalIndexingService` reindex | integration | `./gradlew test --tests "*.MigrationToolServiceIntegrationTest"` | Wave 0 |
 | MCP-08 | Graceful degradation: Neo4j down → partial context + warnings | unit | `./gradlew test --tests "*.MigrationContextAssemblerTest"` | Wave 0 |
 | SLO-MCP-01 | `get_migration_context` < 1.5s with pilot fixtures | integration | `./gradlew test --tests "*.McpSloTest"` | Wave 0 |
 | SLO-MCP-02 | `search_knowledge` < 500ms | integration | `./gradlew test --tests "*.McpSloTest"` | Wave 0 |
@@ -543,11 +543,9 @@ Place at project root as `.mcp.json`. Checked into version control. Team members
 
 ### Wave 0 Gaps
 - [ ] `src/test/java/com/esmp/mcp/application/MigrationContextAssemblerTest.java` — covers MCP-02, MCP-08
-- [ ] `src/test/java/com/esmp/mcp/tool/MigrationToolServiceTest.java` — covers MCP-03, MCP-04, MCP-05
-- [ ] `src/test/java/com/esmp/mcp/config/McpCacheTest.java` — covers MCP-06
+- [ ] `src/test/java/com/esmp/mcp/tool/MigrationToolServiceIntegrationTest.java` — covers MCP-03, MCP-04, MCP-05, MCP-06, MCP-07
 - [ ] `src/test/java/com/esmp/mcp/config/McpServerStartupTest.java` — covers MCP-01
 - [ ] `src/test/java/com/esmp/mcp/config/McpSloTest.java` — covers SLO-MCP-01, SLO-MCP-02
-- [ ] `src/test/java/com/esmp/mcp/config/McpCacheEvictionTest.java` — covers MCP-07
 
 ---
 
