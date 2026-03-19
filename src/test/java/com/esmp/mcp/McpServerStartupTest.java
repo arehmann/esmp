@@ -2,13 +2,14 @@ package com.esmp.mcp;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
@@ -23,6 +24,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  *
  * <p>Verifies that the Spring AI MCP Server WebMVC starter correctly registers the SSE endpoint at
  * {@code /mcp/sse} and that the endpoint is reachable (MCP-01).
+ *
+ * <p>Uses a raw TCP socket with SO_TIMEOUT to read only the HTTP status line — SSE connections
+ * never close, so using {@code TestRestTemplate.getForEntity()} would block indefinitely.
  *
  * <p>This test only verifies infrastructure wiring — it does not test any MCP tool behaviour.
  */
@@ -58,23 +62,39 @@ class McpServerStartupTest {
     registry.add("qdrant.port", () -> qdrant.getMappedPort(6334));
   }
 
-  @Autowired
-  private TestRestTemplate testRestTemplate;
+  @LocalServerPort
+  private int port;
 
   /**
-   * MCP-01: Verifies that the MCP SSE endpoint is registered and reachable.
+   * MCP-01: Verifies that the MCP SSE endpoint is registered and returns HTTP 200.
    *
-   * <p>A GET request to {@code /mcp/sse} should return HTTP 200 with {@code text/event-stream}
-   * content type. Spring AI MCP Server auto-configuration maps this endpoint when the
-   * {@code spring-ai-starter-mcp-server-webmvc} dependency is on the classpath.
+   * <p>Uses a raw TCP socket with a 5-second read timeout to read only the HTTP status line.
+   * SSE connections stream indefinitely so standard HTTP clients block forever — reading just the
+   * first response line avoids that limitation while still confirming endpoint registration.
    */
   @Test
   @DisplayName("MCP-01: /mcp/sse endpoint is registered and returns 200")
-  void testMcpSseEndpointReachable_MCP01() {
-    ResponseEntity<String> response = testRestTemplate.getForEntity("/mcp/sse", String.class);
+  void testMcpSseEndpointReachable_MCP01() throws Exception {
+    try (Socket socket = new Socket("localhost", port)) {
+      socket.setSoTimeout(5000); // 5-second read timeout — enough to see the HTTP status line
 
-    assertThat(response.getStatusCode())
-        .as("MCP SSE endpoint must return 200 OK")
-        .isEqualTo(HttpStatus.OK);
+      PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+      BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+      // Send minimal HTTP/1.1 GET request
+      out.println("GET /mcp/sse HTTP/1.1");
+      out.println("Host: localhost:" + port);
+      out.println("Accept: text/event-stream");
+      out.println("Connection: close");
+      out.println();
+
+      // Read HTTP response status line (e.g., "HTTP/1.1 200 ")
+      String statusLine = in.readLine();
+
+      assertThat(statusLine)
+          .as("MCP SSE endpoint must return HTTP 200 status line")
+          .isNotNull()
+          .contains("200");
+    }
   }
 }
