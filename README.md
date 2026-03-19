@@ -30,7 +30,7 @@ ESMP analyzes your legacy Java/Vaadin codebase, builds a knowledge graph of ever
 - [Running Tests](#running-tests)
 - [Monitoring](#monitoring)
 - [Troubleshooting](#troubleshooting)
-- [AI-Powered Migration Guide](#ai-powered-migration-guide)
+- [v1: Manual AI-Assisted Migration](#v1-manual-ai-assisted-migration)
   - [The Big Picture](#the-big-picture)
   - [Phase 1: Preparation](#phase-1-preparation--analyze--index--schedule)
   - [Phase 2: Pilot Migration](#phase-2-pilot-migration--one-module-end-to-end)
@@ -38,6 +38,16 @@ ESMP analyzes your legacy Java/Vaadin codebase, builds a knowledge graph of ever
   - [Phase 4: Continuous Validation](#phase-4-continuous-validation--keep-everything-green)
   - [Prompt Engineering for Migration](#prompt-engineering-for-migration)
   - [Automation Scripts](#automation-scripts)
+- [v2: Autonomous AI Orchestration Engine (Roadmap)](#v2-autonomous-ai-orchestration-engine-roadmap)
+  - [What Changes from v1 to v2](#what-changes-from-v1-to-v2)
+  - [Architecture: The Orchestration Loop](#architecture-the-orchestration-loop)
+  - [ORCH-01: AI Orchestration Engine](#orch-01-ai-orchestration-engine)
+  - [ORCH-02: Automated Pull Request Generation](#orch-02-automated-pull-request-generation)
+  - [ORCH-03: Deterministic Guardrails](#orch-03-deterministic-guardrails)
+  - [ORCH-04: AI Confidence Scoring](#orch-04-ai-confidence-scoring)
+  - [Behavioral Diffing Framework](#behavioral-diffing-framework)
+  - [Advanced Features](#advanced-features)
+  - [What v2 Will NOT Do](#what-v2-will-not-do)
 
 ---
 
@@ -1459,9 +1469,11 @@ Here's a complete workflow from start to finish:
 
 ---
 
-## AI-Powered Migration Guide
+## v1: Manual AI-Assisted Migration
 
-> **This is the core value of ESMP** — using everything you've set up to systematically migrate your codebase with AI assistance. ESMP is not just an analysis tool; it's a **migration orchestration platform** that feeds AI models with graph-aware, risk-scored, dependency-mapped context so they can write accurate Vaadin 24 code.
+> **Available now.** You drive the migration, ESMP provides the intelligence. You use ESMP's APIs to get rich, graph-aware context for each class, feed it to any AI tool (Claude, GPT, Copilot), review the output, and re-index. ESMP validates every step.
+
+> **Looking for the fully automated version?** See [v2: Autonomous AI Orchestration Engine](#v2-autonomous-ai-orchestration-engine-roadmap) below — where ESMP itself calls Claude, generates code, validates it, and opens PRs automatically.
 
 ### The Big Picture
 
@@ -2280,6 +2292,628 @@ Here's a concrete example of migrating `OrderFormView` (a Vaadin 7 view) using E
 
   All green! Move to the next class.
 ```
+
+---
+
+## v2: Autonomous AI Orchestration Engine (Roadmap)
+
+> **Coming next.** v2 transforms ESMP from a tool you use *with* AI into a tool that *is* the AI migration engine. Instead of you copying context to Claude and pasting code back, ESMP itself orchestrates the entire migration pipeline end-to-end — from code analysis to validated pull request.
+
+### What Changes from v1 to v2
+
+```
+  +=====================================================================+
+  |                      v1 vs v2 COMPARISON                             |
+  +=====================================================================+
+  |                                                                      |
+  |   v1 (CURRENT)                      v2 (ROADMAP)                    |
+  |   ============                      ============                    |
+  |                                                                      |
+  |   You call ESMP APIs               ESMP orchestrates everything     |
+  |        |                                   |                         |
+  |   You copy RAG context             ESMP builds prompts internally   |
+  |   to Claude/GPT                    and calls Claude API directly    |
+  |        |                                   |                         |
+  |   You review AI output             Guardrails auto-validate output  |
+  |   manually                         (contracts, security, rules)     |
+  |        |                                   |                         |
+  |   You paste migrated code          ESMP writes code to files        |
+  |   into files                       automatically                    |
+  |        |                                   |                         |
+  |   You run re-index +               ESMP re-indexes, validates,      |
+  |   validation manually              runs behavioral diffs            |
+  |        |                                   |                         |
+  |   You create PRs                   ESMP opens PRs with confidence   |
+  |   yourself                         scores and diff reports          |
+  |                                                                      |
+  |   HUMAN-IN-THE-LOOP               HUMAN-ON-THE-LOOP                |
+  |   (you drive)                      (you approve)                    |
+  +=====================================================================+
+```
+
+```
+  THE v2 PROMISE
+  ==============
+
+  Developer says: "Migrate the billing module"
+
+  ESMP:
+  1. Gets migration schedule (billing is Wave 3)
+  2. For each class in billing (sorted by risk):
+     a. Retrieves full RAG context (dependency cone + vectors)
+     b. Runs OpenRewrite deterministic transforms first
+     c. Builds a rich prompt with context + Vaadin 7→24 mappings
+     d. Calls Claude API with the prompt
+     e. Validates output:
+        - Does it compile?
+        - Do tests pass?
+        - Did any service contracts change? (BLOCKED if yes)
+        - Did any security annotations get removed? (BLOCKED if yes)
+        - Did any validation rules disappear? (BLOCKED if yes)
+     f. Captures behavioral diffs (service outputs, SQL, validations)
+     g. Computes confidence score (0-100)
+     h. Writes migrated code to file
+     i. Re-indexes into knowledge graph
+  3. Opens a PR with:
+     - All migrated files
+     - Confidence score per class
+     - Behavioral diff report
+     - Guardrail check results
+     - Classes that need human review (low confidence)
+
+  Developer reviews ONE PR instead of migrating 45 classes manually.
+```
+
+---
+
+### Architecture: The Orchestration Loop
+
+```
+  +------------------------------------------------------------------+
+  |                   v2 ORCHESTRATION ENGINE                         |
+  +------------------------------------------------------------------+
+  |                                                                    |
+  |  +-----------+     +------------+     +-----------+               |
+  |  | Schedule  |---->| OpenRewrite|---->|    RAG    |               |
+  |  | (Wave +   |     | (Determin- |     | (Context  |               |
+  |  |  class    |     |  istic     |     |  assembly |               |
+  |  |  order)   |     |  transforms|     |  25 chunks|               |
+  |  +-----------+     |  first)    |     |  + risk)  |               |
+  |                    +------------+     +-----------+               |
+  |                                              |                     |
+  |                                              v                     |
+  |                                    +------------------+            |
+  |                                    | Prompt Builder   |            |
+  |                                    | (class + context |            |
+  |                                    |  + Vaadin maps   |            |
+  |                                    |  + guardrail     |            |
+  |                                    |  instructions)   |            |
+  |                                    +------------------+            |
+  |                                              |                     |
+  |                                              v                     |
+  |                                    +------------------+            |
+  |                                    |  Claude API      |            |
+  |                                    |  (Anthropic SDK) |            |
+  |                                    +------------------+            |
+  |                                              |                     |
+  |                                              v                     |
+  |  +------------+    +-------------+   +----------------+            |
+  |  | Behavioral |<---| Guardrails  |<--| Output         |            |
+  |  | Diff       |    | (Contract,  |   | Validator      |            |
+  |  | (pre/post  |    |  Security,  |   | (Compile +     |            |
+  |  |  compare)  |    |  Validation)|   |  Test + Parse) |            |
+  |  +------------+    +-------------+   +----------------+            |
+  |        |                  |                  |                      |
+  |        v                  v                  v                      |
+  |  +--------------------------------------------------+             |
+  |  |              Confidence Scorer                     |             |
+  |  |  compilation: PASS (25pts)                        |             |
+  |  |  tests: PASS (25pts)                              |             |
+  |  |  guardrails: PASS (25pts)                         |             |
+  |  |  behavioral diff: MINOR (20pts)                   |             |
+  |  |  TOTAL: 95/100 — AUTO-APPROVE                     |             |
+  |  +--------------------------------------------------+             |
+  |        |                                                           |
+  |        v                                                           |
+  |  +--------------------------------------------------+             |
+  |  |              PR Generator                          |             |
+  |  |  - Migrated files                                 |             |
+  |  |  - Confidence per class                           |             |
+  |  |  - Behavioral diff report                         |             |
+  |  |  - Guardrail results                              |             |
+  |  |  - Human review flags                             |             |
+  |  +--------------------------------------------------+             |
+  +------------------------------------------------------------------+
+```
+
+---
+
+### ORCH-01: AI Orchestration Engine
+
+The core engine that ties everything together. It replaces the manual "copy context → paste to AI → paste code back" loop with a single automated pipeline.
+
+```
+  ORCHESTRATION ENGINE PIPELINE
+  =============================
+
+  Input:  Module name + source root
+  Output: Migrated code + PR + confidence report
+
+  For each class (ordered by risk, lowest first):
+
+  ┌─────────────────────────────────────────────────┐
+  │ 1. DETERMINISTIC TRANSFORMS (OpenRewrite)       │
+  │    - Import rewrites (com.vaadin.ui → flow)     │
+  │    - Annotation migrations (@Route)             │
+  │    - Known API renames (mechanical changes)     │
+  │    These are SAFE — no AI needed.               │
+  └──────────────────────┬──────────────────────────┘
+                         │
+  ┌──────────────────────▼──────────────────────────┐
+  │ 2. RAG CONTEXT RETRIEVAL                        │
+  │    - Dependency cone (10 hops, all 9 edge types)│
+  │    - Vector search within cone (top 25 chunks)  │
+  │    - Risk scores + business terms               │
+  │    - Vaadin 7 pattern detection flags           │
+  │    - Callers/callees for impact analysis        │
+  └──────────────────────┬──────────────────────────┘
+                         │
+  ┌──────────────────────▼──────────────────────────┐
+  │ 3. PROMPT CONSTRUCTION                          │
+  │    - Class source code                          │
+  │    - RAG context (25 ranked chunks)             │
+  │    - Vaadin 7 → 24 API mapping table            │
+  │    - Guardrail instructions:                    │
+  │      "Do NOT change method signatures"          │
+  │      "Do NOT remove @Secured annotations"       │
+  │      "Do NOT remove Bean Validation rules"      │
+  │    - Business term context from lexicon         │
+  └──────────────────────┬──────────────────────────┘
+                         │
+  ┌──────────────────────▼──────────────────────────┐
+  │ 4. CLAUDE API CALL                              │
+  │    - Anthropic SDK (Java)                       │
+  │    - Model: Claude Sonnet/Opus                  │
+  │    - Returns: migrated Java source code         │
+  └──────────────────────┬──────────────────────────┘
+                         │
+  ┌──────────────────────▼──────────────────────────┐
+  │ 5. OUTPUT VALIDATION                            │
+  │    - Parse the returned code (valid Java?)      │
+  │    - Compile check (javac)                      │
+  │    - Run existing tests                         │
+  │    - Guardrail enforcement (see ORCH-03)        │
+  │    - Behavioral diff (see DIFF-01/02/03)        │
+  └──────────────────────┬──────────────────────────┘
+                         │
+  ┌──────────────────────▼──────────────────────────┐
+  │ 6. CONFIDENCE SCORING (see ORCH-04)             │
+  │    Score ≥ 90 → auto-commit                     │
+  │    Score 70-89 → commit with review flag        │
+  │    Score < 70 → skip, flag for human migration  │
+  └─────────────────────────────────────────────────┘
+```
+
+**How you'll use it (v2 API — planned):**
+
+```bash
+# Migrate an entire module autonomously
+curl -X POST "http://localhost:8080/api/orchestration/migrate" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "module": "billing",
+    "sourceRoot": "/path/to/src/main/java",
+    "dryRun": false,
+    "confidenceThreshold": 80,
+    "createPR": true
+  }'
+
+# Check migration status
+curl "http://localhost:8080/api/orchestration/status/billing"
+
+# Get confidence report
+curl "http://localhost:8080/api/orchestration/report/billing"
+```
+
+---
+
+### ORCH-02: Automated Pull Request Generation
+
+After the orchestration engine migrates a module, it automatically creates a GitHub PR with a structured report.
+
+```
+  GENERATED PR STRUCTURE
+  ======================
+
+  PR Title: "feat: migrate billing module (Wave 3) — 42/45 classes, avg confidence 91%"
+
+  PR Body:
+  ┌────────────────────────────────────────────────────────────┐
+  │ ## Migration Report: billing                               │
+  │                                                            │
+  │ **Module:** billing (Wave 3 of 4)                          │
+  │ **Classes Migrated:** 42/45                                │
+  │ **Average Confidence:** 91%                                │
+  │ **Duration:** 4m 32s                                       │
+  │                                                            │
+  │ ### Confidence Breakdown                                   │
+  │                                                            │
+  │ | Class                    | Confidence | Status          | │
+  │ |--------------------------|-----------|-----------------|  │
+  │ | BillingConfig            |    98%    | Auto-approved   |  │
+  │ | InvoiceRepository        |    96%    | Auto-approved   |  │
+  │ | InvoiceService           |    92%    | Auto-approved   |  │
+  │ | PaymentProcessor         |    85%    | Review needed   |  │
+  │ | InvoiceFormView          |    78%    | Review needed   |  │
+  │ | TaxCalculatorView        |    --     | Skipped (< 70)  |  │
+  │ | RefundWizard             |    --     | Skipped (< 70)  |  │
+  │ | BillingDashboard         |    --     | Skipped (< 70)  |  │
+  │                                                            │
+  │ ### Guardrail Results                                      │
+  │                                                            │
+  │ | Check                    | Status                       │
+  │ |--------------------------|------------------------------|│
+  │ | Service contracts        | PASS — no signatures changed │
+  │ | Security annotations     | PASS — all @Secured kept     │
+  │ | Validation rules         | PASS — all @Valid kept        │
+  │ | Compilation              | PASS — all classes compile    │
+  │ | Test suite               | PASS — 128/128 tests pass    │
+  │                                                            │
+  │ ### Behavioral Diff Summary                                │
+  │                                                            │
+  │ | Dimension          | Changes |                           │
+  │ |--------------------|---------|                           │
+  │ | Service outputs    | 0 diffs |                           │
+  │ | SQL queries        | 2 minor | (ORDER BY added)          │
+  │ | Validation         | 0 diffs |                           │
+  │                                                            │
+  │ ### Classes Needing Human Migration                        │
+  │                                                            │
+  │ These 3 classes scored below the confidence threshold:     │
+  │ - `TaxCalculatorView` — complex custom Vaadin 7 widget    │
+  │ - `RefundWizard` — multi-step wizard with no V24 equiv    │
+  │ - `BillingDashboard` — heavy custom JS interop            │
+  │                                                            │
+  │ Use v1 manual migration for these:                         │
+  │ `curl -X POST localhost:8080/api/rag/context -d {...}`     │
+  └────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### ORCH-03: Deterministic Guardrails
+
+Guardrails are non-negotiable rules that **automatically block** migrations that violate them. No AI confidence score can override a guardrail failure.
+
+```
+  GUARDRAIL ENFORCEMENT
+  =====================
+
+  ┌─────────────────────────────────────────────────────────┐
+  │                  THREE GUARDRAILS                        │
+  │                                                          │
+  │  1. SERVICE CONTRACT PRESERVATION                        │
+  │     ─────────────────────────────                        │
+  │     Compare: method signatures before vs after           │
+  │                                                          │
+  │     BLOCKED if:                                          │
+  │     - Public method signature changed                    │
+  │     - Return type changed                                │
+  │     - Parameter types changed                            │
+  │     - Method removed                                     │
+  │                                                          │
+  │     WHY: Other modules depend on these contracts.        │
+  │     Changing them silently breaks everything.            │
+  │                                                          │
+  │  ┌─────────────────────────────────────────────┐         │
+  │  │  BEFORE                  AFTER              │         │
+  │  │  List<Invoice>           List<Invoice>      │ PASS    │
+  │  │    getInvoices(long)       getInvoices(long)│         │
+  │  │                                             │         │
+  │  │  Invoice                 Optional<Invoice>  │ BLOCKED │
+  │  │    findById(long)          findById(long)   │ Return  │
+  │  │                                  ^^^        │ type    │
+  │  │                                  changed!   │ changed │
+  │  └─────────────────────────────────────────────┘         │
+  │                                                          │
+  │  2. SECURITY ANNOTATION PRESERVATION                     │
+  │     ───────────────────────────────                      │
+  │     BLOCKED if ANY security annotation removed:          │
+  │     @Secured, @RolesAllowed, @PreAuthorize,             │
+  │     @PostAuthorize, @WithMockUser                        │
+  │                                                          │
+  │     WHY: Removing security = creating vulnerabilities.   │
+  │     AI models sometimes "simplify" by removing these.    │
+  │                                                          │
+  │  3. VALIDATION RULE PRESERVATION                         │
+  │     ─────────────────────────────                        │
+  │     BLOCKED if ANY validation removed:                   │
+  │     @Valid, @NotNull, @NotBlank, @Size, @Min, @Max,     │
+  │     @Pattern, @Email, custom validators                  │
+  │                                                          │
+  │     WHY: Validation rules ARE business rules.            │
+  │     Removing @NotNull on a payment amount = data         │
+  │     corruption.                                          │
+  └─────────────────────────────────────────────────────────┘
+
+  Guardrail Failure Flow:
+  =======================
+
+  AI output fails guardrail
+         |
+         v
+  Migration BLOCKED for this class
+         |
+         v
+  Class added to "needs human review" list in PR
+         |
+         v
+  Developer uses v1 manual migration for this class
+  (with full RAG context still available)
+```
+
+---
+
+### ORCH-04: AI Confidence Scoring
+
+Every migrated class gets a composite confidence score (0-100) that determines whether it's auto-approved, flagged for review, or skipped.
+
+```
+  CONFIDENCE SCORING MODEL
+  ========================
+
+  ┌──────────────────────────────────────────────────┐
+  │                                                    │
+  │  DIMENSION              WEIGHT    SCORING          │
+  │  ─────────              ──────    ───────          │
+  │                                                    │
+  │  Compilation            25 pts    PASS = 25        │
+  │                                   FAIL = 0         │
+  │                                                    │
+  │  Test Suite             25 pts    All pass = 25    │
+  │                                   Some fail = 0-15 │
+  │                                   (proportional)   │
+  │                                                    │
+  │  Guardrails             25 pts    All pass = 25    │
+  │                                   Any fail = 0     │
+  │                                   (binary)         │
+  │                                                    │
+  │  Behavioral Diff        25 pts    No diffs = 25    │
+  │                                   Minor = 15-20    │
+  │                                   Major = 0-10     │
+  │                                                    │
+  │  TOTAL                  100 pts                    │
+  │                                                    │
+  ├──────────────────────────────────────────────────┤
+  │                                                    │
+  │  DECISION THRESHOLDS:                              │
+  │                                                    │
+  │  90-100  AUTO-APPROVE                              │
+  │  ┌──────────────────────────────────────────┐      │
+  │  │ Commit directly. No human review needed. │      │
+  │  │ All checks passed. Behavior unchanged.   │      │
+  │  └──────────────────────────────────────────┘      │
+  │                                                    │
+  │  70-89   REVIEW NEEDED                             │
+  │  ┌──────────────────────────────────────────┐      │
+  │  │ Commit but flag in PR for human review.  │      │
+  │  │ Minor behavioral diffs or warnings.      │      │
+  │  └──────────────────────────────────────────┘      │
+  │                                                    │
+  │  0-69    SKIP                                      │
+  │  ┌──────────────────────────────────────────┐      │
+  │  │ Do not commit. Add to "manual migration" │      │
+  │  │ list. Use v1 workflow for this class.     │      │
+  │  └──────────────────────────────────────────┘      │
+  │                                                    │
+  └──────────────────────────────────────────────────┘
+```
+
+**Example scoring:**
+
+```
+  InvoiceService.java
+  ├── Compilation:     PASS     25/25
+  ├── Tests:           PASS     25/25
+  ├── Guardrails:      PASS     25/25
+  └── Behavioral Diff: MINOR    20/25  (one SQL ORDER BY changed)
+                                ──────
+                       TOTAL:   95/100  → AUTO-APPROVE
+
+  RefundWizard.java
+  ├── Compilation:     PASS     25/25
+  ├── Tests:           2 FAIL   15/25
+  ├── Guardrails:      PASS     25/25
+  └── Behavioral Diff: MAJOR     5/25  (validation behavior changed)
+                                ──────
+                       TOTAL:   70/100  → REVIEW NEEDED
+
+  TaxCalculatorView.java
+  ├── Compilation:     FAIL      0/25
+  ├── Tests:           N/A       0/25
+  ├── Guardrails:      N/A       0/25
+  └── Behavioral Diff: N/A       0/25
+                                ──────
+                       TOTAL:    0/100  → SKIP (manual migration)
+```
+
+---
+
+### Behavioral Diffing Framework
+
+The diffing framework captures how the system **behaves** before and after migration, catching semantic bugs that compile fine but produce wrong results.
+
+```
+  BEHAVIORAL DIFFING PIPELINE
+  ============================
+
+  BEFORE MIGRATION              AFTER MIGRATION
+  ================              ===============
+
+  1. SERVICE OUTPUTS (DIFF-01)
+  ┌─────────────────────┐      ┌─────────────────────┐
+  │ Call each public     │      │ Call same methods    │
+  │ method with test     │      │ with same inputs     │
+  │ inputs               │      │                     │
+  │                     │      │                     │
+  │ Record: return      │      │ Record: return      │
+  │ values, exceptions  │      │ values, exceptions  │
+  └─────────┬───────────┘      └─────────┬───────────┘
+            │                             │
+            └──────────┬──────────────────┘
+                       │
+                  COMPARE
+                       │
+            ┌──────────▼──────────────────┐
+            │ Identical?      → PASS      │
+            │ Minor format?   → MINOR     │
+            │ Different value?→ MAJOR     │
+            └─────────────────────────────┘
+
+
+  2. SQL QUERIES (DIFF-02)
+  ┌─────────────────────┐      ┌─────────────────────┐
+  │ Intercept all SQL    │      │ Intercept all SQL    │
+  │ via datasource      │      │ via datasource      │
+  │ proxy                │      │ proxy                │
+  │                     │      │                     │
+  │ Record: query text, │      │ Record: query text, │
+  │ parameters, results │      │ parameters, results │
+  └─────────┬───────────┘      └─────────┬───────────┘
+            │                             │
+            └──────────┬──────────────────┘
+                       │
+                  COMPARE
+                       │
+            ┌──────────▼──────────────────┐
+            │ Same queries?   → PASS      │
+            │ Reordered?      → MINOR     │
+            │ Different WHERE?→ MAJOR     │
+            │ Missing query?  → CRITICAL  │
+            └─────────────────────────────┘
+
+
+  3. VALIDATION BEHAVIOR (DIFF-03)
+  ┌─────────────────────┐      ┌─────────────────────┐
+  │ Submit valid +       │      │ Submit same inputs   │
+  │ invalid inputs to   │      │ to migrated          │
+  │ original validators │      │ validators           │
+  │                     │      │                     │
+  │ Record: which pass, │      │ Record: which pass, │
+  │ which fail, errors  │      │ which fail, errors  │
+  └─────────┬───────────┘      └─────────┬───────────┘
+            │                             │
+            └──────────┬──────────────────┘
+                       │
+                  COMPARE
+                       │
+            ┌──────────▼──────────────────┐
+            │ Same pass/fail? → PASS      │
+            │ Stricter?       → MINOR     │
+            │ More lenient?   → CRITICAL  │
+            │ (accepting previously       │
+            │  invalid input = data bug)  │
+            └─────────────────────────────┘
+```
+
+---
+
+### Advanced Features
+
+These enhance the core orchestration engine:
+
+#### ADV-01: Multi-Layer RAG with Lexicon Scoring
+
+The current RAG pipeline scores on 3 dimensions (vector similarity, graph proximity, risk). v2 adds a **4th dimension: lexicon match** — how many business terms does this chunk share with the focal class?
+
+```
+  v1 RAG Scoring:                   v2 RAG Scoring:
+  finalScore =                      finalScore =
+    vector   * 0.40                   vector    * 0.35
+  + graph    * 0.35                 + graph     * 0.30
+  + risk     * 0.25                 + risk      * 0.20
+                                    + lexicon   * 0.15  ← NEW
+
+  Lexicon score = shared business terms between
+  focal class and context chunk / total terms
+  in focal class.
+
+  WHY: Code that talks about the same business
+  concepts is more relevant for migration context
+  than code that's just structurally close.
+```
+
+#### ADV-02: Natural Language Graph Queries
+
+Ask questions about your codebase in plain English:
+
+```bash
+# v2 planned API
+curl -X POST "http://localhost:8080/api/graph/ask" \
+  -H "Content-Type: application/json" \
+  -d '{"question": "Which services write to the invoices table?"}'
+
+# Response: translates to Cypher, executes, returns results
+{
+  "cypher": "MATCH (s:JavaClass:Service)-[:DEPENDS_ON*]->(r)-[:MAPS_TO_TABLE]->(t:DBTable {name:'invoices'}) RETURN s",
+  "results": [
+    {"fqn": "com.acme.billing.InvoiceService", "risk": 0.78},
+    {"fqn": "com.acme.billing.CreditNoteService", "risk": 0.45}
+  ]
+}
+```
+
+#### ADV-03: Trained Confidence Model
+
+Replace the rule-based confidence scorer with a model trained on historical migration outcomes:
+
+```
+  TRAINING DATA
+  =============
+
+  For each past migration:
+  - Input features: risk score, complexity, Vaadin 7 pattern count,
+    dependency cone size, business term density, method count
+  - Output: did the migration succeed without bugs?
+    (tracked via post-migration bug reports)
+
+  Over time, the model learns which class characteristics
+  predict successful AI migration and which predict failure,
+  giving more accurate confidence scores than static rules.
+```
+
+---
+
+### What v2 Will NOT Do
+
+These are explicitly out of scope to keep the system trustworthy:
+
+| Feature | Reason |
+|---------|--------|
+| **Full automated rewrite without human validation** | AI hallucination risk too high for enterprise code. Humans always review PRs. |
+| **Business rule inference without domain expert** | Critical rules require human SME curation via the Lexicon. |
+| **Replacing CI/CD pipelines** | ESMP is a parallel intelligence layer, not a build system. |
+| **Auto-merging PRs** | Even high-confidence PRs need human approval before merge. The engine *creates* PRs, humans *merge* them. |
+| **Training on your proprietary code** | All AI calls use Claude's general model. Your code is sent via API but never used for training. |
+
+---
+
+### v2 Roadmap Status
+
+| Requirement | Description | Status |
+|-------------|-------------|--------|
+| **ORCH-01** | AI orchestration engine (OpenRewrite → RAG → Claude → validate) | Planned |
+| **ORCH-02** | Automated PR generation with confidence reports | Planned |
+| **ORCH-03** | Deterministic guardrails (contracts, security, validation) | Planned |
+| **ORCH-04** | AI confidence scoring (compilation + tests + guardrails + diff) | Planned |
+| **DIFF-01** | Service output behavioral diffing | Planned |
+| **DIFF-02** | SQL query behavioral diffing | Planned |
+| **DIFF-03** | Validation behavior diffing | Planned |
+| **ADV-01** | Multi-layer RAG with lexicon scoring | Planned |
+| **ADV-02** | Natural language graph queries | Planned |
+| **ADV-03** | Trained confidence scoring model | Planned |
+
+**Foundation ready:** All v1 infrastructure (Phases 1-13) provides the building blocks — RAG pipeline, validation framework, risk scoring, graph API, incremental indexing, scheduling. v2 wires them together with Claude API integration and automated quality gates.
 
 ---
 
