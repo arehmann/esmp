@@ -30,6 +30,14 @@ ESMP analyzes your legacy Java/Vaadin codebase, builds a knowledge graph of ever
 - [Running Tests](#running-tests)
 - [Monitoring](#monitoring)
 - [Troubleshooting](#troubleshooting)
+- [AI-Powered Migration Guide](#ai-powered-migration-guide)
+  - [The Big Picture](#the-big-picture)
+  - [Phase 1: Preparation](#phase-1-preparation--analyze--index--schedule)
+  - [Phase 2: Pilot Migration](#phase-2-pilot-migration--one-module-end-to-end)
+  - [Phase 3: Wave Execution](#phase-3-wave-execution--systematic-rollout)
+  - [Phase 4: Continuous Validation](#phase-4-continuous-validation--keep-everything-green)
+  - [Prompt Engineering for Migration](#prompt-engineering-for-migration)
+  - [Automation Scripts](#automation-scripts)
 
 ---
 
@@ -1447,6 +1455,830 @@ Here's a complete workflow from start to finish:
   (Get AI context for migration)   (After each code change)
   Write new Vaadin 24 code         Re-check risk scores
   Repeat for each class            Monitor validation health
+```
+
+---
+
+## AI-Powered Migration Guide
+
+> **This is the core value of ESMP** — using everything you've set up to systematically migrate your codebase with AI assistance. ESMP is not just an analysis tool; it's a **migration orchestration platform** that feeds AI models with graph-aware, risk-scored, dependency-mapped context so they can write accurate Vaadin 24 code.
+
+### The Big Picture
+
+```
+  +=======================================================================+
+  |                   ESMP AS MIGRATION ORCHESTRATOR                       |
+  +=======================================================================+
+  |                                                                        |
+  |   TRADITIONAL MIGRATION              ESMP-ORCHESTRATED MIGRATION       |
+  |   =====================              ============================      |
+  |                                                                        |
+  |   Developer reads old code           ESMP analyzes entire codebase     |
+  |        |                                    |                          |
+  |   Developer guesses what             ESMP builds knowledge graph       |
+  |   depends on what                    of ALL relationships              |
+  |        |                                    |                          |
+  |   Developer picks a random           ESMP recommends safest module     |
+  |   class to migrate                   to migrate first (by wave)        |
+  |        |                                    |                          |
+  |   Developer manually reads           ESMP assembles rich context:      |
+  |   all related classes                - dependency cone (10 hops)       |
+  |        |                             - risk scores                     |
+  |   Developer writes Vaadin 24         - business terms                  |
+  |   code from scratch                  - callers/callees                 |
+  |        |                             - Vaadin 7 patterns detected      |
+  |   Developer hopes nothing                   |                          |
+  |   broke                              AI writes Vaadin 24 code with     |
+  |        |                             FULL understanding of context      |
+  |   Developer manually tests                  |                          |
+  |   everything                         ESMP re-indexes, validates,       |
+  |                                      and confirms nothing broke        |
+  |                                                                        |
+  |   Result: Slow, risky,              Result: Fast, safe,               |
+  |   error-prone                        data-driven                       |
+  +=======================================================================+
+```
+
+The workflow is a loop:
+
+```
+  +---> SCHEDULE (which module next?)
+  |            |
+  |            v
+  |     RETRIEVE CONTEXT (RAG for each class)
+  |            |
+  |            v
+  |     AI MIGRATES (with full dependency + risk context)
+  |            |
+  |            v
+  |     RE-INDEX (update graph with new code)
+  |            |
+  |            v
+  |     VALIDATE (run 41 checks — anything broken?)
+  |            |
+  |     NO ----+----> YES (fix before continuing)
+  |            |
+  +--- NEXT CLASS / MODULE
+```
+
+---
+
+### Phase 1: Preparation — Analyze, Index, Schedule
+
+Before any migration, run the full analysis pipeline. This only needs to be done once (incremental updates keep it fresh afterward).
+
+#### Step 1.1: Extract your codebase
+
+```bash
+# Point ESMP at your legacy Vaadin 7 project
+curl -X POST "http://localhost:8080/api/extraction/trigger" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sourceRoot": "/path/to/legacy-app/src/main/java",
+    "classpathFile": "/path/to/legacy-app/classpath.txt"
+  }'
+```
+
+**What happens behind the scenes:**
+
+```
+  Your 500+ Java files
+         |
+         v
+  7 AST visitors extract:
+  - 8 node types (classes, methods, fields, annotations, ...)
+  - 9 relationship types (CALLS, EXTENDS, DEPENDS_ON, ...)
+  - Business terms from naming conventions
+  - Cyclomatic complexity per method
+  - Vaadin 7 patterns (views, components, data bindings)
+  - JPA queries and table mappings
+         |
+         v
+  Neo4j graph: thousands of nodes and edges
+  representing your ENTIRE codebase structure
+```
+
+#### Step 1.2: Build vector embeddings
+
+```bash
+curl -X POST "http://localhost:8080/api/vector/index?sourceRoot=/path/to/legacy-app/src/main/java"
+```
+
+This creates searchable embeddings for every class and method, enriched with graph context (callers, dependencies, risk scores, business terms).
+
+#### Step 1.3: Get your migration schedule
+
+```bash
+curl "http://localhost:8080/api/scheduling/recommend?sourceRoot=/path/to/legacy-app" | python -m json.tool
+```
+
+Or open **http://localhost:8080/schedule** and click **Generate Schedule**.
+
+You now have a wave-ordered migration plan:
+
+```
+  YOUR MIGRATION ROADMAP
+  ======================
+
+  Wave 1 (Safest - Migrate First)     Wave 2 (Moderate Risk)
+  +--------+ +--------+ +--------+    +--------+ +--------+
+  | utils  | | config | | common |    | service| | report |
+  | 0.120  | | 0.185  | | 0.210  |    | 0.445  | | 0.380  |
+  +--------+ +--------+ +--------+    +--------+ +--------+
+
+  Wave 3 (Higher Risk)                 Wave 4 (Circular Deps)
+  +--------+ +--------+               +--------+ +--------+
+  |  ui    | |billing |               |  auth  | |payment |
+  | 0.620  | | 0.780  |               | 0.850  | | 0.830  |
+  +--------+ +--------+               +--------+ +--------+
+
+  Start from Wave 1, left to right.
+  Each module's dependencies are guaranteed
+  to be in earlier waves.
+```
+
+#### Step 1.4: Validate pilot module readiness
+
+```bash
+# Pick the first module from Wave 1
+curl "http://localhost:8080/api/pilot/validate/utils"
+```
+
+Confirm all 5 checks pass before starting migration.
+
+---
+
+### Phase 2: Pilot Migration — One Module End-to-End
+
+Now you migrate your first module using AI. This establishes the pattern you'll repeat for every module.
+
+#### Step 2.1: List all classes in the module
+
+```bash
+# Get all classes in the target module
+curl "http://localhost:8080/api/graph/search?name=utils" | python -m json.tool
+```
+
+Or use the Dashboard's dependency explorer to drill into the module.
+
+#### Step 2.2: For each class — Get AI migration context
+
+This is the key step. For every class you want to migrate, ask ESMP to assemble the full context an AI needs:
+
+```bash
+# Get rich migration context for a specific class
+curl -X POST "http://localhost:8080/api/rag/context" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "fqn": "com.acme.utils.DateFormatter",
+    "limit": 25,
+    "includeFullSource": true
+  }'
+```
+
+**What the AI receives (not just the class — everything it needs):**
+
+```
+  RAG Context Package for: DateFormatter
+  =======================================
+
+  FOCAL CLASS
+  -----------
+  - Full source code of DateFormatter
+  - Risk score: 0.12 (low - safe to migrate)
+  - Vaadin 7 detected: yes (uses com.vaadin.ui.Label)
+  - Business terms: ["Date", "Format"]
+
+  25 CONTEXT CHUNKS (ranked by relevance)
+  ----------------------------------------
+  Each chunk includes:
+
+  1. DateUtils.formatEuropean()        score: 0.92
+     - Called BY DateFormatter          (graph proximity: 1 hop)
+     - Also Vaadin 7                    (risk: 0.08)
+     - Code: public String formatEuropean(Date d) { ... }
+
+  2. DateConverter.convertToModel()     score: 0.87
+     - Implements Converter<String,Date> (Vaadin 7 interface!)
+     - Called by DateFormatter           (graph proximity: 1 hop)
+     - Code: @Override public Date convertToModel(...) { ... }
+
+  3. OrderForm.buildDateField()         score: 0.81
+     - USES DateFormatter               (graph proximity: 2 hops)
+     - Vaadin 7 Form with DateField     (needs migration)
+     - Code: DateField df = new DateField(); ...
+
+  ... 22 more chunks, each with:
+      - Source code
+      - Relationship to focal class
+      - Risk score
+      - Vaadin 7 detection
+      - Business terms
+
+  CONE SUMMARY
+  ------------
+  - 18 total reachable nodes
+  - 4 contain Vaadin 7 code
+  - Average risk: 0.15 (low)
+  - Key business terms: Date, Format, Order, Invoice
+```
+
+#### Step 2.3: Feed context to AI and migrate
+
+Now you take the RAG context and feed it to your AI tool (Claude, GPT, Copilot, etc.). Here's how:
+
+**Option A: Manual prompt (copy-paste)**
+
+```
+You are migrating a Java/Vaadin 7 application to Vaadin 24.
+
+Here is the class to migrate:
+[paste focal class source code]
+
+Here is the full dependency context from our code knowledge graph:
+[paste the RAG response JSON or formatted context]
+
+Key information:
+- This class has risk score 0.12 (low risk)
+- It uses Vaadin 7 DateField which maps to Vaadin 24 DatePicker
+- It has 4 callers that will also need updating
+- Business terms involved: Date, Format
+
+Please:
+1. Rewrite this class using Vaadin 24 APIs
+2. Preserve all business logic exactly
+3. Note any callers that will need updating
+4. Flag any Vaadin 7 patterns that have no direct Vaadin 24 equivalent
+```
+
+**Option B: Scripted pipeline (recommended for scale)**
+
+```bash
+#!/bin/bash
+# migrate-class.sh — Migrate a single class with AI context
+
+FQN="$1"
+SOURCE_ROOT="/path/to/legacy-app/src/main/java"
+
+# 1. Get full RAG context from ESMP
+CONTEXT=$(curl -s -X POST "http://localhost:8080/api/rag/context" \
+  -H "Content-Type: application/json" \
+  -d "{\"fqn\": \"$FQN\", \"limit\": 25, \"includeFullSource\": true}")
+
+# 2. Get risk detail
+RISK=$(curl -s "http://localhost:8080/api/risk/class/$FQN")
+
+# 3. Get inheritance chain
+INHERITANCE=$(curl -s "http://localhost:8080/api/graph/class/$FQN/inheritance")
+
+# 4. Combine into AI prompt
+cat <<PROMPT
+Migrate this Vaadin 7 class to Vaadin 24.
+
+## Class: $FQN
+
+## Risk Assessment:
+$RISK
+
+## Inheritance Chain:
+$INHERITANCE
+
+## Full Dependency Context (from code knowledge graph):
+$CONTEXT
+
+## Instructions:
+1. Rewrite using Vaadin 24 Flow APIs
+2. Replace deprecated Vaadin 7 patterns:
+   - com.vaadin.ui.* -> com.vaadin.flow.component.*
+   - Navigator -> @Route annotations
+   - BeanItemContainer -> DataProvider
+   - Property/Item -> Binder
+3. Preserve all business logic
+4. List all classes that call this one (they may need updates)
+PROMPT
+```
+
+```bash
+# Usage:
+./migrate-class.sh com.acme.utils.DateFormatter | claude --prompt -
+# or pipe to any AI CLI tool
+```
+
+**Option C: Claude Code integration (most powerful)**
+
+If you're using Claude Code (this CLI tool), you can build a migration workflow:
+
+```bash
+# In your project directory, create a migration helper script:
+
+# 1. Get the schedule
+curl -s "http://localhost:8080/api/scheduling/recommend" > /tmp/schedule.json
+
+# 2. For each module in wave order, for each class:
+#    Ask Claude Code to migrate with full ESMP context
+
+# Example Claude Code prompt:
+# "Migrate com.acme.utils.DateFormatter from Vaadin 7 to Vaadin 24.
+#  Use the ESMP RAG API at localhost:8080 to get full context first:
+#  POST /api/rag/context with fqn=com.acme.utils.DateFormatter"
+```
+
+#### Step 2.4: After migration — Re-index and validate
+
+After you've written the new Vaadin 24 code for a class:
+
+```bash
+# Tell ESMP about the changed files
+curl -X POST "http://localhost:8080/api/indexing/incremental" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sourceRoot": "/path/to/legacy-app/src/main/java",
+    "changedFiles": [
+      "com/acme/utils/DateFormatter.java"
+    ]
+  }'
+
+# Run validation to check nothing broke
+curl "http://localhost:8080/api/graph/validation" | python -m json.tool
+```
+
+```
+  After Re-indexing DateFormatter
+  ===============================
+
+  BEFORE                          AFTER
+  ------                          -----
+  Vaadin 7 views: 28              Vaadin 7 views: 27  (-1!)
+  Risk score: 0.12                Risk score: 0.05    (improved!)
+  Validation: 41/41 pass          Validation: 41/41 pass (still green!)
+
+  The graph automatically updated:
+  - DateFormatter node now has Vaadin 24 patterns
+  - Risk scores recomputed
+  - Vector embeddings refreshed
+  - Dependent classes' context updated
+```
+
+---
+
+### Phase 3: Wave Execution — Systematic Rollout
+
+After the pilot module succeeds, scale up to the full migration following the wave schedule.
+
+```
+  WAVE-BY-WAVE MIGRATION PROCESS
+  ================================
+
+  For each wave (1, 2, 3, ...):
+  |
+  +---> For each module in this wave (sorted by score):
+  |     |
+  |     +---> For each class in this module:
+  |     |     |
+  |     |     1. GET RAG context:
+  |     |        POST /api/rag/context {fqn: "...", limit: 25}
+  |     |     |
+  |     |     2. AI migrates with context
+  |     |     |
+  |     |     3. Re-index changed file:
+  |     |        POST /api/indexing/incremental
+  |     |     |
+  |     |     4. Spot-check validation:
+  |     |        GET /api/graph/validation
+  |     |
+  |     +---> Module complete!
+  |           Validate module:
+  |           GET /api/pilot/validate/{module}
+  |
+  +---> Wave complete!
+        Full validation + update schedule:
+        GET /api/graph/validation
+        GET /api/scheduling/recommend
+        (risk scores shift as you migrate)
+```
+
+**Key insight:** As you migrate modules in earlier waves, the risk scores for later waves **automatically update** because:
+- Dependency counts change (migrated modules are "safe" now)
+- Vaadin 7 detection counts drop
+- The knowledge graph reflects the new code structure
+
+```
+  RISK EVOLUTION OVER TIME
+  ========================
+
+  Wave 1 migrated:
+  billing risk: 0.780 --> 0.720  (its dependency 'utils' is now safe)
+
+  Wave 2 migrated:
+  billing risk: 0.720 --> 0.650  ('service' dependency now safe too)
+
+  Wave 3 migrated:
+  billing risk: 0.650 --> 0.580  (getting safer to migrate!)
+```
+
+#### Handling class-by-class migration within a module
+
+For each module, here's the recommended class migration order:
+
+```bash
+# 1. Get all classes in the module sorted by risk (lowest first)
+curl "http://localhost:8080/api/risk/heatmap?module=utils&sortBy=enhanced&limit=100"
+
+# 2. Start with the lowest-risk class
+# 3. For each class:
+
+# Get migration context
+curl -X POST "http://localhost:8080/api/rag/context" \
+  -H "Content-Type: application/json" \
+  -d '{"fqn": "com.acme.utils.StringHelper", "limit": 20}'
+
+# Feed to AI, get migrated code, write it
+
+# Re-index
+curl -X POST "http://localhost:8080/api/indexing/incremental" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sourceRoot": "/path/to/src/main/java",
+    "changedFiles": ["com/acme/utils/StringHelper.java"]
+  }'
+
+# Quick validation check
+curl "http://localhost:8080/api/graph/validation" | \
+  python -c "import sys,json; r=json.load(sys.stdin); print(f'Pass: {r[\"passCount\"]}, Warn: {r[\"warnCount\"]}, Error: {r[\"errorCount\"]}')"
+```
+
+---
+
+### Phase 4: Continuous Validation — Keep Everything Green
+
+Throughout the migration, ESMP acts as your safety net:
+
+```
+  CONTINUOUS SAFETY NET
+  =====================
+
+  +----------------------------------------------------------+
+  |                    41 Validation Queries                   |
+  |                                                           |
+  |  STRUCTURAL    |  Are all edges still valid?              |
+  |  INTEGRITY     |  Any orphan nodes created?               |
+  |  (10 queries)  |  Any dangling references?                |
+  |                                                           |
+  |  ARCHITECTURE  |  Services still depend on repositories?  |
+  |  PATTERNS      |  Views still bind to models?             |
+  |  (10 queries)  |  Inheritance chains intact?              |
+  |                                                           |
+  |  DOMAIN        |  Business terms still connected?         |
+  |  (3 queries)   |  Business rules still defined?           |
+  |                                                           |
+  |  RISK          |  Risk scores still computed?             |
+  |  (6 queries)   |  No high-risk orphans?                   |
+  |                                                           |
+  |  VECTOR        |  Embeddings in sync with code?           |
+  |  (3 queries)   |  Content hashes current?                 |
+  |                                                           |
+  |  RAG           |  Context retrieval working?              |
+  |  (3 queries)   |  Vector index aligned with graph?        |
+  |                                                           |
+  |  SCHEDULING    |  Module structure intact?                |
+  |  (3 queries)   |  Dependency edges still valid?           |
+  |                                                           |
+  |  PILOT         |  Module metrics up to date?              |
+  |  (3 queries)   |                                          |
+  +----------------------------------------------------------+
+         |
+         |  Run after every module migration:
+         |  curl http://localhost:8080/api/graph/validation
+         |
+         v
+  +----------------------------------------------------------+
+  |  ALL PASS?                                                |
+  |                                                           |
+  |  YES --> Continue to next module                          |
+  |                                                           |
+  |  NO  --> STOP. Fix the issue before continuing.           |
+  |          The validation details tell you exactly           |
+  |          what broke and which classes are involved.        |
+  +----------------------------------------------------------+
+```
+
+#### Monitoring migration progress
+
+Track your migration progress through the dashboard:
+
+```
+  DASHBOARD SHOWS REAL-TIME MIGRATION STATUS
+  ===========================================
+
+  +-------------------+-------------------+-------------------+
+  |   Total Classes   | Vaadin 7 Remaining|  Validation Health|
+  |       342         |    28 --> 15 --> 0 |     41/41 pass   |
+  +-------------------+-------------------+-------------------+
+
+  Risk heatmap shows modules getting "greener" over time:
+
+  Before migration:     After Wave 1:       After Wave 2:
+  +------+-------+     +------+-------+    +------+-------+
+  |Module| Risk  |     |Module| Risk  |    |Module| Risk  |
+  |------|-------|     |------|-------|    |------|-------|
+  |utils | 0.12  |     |utils | 0.02  |    |utils | 0.02  |
+  |config| 0.18  |     |config| 0.05  |    |config| 0.05  |
+  |svc   | 0.45  |     |svc   | 0.38  |    |svc   | 0.12  |
+  |bill  | 0.78  |     |bill  | 0.72  |    |bill  | 0.58  |
+  +------+-------+     +------+-------+    +------+-------+
+   (mostly red)         (getting better)    (mostly green!)
+```
+
+---
+
+### Prompt Engineering for Migration
+
+Here are battle-tested prompts for different migration scenarios:
+
+#### Simple class migration (no Vaadin UI)
+
+```
+I'm migrating a Java application. Here is a service class and its full
+dependency context from our code knowledge graph (ESMP RAG output):
+
+[paste RAG context JSON]
+
+This class has:
+- Risk score: {enhancedRiskScore} ({low/moderate/high})
+- {dependentCount} classes depend on it
+- Business terms: {topDomainTerms}
+
+Rewrite this class for modern Spring Boot 3.x / Java 21:
+1. Keep all business logic identical
+2. Use modern Java features where appropriate (records, pattern matching)
+3. List any API changes that callers will need to adapt to
+```
+
+#### Vaadin 7 View migration
+
+```
+I'm migrating a Vaadin 7 view to Vaadin 24 Flow. Here is the class and
+its full dependency context from ESMP:
+
+[paste RAG context JSON]
+
+Key Vaadin 7 to 24 mappings:
+- com.vaadin.ui.VerticalLayout -> com.vaadin.flow.component.orderedlayout.VerticalLayout
+- com.vaadin.ui.Button -> com.vaadin.flow.component.button.Button
+- com.vaadin.ui.Grid (v7) -> com.vaadin.flow.component.grid.Grid (v24)
+- com.vaadin.navigator.View -> @Route annotation
+- BeanItemContainer -> ListDataProvider or DataProvider
+- Property.ValueChangeListener -> HasValue.ValueChangeListener
+- UI.getCurrent().getNavigator().navigateTo() -> UI.getCurrent().navigate()
+
+The context shows these related classes that bind to this view:
+[list classes with BINDS_TO relationships from context]
+
+Please:
+1. Rewrite as Vaadin 24 Flow view with @Route
+2. Convert all Vaadin 7 components to their Flow equivalents
+3. Replace Property/Item model with Binder
+4. Show which data binding patterns changed
+5. Flag any Vaadin 7 features with no direct equivalent
+```
+
+#### Complex class with circular dependencies
+
+```
+I'm migrating a class that's part of a circular dependency cycle.
+ESMP has placed it in the final migration wave because of this cycle.
+
+Here is the class and its context:
+[paste RAG context JSON]
+
+The circular dependency involves these classes:
+- {class A} depends on {class B}
+- {class B} depends on {class A}
+
+Strategy: We need to break this cycle as part of the migration.
+Please:
+1. Identify the interface boundary that should break the cycle
+2. Extract the shared contract into an interface
+3. Rewrite both classes to depend on the interface, not each other
+4. Migrate to Vaadin 24 at the same time
+```
+
+---
+
+### Automation Scripts
+
+#### Full module migration script
+
+```bash
+#!/bin/bash
+# migrate-module.sh — Migrate an entire module class by class
+#
+# Usage: ./migrate-module.sh <module-name> <source-root>
+#
+# Prerequisites: ESMP running at localhost:8080, jq installed
+
+MODULE="$1"
+SOURCE_ROOT="$2"
+ESMP="http://localhost:8080"
+
+echo "========================================="
+echo " ESMP Module Migration: $MODULE"
+echo "========================================="
+
+# 1. Validate module readiness
+echo ""
+echo "[Step 1] Validating module readiness..."
+VALIDATION=$(curl -s "$ESMP/api/pilot/validate/$MODULE")
+CHECKS_FAILED=$(echo "$VALIDATION" | jq '[.pilotChecks[] | select(.status == "FAIL")] | length')
+
+if [ "$CHECKS_FAILED" -gt 0 ]; then
+  echo "FAILED: $CHECKS_FAILED pilot checks failed. Fix before migrating."
+  echo "$VALIDATION" | jq '.pilotChecks[] | select(.status == "FAIL")'
+  exit 1
+fi
+echo "All pilot checks passed."
+
+# 2. Get classes sorted by risk (safest first)
+echo ""
+echo "[Step 2] Getting classes sorted by risk (lowest first)..."
+CLASSES=$(curl -s "$ESMP/api/risk/heatmap?module=$MODULE&limit=500&sortBy=enhanced" \
+  | jq -r '.[].fqn')
+CLASS_COUNT=$(echo "$CLASSES" | wc -l)
+echo "Found $CLASS_COUNT classes to migrate."
+
+# 3. Migrate each class
+COUNTER=0
+echo "$CLASSES" | while read -r FQN; do
+  COUNTER=$((COUNTER + 1))
+  echo ""
+  echo "========================================="
+  echo " [$COUNTER/$CLASS_COUNT] $FQN"
+  echo "========================================="
+
+  # Get RAG context
+  echo "  Fetching RAG context..."
+  CONTEXT=$(curl -s -X POST "$ESMP/api/rag/context" \
+    -H "Content-Type: application/json" \
+    -d "{\"fqn\": \"$FQN\", \"limit\": 20, \"includeFullSource\": true}")
+
+  # Save context to temp file for AI consumption
+  echo "$CONTEXT" > "/tmp/esmp-context-$COUNTER.json"
+  echo "  Context saved to /tmp/esmp-context-$COUNTER.json"
+  echo "  Cone size: $(echo "$CONTEXT" | jq '.coneSummary.totalNodes') nodes"
+  echo "  Vaadin 7: $(echo "$CONTEXT" | jq '.focalClass.vaadin7Detected')"
+  echo "  Risk: $(echo "$CONTEXT" | jq '.focalClass.enhancedRiskScore')"
+
+  # >>> YOUR AI MIGRATION STEP HERE <<<
+  # Feed /tmp/esmp-context-$COUNTER.json to your AI tool
+  # Write the migrated code back to the source file
+  echo ""
+  echo "  >>> Migrate this class now. Press Enter when done..."
+  read -r
+
+  # Re-index the changed file
+  FILE_PATH=$(echo "$FQN" | tr '.' '/')".java"
+  echo "  Re-indexing $FILE_PATH..."
+  curl -s -X POST "$ESMP/api/indexing/incremental" \
+    -H "Content-Type: application/json" \
+    -d "{\"sourceRoot\": \"$SOURCE_ROOT\", \"changedFiles\": [\"$FILE_PATH\"]}" > /dev/null
+
+  # Quick validation
+  VAL=$(curl -s "$ESMP/api/graph/validation")
+  ERRORS=$(echo "$VAL" | jq '.errorCount')
+  if [ "$ERRORS" -gt 0 ]; then
+    echo "  WARNING: $ERRORS validation errors detected!"
+    echo "$VAL" | jq '.results[] | select(.status == "FAIL") | {name, count, details}'
+    echo "  Fix before continuing. Press Enter to proceed anyway..."
+    read -r
+  else
+    echo "  Validation: ALL PASS"
+  fi
+done
+
+echo ""
+echo "========================================="
+echo " Module $MODULE migration complete!"
+echo "========================================="
+echo ""
+echo "Run full validation: curl $ESMP/api/graph/validation"
+echo "Check updated schedule: curl $ESMP/api/scheduling/recommend"
+```
+
+#### Migration progress tracker
+
+```bash
+#!/bin/bash
+# migration-status.sh — Track overall migration progress
+#
+# Usage: ./migration-status.sh
+
+ESMP="http://localhost:8080"
+
+echo "========================================="
+echo " ESMP Migration Progress"
+echo "========================================="
+
+# Get schedule for wave info
+SCHEDULE=$(curl -s "$ESMP/api/scheduling/recommend")
+TOTAL_MODULES=$(echo "$SCHEDULE" | jq '.flatRanking | length')
+TOTAL_WAVES=$(echo "$SCHEDULE" | jq '.waves | length')
+
+# Get risk heatmap for Vaadin 7 counts
+HEATMAP=$(curl -s "$ESMP/api/risk/heatmap?limit=1000")
+TOTAL_CLASSES=$(echo "$HEATMAP" | jq 'length')
+
+# Get validation health
+VALIDATION=$(curl -s "$ESMP/api/graph/validation")
+PASS=$(echo "$VALIDATION" | jq '.passCount')
+WARN=$(echo "$VALIDATION" | jq '.warnCount')
+ERROR=$(echo "$VALIDATION" | jq '.errorCount')
+
+echo ""
+echo "Modules: $TOTAL_MODULES across $TOTAL_WAVES waves"
+echo "Classes: $TOTAL_CLASSES total"
+echo "Validation: $PASS pass, $WARN warn, $ERROR errors"
+echo ""
+echo "Risk Distribution:"
+echo "  Low  (< 0.3): $(echo "$HEATMAP" | jq '[.[] | select(.enhancedRiskScore < 0.3)] | length') classes"
+echo "  Med  (0.3-0.6): $(echo "$HEATMAP" | jq '[.[] | select(.enhancedRiskScore >= 0.3 and .enhancedRiskScore < 0.6)] | length') classes"
+echo "  High (>= 0.6): $(echo "$HEATMAP" | jq '[.[] | select(.enhancedRiskScore >= 0.6)] | length') classes"
+echo ""
+echo "Wave Schedule:"
+echo "$SCHEDULE" | jq -r '.waves[] | "  Wave \(.waveNumber): \(.modules | length) modules — \([.modules[].module] | join(", "))"'
+```
+
+---
+
+### End-to-End Example: Migrating a Real Class
+
+Here's a concrete example of migrating `OrderFormView` (a Vaadin 7 view) using ESMP:
+
+```
+  STEP 1: Check the schedule
+  ===========================
+  $ curl -s localhost:8080/api/scheduling/recommend | jq '.flatRanking[] | select(.module == "order")'
+
+  {
+    "module": "order",
+    "waveNumber": 2,
+    "finalScore": 0.445,
+    "rationale": "Avg risk 0.42 (moderate), 3 dependents, 28 commits/6mo, avg CC 8.2 — moderate priority"
+  }
+
+  Wave 2 = safe to start after Wave 1 is done. OK.
+
+
+  STEP 2: Get RAG context for OrderFormView
+  ==========================================
+  $ curl -s -X POST localhost:8080/api/rag/context \
+    -d '{"fqn": "com.acme.order.OrderFormView", "limit": 20}' | jq '.coneSummary'
+
+  {
+    "totalNodes": 32,
+    "vaadin7Count": 5,           <-- 5 Vaadin 7 classes in the dependency cone
+    "avgEnhancedRisk": 0.38,
+    "topDomainTerms": ["Order", "Customer", "Product", "Price"]
+  }
+
+  Context includes 20 ranked chunks:
+  - OrderService.createOrder()           (1 hop, score 0.94)
+  - OrderValidator.validate()            (1 hop, score 0.91)
+  - CustomerSelector (Vaadin 7 combo)    (2 hops, score 0.85)
+  - ProductGrid (Vaadin 7 grid)          (2 hops, score 0.82)
+  - PriceCalculator.calculate()          (3 hops, score 0.78)
+  ...
+
+
+  STEP 3: AI migrates with full context
+  ======================================
+  AI sees:
+  - OrderFormView extends com.vaadin.navigator.View (Vaadin 7!)
+  - Uses BeanFieldGroup<Order> for data binding
+  - Calls OrderService, OrderValidator
+  - Contains CustomerSelector and ProductGrid components
+  - Business terms: Order, Customer, Product, Price
+  - Risk: 0.42 (moderate)
+
+  AI produces:
+  - @Route("order-form") public class OrderFormView extends VerticalLayout
+  - Binder<Order> replaces BeanFieldGroup
+  - Grid<Product> replaces old ProductGrid
+  - ComboBox<Customer> replaces old CustomerSelector
+  - All business logic preserved exactly
+
+
+  STEP 4: Re-index and validate
+  ==============================
+  $ curl -s -X POST localhost:8080/api/indexing/incremental \
+    -d '{"sourceRoot": "/path/to/src", "changedFiles": ["com/acme/order/OrderFormView.java"]}'
+
+  {"classesExtracted": 1, "chunksReEmbedded": 4, "errors": []}
+
+  $ curl -s localhost:8080/api/graph/validation | jq '{passCount, warnCount, errorCount}'
+
+  {"passCount": 41, "warnCount": 0, "errorCount": 0}
+
+  All green! Move to the next class.
 ```
 
 ---
