@@ -267,8 +267,8 @@ Plans:
 **Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 14-01-PLAN.md — Dependencies (MCP WebMVC starter, Caffeine), config (McpConfig, McpCacheConfig, McpObservabilityConfig), response records (MigrationContext, AssemblerWarning), MigrationContextAssembler with parallel async assembly and token budgeting
-- [ ] 14-02-PLAN.md — MigrationToolService (6 @Tool methods), McpToolRegistration, McpCacheEvictionService, IncrementalIndexingService cache eviction wiring, .mcp.json, integration tests, human verification
+- [x] 14-01-PLAN.md — Dependencies (MCP WebMVC starter, Caffeine), config (McpConfig, McpCacheConfig, McpObservabilityConfig), response records (MigrationContext, AssemblerWarning), MigrationContextAssembler with parallel async assembly and token budgeting
+- [x] 14-02-PLAN.md — MigrationToolService (6 @Tool methods), McpToolRegistration, McpCacheEvictionService, IncrementalIndexingService cache eviction wiring, .mcp.json, integration tests, human verification
 
 ## Progress
 

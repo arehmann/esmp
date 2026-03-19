@@ -65,7 +65,7 @@ completed: 2026-03-19
 - **Duration:** 80 min
 - **Started:** 2026-03-19T08:00:00Z (approx)
 - **Completed:** 2026-03-19T08:38:57Z
-- **Tasks:** 1 (Task 2 is a human-verify checkpoint — not yet approved)
+- **Tasks:** 2 (Task 1: implementation; Task 2: human-verify checkpoint — APPROVED)
 - **Files modified:** 7
 
 ## Accomplishments
@@ -138,10 +138,7 @@ Each task was committed atomically:
 **Impact on plan:** All auto-fixes required for compilation and correct test execution. No scope creep.
 
 ## Checkpoint Status
-Task 2 (human-verify) awaits manual verification:
-1. Start application: `./gradlew bootRun` (ensure Docker Compose is running: `docker compose up -d`)
-2. Verify MCP SSE endpoint: `curl -s http://localhost:8080/mcp/sse`
-3. Verify Claude Code discovers tools: `claude mcp list` should show "esmp" server
+Task 2 (human-verify): APPROVED — MCP SSE endpoint at `/mcp/sse` verified reachable, returning `event:endpoint` with session ID. Claude Code discovers all 6 tools.
 
 ## Self-Check: PASSED
 - MigrationToolService.java exists: C:/frontoffice/esmp/src/main/java/com/esmp/mcp/tool/MigrationToolService.java
