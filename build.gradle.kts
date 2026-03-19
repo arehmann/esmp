@@ -42,6 +42,9 @@ dependencies {
     implementation(libs.openrewrite.java.jdk21)
     implementation(libs.vaadin.spring.boot.starter)
     implementation(libs.spring.ai.starter.transformers)
+    implementation(libs.spring.ai.starter.mcp.server.webmvc)
+    implementation(libs.spring.boot.starter.cache)
+    implementation(libs.caffeine)
 
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.vaadin.server)
