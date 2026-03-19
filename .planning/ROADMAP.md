@@ -25,6 +25,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 11: RAG Pipeline** - Multi-layer GraphRAG retrieval combining graph expansion and embedding similarity (completed 2026-03-18)
 - [x] **Phase 12: Governance Dashboard** - Migration progress, risk clusters, dependency explorer, and lexicon coverage metrics (completed 2026-03-18)
 - [x] **Phase 13: Risk-Prioritized Scheduling** - Data-driven module migration order recommendations (completed 2026-03-18)
+- [ ] **Phase 14: MCP Server for AI-Powered Migration Context** - MCP protocol layer exposing all ESMP knowledge services as Claude Code tools via SSE transport
 
 ## Phase Details
 
@@ -245,13 +246,34 @@ Plans:
 **Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 13-01-PLAN.md — SchedulingWeightConfig, GitFrequencyService, API records, SchedulingService (Neo4j aggregation + topological sort + composite scoring), SchedulingController, SchedulingValidationQueryRegistry, integration tests
-- [ ] 13-02-PLAN.md — ScheduleView Vaadin UI (wave lanes + sortable table + CytoscapeGraph drill-down), MainLayout sidebar update, human verification
+- [x] 13-01-PLAN.md — SchedulingWeightConfig, GitFrequencyService, API records, SchedulingService (Neo4j aggregation + topological sort + composite scoring), SchedulingController, SchedulingValidationQueryRegistry, integration tests
+- [x] 13-02-PLAN.md — ScheduleView Vaadin UI (wave lanes + sortable table + CytoscapeGraph drill-down), MainLayout sidebar update, human verification
+
+### Phase 14: MCP Server for AI-Powered Migration Context
+**Goal**: Claude Code can connect to ESMP via MCP protocol and use 6 tools to retrieve structured, domain-aware migration context during Vaadin 7 to Vaadin 24 migration work
+**Depends on**: Phase 13
+**Requirements**: MCP-01, MCP-02, MCP-03, MCP-04, MCP-05, MCP-06, MCP-07, MCP-08, SLO-MCP-01, SLO-MCP-02
+**Success Criteria** (what must be TRUE):
+  1. MCP server starts and exposes `/mcp/sse` endpoint alongside existing Vaadin UI and REST APIs
+  2. `get_migration_context` returns unified context (dependency cone, risk, domain terms, business rules, code chunks) for a given class FQN
+  3. `search_knowledge` returns ranked code chunks from semantic vector search with optional module/stereotype filters
+  4. `get_dependency_cone` returns graph nodes and edges for a class FQN
+  5. `get_risk_analysis` returns risk heatmap or class-level detail with per-method complexity
+  6. `browse_domain_terms` returns lexicon terms filtered by search text or criticality
+  7. `validate_system_health` runs all 41 validation queries and returns pass/fail report
+  8. Graceful degradation returns partial context with warnings when a downstream service fails
+  9. Caffeine cache is hit on repeated calls and evicted after incremental reindex
+  10. `get_migration_context` completes in under 1.5s; `search_knowledge` completes in under 500ms
+**Plans:** 2 plans
+
+Plans:
+- [ ] 14-01-PLAN.md — Dependencies (MCP WebMVC starter, Caffeine), config (McpConfig, McpCacheConfig, McpObservabilityConfig), response records (MigrationContext, AssemblerWarning), MigrationContextAssembler with parallel async assembly and token budgeting
+- [ ] 14-02-PLAN.md — MigrationToolService (6 @Tool methods), McpToolRegistration, McpCacheEvictionService, IncrementalIndexingService cache eviction wiring, .mcp.json, integration tests, human verification
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -268,13 +290,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 11. RAG Pipeline | 2/2 | Complete    | 2026-03-18 |
 | 12. Governance Dashboard | 3/3 | Complete    | 2026-03-18 |
 | 13. Risk-Prioritized Scheduling | 2/2 | Complete    | 2026-03-18 |
-
-### Phase 14: MCP server for AI-powered migration context
-
-**Goal:** [To be planned]
-**Requirements**: TBD
-**Depends on:** Phase 13
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (run /gsd:plan-phase 14 to break down)
+| 14. MCP Server | 0/2 | Planning    | - |
