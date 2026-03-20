@@ -24,6 +24,21 @@ public class ExtractionConfig {
    */
   private String classpathFile = "";
 
+  /**
+   * Minimum number of source files required to trigger the parallel extraction path.
+   * When the file count is at or below this threshold, the sequential path is used instead.
+   * Configurable via {@code esmp.extraction.parallel-threshold} or environment variable
+   * {@code ESMP_EXTRACTION_PARALLEL_THRESHOLD}.
+   */
+  private int parallelThreshold = 500;
+
+  /**
+   * Number of source files per partition when using the parallel extraction path.
+   * Configurable via {@code esmp.extraction.partition-size} or environment variable
+   * {@code ESMP_EXTRACTION_PARTITION_SIZE}.
+   */
+  private int partitionSize = 200;
+
   public String getSourceRoot() {
     return sourceRoot;
   }
@@ -38,5 +53,21 @@ public class ExtractionConfig {
 
   public void setClasspathFile(String classpathFile) {
     this.classpathFile = classpathFile;
+  }
+
+  public int getParallelThreshold() {
+    return parallelThreshold;
+  }
+
+  public void setParallelThreshold(int parallelThreshold) {
+    this.parallelThreshold = parallelThreshold;
+  }
+
+  public int getPartitionSize() {
+    return partitionSize;
+  }
+
+  public void setPartitionSize(int partitionSize) {
+    this.partitionSize = partitionSize;
   }
 }

@@ -367,6 +367,89 @@ public class ExtractionAccumulator {
   }
 
   // =========================================================================
+  // Merge (for parallel extraction)
+  // =========================================================================
+
+  /**
+   * Merges another accumulator's data into this accumulator and returns {@code this}.
+   *
+   * <p>Designed for use after parallel extraction where each partition produces its own
+   * {@code ExtractionAccumulator}. After all partitions complete, their accumulators are reduced
+   * via this method into a single merged accumulator. The merge runs after all parallel tasks have
+   * finished — no concurrent access occurs during the merge itself.
+   *
+   * <p>Merge semantics per collection:
+   * <ul>
+   *   <li>Maps keyed by FQN ({@code classes}, {@code methods}, {@code fields}, {@code annotations},
+   *       {@code tableMappings}): {@code putAll} — last-write-wins for identical FQN keys, which is
+   *       safe because identical FQNs represent the same entity.
+   *   <li>{@code annotations}: {@code putIfAbsent} — first-occurrence-wins to preserve any
+   *       additional metadata captured by the first partition.
+   *   <li>Lists ({@code callEdges}, {@code componentEdges}, {@code dependencyEdges},
+   *       {@code queryMethods}, {@code bindsToEdges}): {@code addAll} — all edges from both
+   *       partitions are kept (deduplication happens at graph MERGE level).
+   *   <li>Sets ({@code vaadinViews}, {@code vaadinComponents}, {@code vaadinDataBindings},
+   *       {@code serviceClasses}, {@code repositoryClasses}, {@code uiViewClasses}): {@code addAll}
+   *       — set union.
+   *   <li>{@code businessTerms}: merge per-term {@code allSourceFqns} sets so all class references
+   *       are preserved.
+   *   <li>{@code methodComplexities}: {@code putAll} — keyed by methodId, no conflict expected.
+   *   <li>{@code classWriteData}: merge write counts — same class FQN from two partitions is
+   *       unexpected but handled by summing counts.
+   * </ul>
+   *
+   * @param other the other accumulator to merge into this one (not modified)
+   * @return {@code this} with all of {@code other}'s data incorporated
+   */
+  public ExtractionAccumulator merge(ExtractionAccumulator other) {
+    // Maps keyed by FQN — putAll is safe (identical FQN means same entity)
+    this.classes.putAll(other.classes);
+    this.methods.putAll(other.methods);
+    this.fields.putAll(other.fields);
+
+    // Lists — append all (edge deduplication handled at Neo4j MERGE level)
+    this.callEdges.addAll(other.callEdges);
+    this.componentEdges.addAll(other.componentEdges);
+    this.dependencyEdges.addAll(other.dependencyEdges);
+    this.queryMethods.addAll(other.queryMethods);
+    this.bindsToEdges.addAll(other.bindsToEdges);
+
+    // Sets — union
+    this.vaadinViews.addAll(other.vaadinViews);
+    this.vaadinComponents.addAll(other.vaadinComponents);
+    this.vaadinDataBindings.addAll(other.vaadinDataBindings);
+    this.serviceClasses.addAll(other.serviceClasses);
+    this.repositoryClasses.addAll(other.repositoryClasses);
+    this.uiViewClasses.addAll(other.uiViewClasses);
+
+    // Annotations — putIfAbsent so first-captured metadata is preserved
+    other.annotations.forEach((k, v) -> this.annotations.putIfAbsent(k, v));
+
+    // Table mappings — putAll (keyed by classFqn, no conflict expected)
+    this.tableMappings.putAll(other.tableMappings);
+
+    // Business terms — merge allSourceFqns sets so all class references are preserved
+    other.businessTerms.forEach((termId, otherTerm) -> {
+      BusinessTermData existing = this.businessTerms.get(termId);
+      if (existing != null) {
+        existing.allSourceFqns.addAll(otherTerm.allSourceFqns);
+      } else {
+        this.businessTerms.put(termId, otherTerm);
+      }
+    });
+
+    // Method complexities — putAll (keyed by methodId, no conflict expected)
+    this.methodComplexities.putAll(other.methodComplexities);
+
+    // Class write data — merge counts (same FQN in two partitions is unusual but handled safely)
+    other.classWriteData.forEach((fqn, otherWrite) ->
+        this.classWriteData.merge(fqn, otherWrite,
+            (existing, incoming) -> new ClassWriteData(fqn, existing.writeCount() + incoming.writeCount())));
+
+    return this;
+  }
+
+  // =========================================================================
   // Read accessors
   // =========================================================================
 
