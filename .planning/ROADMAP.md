@@ -26,6 +26,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 12: Governance Dashboard** - Migration progress, risk clusters, dependency explorer, and lexicon coverage metrics (completed 2026-03-18)
 - [x] **Phase 13: Risk-Prioritized Scheduling** - Data-driven module migration order recommendations (completed 2026-03-18)
 - [x] **Phase 14: MCP Server for AI-Powered Migration Context** - MCP protocol layer exposing all ESMP knowledge services as Claude Code tools via SSE transport (completed 2026-03-19)
+- [ ] **Phase 15: Docker Deployment & Enterprise Scale** - Deployable Docker image with runtime source access and enterprise-scale extraction performance
 
 ## Phase Details
 
@@ -270,10 +271,30 @@ Plans:
 - [x] 14-01-PLAN.md — Dependencies (MCP WebMVC starter, Caffeine), config (McpConfig, McpCacheConfig, McpObservabilityConfig), response records (MigrationContext, AssemblerWarning), MigrationContextAssembler with parallel async assembly and token budgeting
 - [x] 14-02-PLAN.md — MigrationToolService (6 @Tool methods), McpToolRegistration, McpCacheEvictionService, IncrementalIndexingService cache eviction wiring, .mcp.json, integration tests, human verification
 
+### Phase 15: Docker Deployment & Enterprise Scale
+**Goal**: ESMP is deployable as a Docker image where the source codebase is supplied at runtime (via GitHub URL clone or volume mount), and the full pipeline performs acceptably on enterprise codebases of 4M+ LOC
+**Depends on**: Phase 14
+**Requirements**: DOCK-01, DOCK-02, DOCK-03, DOCK-04, DOCK-05, SCALE-01, SCALE-02, SCALE-03
+**Success Criteria** (what must be TRUE):
+  1. Multi-stage Dockerfile builds ESMP with Vaadin production frontend and layered JAR extraction
+  2. `docker compose -f docker-compose.full.yml up` starts ESMP alongside Neo4j, Qdrant, MySQL, Prometheus, Grafana with healthcheck ordering
+  3. VOLUME_MOUNT strategy resolves sourceRoot from bind-mounted directory
+  4. GITHUB_URL strategy clones a repository via JGit with PAT auth and resolves sourceRoot
+  5. Service-to-service Docker networking connects ESMP to Neo4j, MySQL, Qdrant using service names
+  6. Parallel extraction produces identical graph as sequential extraction for 200+ files
+  7. Batched UNWIND MERGE persistence produces identical graph as per-node saveAll
+  8. SSE progress endpoint streams real-time extraction progress events
+**Plans:** 3 plans
+
+Plans:
+- [ ] 15-01-PLAN.md — Dockerfile, docker-compose.full.yml, .env.example, JGit dependency, application.yml env var overrides, SourceAccessConfig, SourceAccessService, unit tests
+- [ ] 15-02-PLAN.md — ExtractionConfig parallel properties, ExtractionAccumulator.merge(), parallel extraction path, batched UNWIND MERGE persistence, integration tests
+- [ ] 15-03-PLAN.md — ExtractionProgressService (SseEmitter), async extraction trigger, SSE progress endpoint, unit tests, human verification of full Docker stack
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -285,19 +306,10 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 6. Structural Risk Analysis | 2/2 | Complete | 2026-03-05 |
 | 7. Domain-Aware Risk Analysis | 2/2 | Complete | 2026-03-05 |
 | 8. Smart Chunking and Vector Indexing | 2/2 | Complete | 2026-03-06 |
-| 9. Golden Module Pilot | 2/2 | Complete   | 2026-03-06 |
-| 10. Continuous Indexing | 2/2 | Complete    | 2026-03-18 |
-| 11. RAG Pipeline | 2/2 | Complete    | 2026-03-18 |
-| 12. Governance Dashboard | 3/3 | Complete    | 2026-03-18 |
-| 13. Risk-Prioritized Scheduling | 2/2 | Complete    | 2026-03-18 |
-| 14. MCP Server | 2/2 | Complete    | 2026-03-19 |
-
-### Phase 15: Docker Deployment & Enterprise Scale
-
-**Goal:** [To be planned]
-**Requirements**: TBD
-**Depends on:** Phase 14
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (run /gsd:plan-phase 15 to break down)
+| 9. Golden Module Pilot | 2/2 | Complete | 2026-03-06 |
+| 10. Continuous Indexing | 2/2 | Complete | 2026-03-18 |
+| 11. RAG Pipeline | 2/2 | Complete | 2026-03-18 |
+| 12. Governance Dashboard | 3/3 | Complete | 2026-03-18 |
+| 13. Risk-Prioritized Scheduling | 2/2 | Complete | 2026-03-18 |
+| 14. MCP Server | 2/2 | Complete | 2026-03-19 |
+| 15. Docker Deployment & Enterprise Scale | 0/3 | Planned | - |
