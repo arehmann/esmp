@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.openrewrite.SourceFile;
 import org.slf4j.Logger;
@@ -72,6 +73,7 @@ public class ExtractionService {
   private final VaadinAuditService vaadinAuditService;
   private final ExtractionConfig extractionConfig;
   private final TaskExecutor extractionExecutor;
+  private final ExtractionProgressService progressService;
 
   public ExtractionService(
       JavaSourceParser javaSourceParser,
@@ -87,7 +89,8 @@ public class ExtractionService {
       RiskService riskService,
       VaadinAuditService vaadinAuditService,
       ExtractionConfig extractionConfig,
-      @Qualifier("extractionExecutor") TaskExecutor extractionExecutor) {
+      @Qualifier("extractionExecutor") TaskExecutor extractionExecutor,
+      ExtractionProgressService progressService) {
     this.javaSourceParser = javaSourceParser;
     this.mapper = mapper;
     this.classNodeRepository = classNodeRepository;
@@ -102,10 +105,11 @@ public class ExtractionService {
     this.vaadinAuditService = vaadinAuditService;
     this.extractionConfig = extractionConfig;
     this.extractionExecutor = extractionExecutor;
+    this.progressService = progressService;
   }
 
   /**
-   * Runs the full extraction pipeline.
+   * Runs the full extraction pipeline (synchronous, no progress streaming).
    *
    * @param sourceRoot absolute path to the Java source directory; if null or blank, falls back to
    *     {@code ExtractionConfig.sourceRoot}
@@ -115,6 +119,22 @@ public class ExtractionService {
    */
   @Transactional("neo4jTransactionManager")
   public ExtractionResult extract(String sourceRoot, String classpathFile) {
+    return extract(sourceRoot, classpathFile, null);
+  }
+
+  /**
+   * Runs the full extraction pipeline with optional SSE progress streaming.
+   *
+   * @param sourceRoot    absolute path to the Java source directory; if null or blank, falls back to
+   *                      {@code ExtractionConfig.sourceRoot}
+   * @param classpathFile path to the classpath text file; if null or blank, falls back to {@code
+   *                      ExtractionConfig.classpathFile}
+   * @param jobId         optional job identifier for progress streaming via
+   *                      {@link ExtractionProgressService}; may be {@code null} to disable streaming
+   * @return extraction result with counts and Vaadin audit report
+   */
+  @Transactional("neo4jTransactionManager")
+  public ExtractionResult extract(String sourceRoot, String classpathFile, String jobId) {
     long startMs = System.currentTimeMillis();
 
     // Resolve source root
@@ -132,10 +152,12 @@ public class ExtractionService {
     // Scan for .java files
     List<Path> javaPaths = scanJavaFiles(sourceRootPath);
     log.info("Scanning {} for Java sources: found {} files", sourceRootPath, javaPaths.size());
+    sendProgress(jobId, "SCANNING", 0, javaPaths.size());
 
     // Parse all Java source files into OpenRewrite LSTs
     List<SourceFile> sourceFiles =
         javaSourceParser.parse(javaPaths, sourceRootPath, resolvedClasspathFile);
+    sendProgress(jobId, "PARSING", sourceFiles.size(), sourceFiles.size());
 
     // Run visitors to collect AST data into accumulator — parallel path for large codebases
     List<String> errors = Collections.synchronizedList(new ArrayList<>());
@@ -144,11 +166,11 @@ public class ExtractionService {
     if (sourceFiles.size() > extractionConfig.getParallelThreshold()) {
       log.info("Parallel extraction: {} files in partitions of {}",
           sourceFiles.size(), extractionConfig.getPartitionSize());
-      accumulator = visitInParallel(sourceFiles, errors);
+      accumulator = visitInParallel(sourceFiles, errors, jobId);
     } else {
       log.info("Sequential extraction: {} files (below parallel threshold {})",
           sourceFiles.size(), extractionConfig.getParallelThreshold());
-      accumulator = visitSequentially(sourceFiles, errors);
+      accumulator = visitSequentially(sourceFiles, errors, jobId);
     }
     int errorCount = errors.size();
 
@@ -164,6 +186,7 @@ public class ExtractionService {
     // ClassNode uses SDN saveAll() — correct @Id/@Version semantics for class graph wiring
     classNodeRepository.saveAll(classNodes);
     log.info("Persisted {} class nodes to Neo4j", classNodes.size());
+    sendProgress(jobId, "PERSISTING", classNodes.size(), classNodes.size());
 
     // Annotation/Package/Module/DBTable use batched UNWIND MERGE for enterprise-scale performance
     persistAnnotationNodesBatched(annotationNodes);
@@ -177,6 +200,7 @@ public class ExtractionService {
 
     // Run linking pass — creates cross-class relationships via idempotent Cypher MERGE
     LinkingService.LinkingResult linkingResult = linkingService.linkAllRelationships(accumulator);
+    sendProgress(jobId, "LINKING", classNodes.size(), classNodes.size());
 
     // Compute fan-in/out and composite structural risk scores from DEPENDS_ON edges.
     // MUST run after linking — DEPENDS_ON edges must exist for fan-in/out to be accurate.
@@ -216,6 +240,14 @@ public class ExtractionService {
    * Used when {@code sourceFiles.size() <= extractionConfig.getParallelThreshold()}.
    */
   private ExtractionAccumulator visitSequentially(List<SourceFile> sourceFiles, List<String> errors) {
+    return visitSequentially(sourceFiles, errors, null);
+  }
+
+  /**
+   * Visits all source files sequentially with optional progress streaming.
+   * Used when {@code sourceFiles.size() <= extractionConfig.getParallelThreshold()}.
+   */
+  private ExtractionAccumulator visitSequentially(List<SourceFile> sourceFiles, List<String> errors, String jobId) {
     ExtractionAccumulator accumulator = new ExtractionAccumulator();
     ClassMetadataVisitor classMetadataVisitor = new ClassMetadataVisitor();
     CallGraphVisitor callGraphVisitor = new CallGraphVisitor();
@@ -225,6 +257,8 @@ public class ExtractionService {
     LexiconVisitor lexiconVisitor = new LexiconVisitor();
     ComplexityVisitor complexityVisitor = new ComplexityVisitor();
 
+    int total = sourceFiles.size();
+    int processed = 0;
     for (SourceFile sourceFile : sourceFiles) {
       try {
         classMetadataVisitor.visit(sourceFile, accumulator);
@@ -239,6 +273,8 @@ public class ExtractionService {
         errors.add(error);
         log.warn(error, e);
       }
+      processed++;
+      sendProgress(jobId, "VISITING", processed, total);
     }
     return accumulator;
   }
@@ -250,6 +286,19 @@ public class ExtractionService {
    * are reduced into one via {@link ExtractionAccumulator#merge(ExtractionAccumulator)}.
    */
   private ExtractionAccumulator visitInParallel(List<SourceFile> sourceFiles, List<String> errors) {
+    return visitInParallel(sourceFiles, errors, null);
+  }
+
+  /**
+   * Partitions the source file list and visits each partition in a separate task on the
+   * {@code extractionExecutor} thread pool. Each partition gets its own visitor instances and
+   * accumulator, avoiding shared mutable state. After all partitions complete, their accumulators
+   * are reduced into one via {@link ExtractionAccumulator#merge(ExtractionAccumulator)}.
+   *
+   * <p>Progress events are sent after each file visit via {@link ExtractionProgressService} when
+   * {@code jobId} is non-null.
+   */
+  private ExtractionAccumulator visitInParallel(List<SourceFile> sourceFiles, List<String> errors, String jobId) {
     int partSize = extractionConfig.getPartitionSize();
     List<List<SourceFile>> partitions = new ArrayList<>();
     for (int i = 0; i < sourceFiles.size(); i += partSize) {
@@ -257,9 +306,12 @@ public class ExtractionService {
     }
     log.info("Visiting {} partitions in parallel", partitions.size());
 
+    int total = sourceFiles.size();
+    AtomicInteger progressCounter = new AtomicInteger(0);
+
     List<CompletableFuture<ExtractionAccumulator>> futures = partitions.stream()
         .map(batch -> CompletableFuture.supplyAsync(
-            () -> visitBatch(batch, errors), extractionExecutor))
+            () -> visitBatch(batch, errors, jobId, progressCounter, total), extractionExecutor))
         .toList();
 
     CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
@@ -277,6 +329,24 @@ public class ExtractionService {
    * have internal state (a Deque counter stack) that must not be shared across concurrent tasks.
    */
   private ExtractionAccumulator visitBatch(List<SourceFile> batch, List<String> errors) {
+    return visitBatch(batch, errors, null, null, 0);
+  }
+
+  /**
+   * Visits a single batch of source files with optional progress streaming.
+   *
+   * @param batch           the source files to visit
+   * @param errors          shared error list (synchronised externally)
+   * @param jobId           optional job ID for SSE progress streaming
+   * @param progressCounter shared atomic counter across all parallel batches
+   * @param total           total number of source files for progress denominator
+   */
+  private ExtractionAccumulator visitBatch(
+      List<SourceFile> batch,
+      List<String> errors,
+      String jobId,
+      AtomicInteger progressCounter,
+      int total) {
     ExtractionAccumulator acc = new ExtractionAccumulator();
     ClassMetadataVisitor classMetadataVisitor = new ClassMetadataVisitor();
     CallGraphVisitor callGraphVisitor = new CallGraphVisitor();
@@ -299,8 +369,23 @@ public class ExtractionService {
         errors.add("Error visiting " + sf.getSourcePath() + ": " + e.getMessage());
         log.warn("Error visiting {}: {}", sf.getSourcePath(), e.getMessage(), e);
       }
+      if (jobId != null && progressCounter != null) {
+        int processed = progressCounter.incrementAndGet();
+        sendProgress(jobId, "VISITING", processed, total);
+      }
     }
     return acc;
+  }
+
+  /**
+   * Sends a progress event via {@link ExtractionProgressService} when {@code jobId} is non-null.
+   * No-op if jobId is null or blank (synchronous / no-streaming path).
+   */
+  private void sendProgress(String jobId, String phase, int filesProcessed, int totalFiles) {
+    if (jobId != null && !jobId.isBlank()) {
+      progressService.send(jobId,
+          new ExtractionProgressService.ProgressEvent(phase, filesProcessed, totalFiles));
+    }
   }
 
   // =========================================================================
