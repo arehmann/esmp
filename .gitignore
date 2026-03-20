@@ -16,7 +16,5 @@ out/
 # macOS
 .DS_Store
 
-# NOTE: .env is NOT gitignored because it only contains local dev defaults (no real secrets).
-# If you ever add real credentials to .env, add this line:
-#   .env
-# and create a .env.example file with placeholder values.
+# Secrets — copy .env.example to .env and customize; never commit real credentials
+.env

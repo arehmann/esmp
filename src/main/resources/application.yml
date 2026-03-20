@@ -23,9 +23,9 @@ spring:
           prompt: false
           completion: false
   datasource:
-    url: jdbc:mysql://localhost:3307/esmp
-    username: esmp
-    password: ${MYSQL_PASSWORD:esmp-local-password}
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3307/esmp}
+    username: ${SPRING_DATASOURCE_USERNAME:esmp}
+    password: ${SPRING_DATASOURCE_PASSWORD:esmp-local-password}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       connection-timeout: 30000
@@ -38,10 +38,10 @@ spring:
     enabled: true
     locations: classpath:db/migration
   neo4j:
-    uri: bolt://localhost:7687
+    uri: ${SPRING_NEO4J_URI:bolt://localhost:7687}
     authentication:
-      username: neo4j
-      password: ${NEO4J_PASSWORD:esmp-local-password}
+      username: ${SPRING_NEO4J_AUTHENTICATION_USERNAME:neo4j}
+      password: ${SPRING_NEO4J_AUTHENTICATION_PASSWORD:esmp-local-password}
 
 management:
   endpoints:
@@ -55,10 +55,17 @@ management:
         enabled: true
 
 qdrant:
-  host: localhost
-  port: 6334
+  host: ${QDRANT_HOST:localhost}
+  port: ${QDRANT_PORT:6334}
 
 esmp:
+  source:
+    strategy: ${ESMP_SOURCE_STRATEGY:VOLUME_MOUNT}
+    volume-mount-path: ${ESMP_SOURCE_VOLUME_MOUNT_PATH:/mnt/source}
+    github-url: ${ESMP_SOURCE_GITHUB_URL:}
+    github-token: ${ESMP_SOURCE_GITHUB_TOKEN:}
+    clone-directory: ${ESMP_SOURCE_CLONE_DIRECTORY:/tmp/esmp-source-clone}
+    branch: ${ESMP_SOURCE_BRANCH:main}
   mcp:
     context:
       max-tokens: 8000
@@ -70,6 +77,8 @@ esmp:
   extraction:
     source-root: ""
     classpath-file: ""
+    parallel-threshold: ${ESMP_EXTRACTION_PARALLEL_THRESHOLD:500}
+    partition-size: ${ESMP_EXTRACTION_PARTITION_SIZE:200}
   vector:
     collection-name: code_chunks
     vector-dimension: 384

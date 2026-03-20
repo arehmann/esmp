@@ -9,6 +9,7 @@ google-java-format = "1.23.0"
 openrewrite        = "8.74.3"
 vaadin-server      = "7.7.48"
 vaadin             = "24.9.12"
+jgit               = "7.1.0.202411261347-r"
 
 [libraries]
 spring-boot-starter-web       = { module = "org.springframework.boot:spring-boot-starter-web" }
@@ -36,6 +37,7 @@ spring-ai-starter-transformers = { module = "org.springframework.ai:spring-ai-st
 spring-ai-starter-mcp-server-webmvc = { module = "org.springframework.ai:spring-ai-starter-mcp-server-webmvc" }
 spring-boot-starter-cache           = { module = "org.springframework.boot:spring-boot-starter-cache" }
 caffeine                            = { module = "com.github.ben-manes.caffeine:caffeine" }
+jgit                                = { module = "org.eclipse.jgit:org.eclipse.jgit", version.ref = "jgit" }
 
 [plugins]
 spring-boot            = { id = "org.springframework.boot", version.ref = "spring-boot" }
