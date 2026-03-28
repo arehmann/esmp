@@ -324,7 +324,7 @@ Plans:
   4. After each extraction, recipe book usageCount per rule is updated and unmapped com.vaadin.* types are auto-added as NEEDS_MAPPING/DISCOVERED entries
   5. REST API exposes 5 recipe book management endpoints (list, gaps, upsert, delete, reload) and MCP tools surface enriched migration data
   6. getMigrationPlan returns migrationSteps[], pureWrapper, vaadinAncestor, transitiveComplexity for each action; getModuleMigrationSummary returns coverageByType, coverageByUsage, topGaps
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 - [ ] 17-01-PLAN.md — RecipeBookRegistry, RecipeRule record, seed JSON (80+ rules), MigrationConfig extension, MigrationActionNode transitive fields, MigrationPatternVisitor refactor to use registry
@@ -354,4 +354,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 14. MCP Server | 2/2 | Complete | 2026-03-19 |
 | 15. Docker Deployment & Enterprise Scale | 3/3 | Complete    | 2026-03-28 |
 | 16. OpenRewrite Recipe-Based Migration Engine | 3/3 | Complete    | 2026-03-28 |
-| 17. Migration Recipe Book & Transitive Detection | 1/3 | In Progress|  |
+| 17. Migration Recipe Book & Transitive Detection | 2/3 | In Progress|  |

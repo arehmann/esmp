@@ -114,8 +114,8 @@
 
 - [x] **RB-01**: Migration rules stored in external JSON recipe book (not hardcoded Java maps) — loaded at startup, supports base rules + user custom overlay
 - [x] **RB-02**: Comprehensive initial recipe book covering all known Vaadin 7 → 24 component/data/server types plus javax → jakarta mappings (80+ rules)
-- [ ] **RB-03**: Extraction-driven enrichment — after each extraction, recipe book updated with per-rule usage counts, discovered unmapped types (NEEDS_MAPPING), and codebase-specific statistics
-- [ ] **RB-04**: Transitive detection via EXTENDS graph traversal — custom widgets inheriting from Vaadin 7 types discovered, classified as pure wrapper (no overrides) or complex, assigned inherited automation level
+- [x] **RB-03**: Extraction-driven enrichment — after each extraction, recipe book updated with per-rule usage counts, discovered unmapped types (NEEDS_MAPPING), and codebase-specific statistics
+- [x] **RB-04**: Transitive detection via EXTENDS graph traversal — custom widgets inheriting from Vaadin 7 types discovered, classified as pure wrapper (no overrides) or complex, assigned inherited automation level
 - [ ] **RB-05**: REST API for recipe book management (view rules, view gaps, add/update custom rules) and updated MCP tools that surface transitive actions and coverage scores
 - [ ] **RB-06**: AI-optimized output — getMigrationPlan returns enrichment context (usageCount, pureWrapper flag, vaadinAncestor, migration steps) so Claude Code can make accurate migration decisions without additional queries
 
