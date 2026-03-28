@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Phase 16 context gathered
-last_updated: "2026-03-28T13:04:36.159Z"
+stopped_at: Completed 16-openrewrite-recipe-based-migration-engine 16-01-PLAN.md
+last_updated: "2026-03-28T13:47:58.669Z"
 last_activity: 2026-03-04 — Roadmap created, project initialized
 progress:
   total_phases: 16
   completed_phases: 15
-  total_plans: 38
-  completed_plans: 38
+  total_plans: 41
+  completed_plans: 39
 ---
 
 ---
@@ -362,6 +362,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 15-docker-deployment-enterprise-scale P01 | 5min | 2 tasks | 11 files |
 | Phase 15-docker-deployment-enterprise-scale P02 | 55min | 2 tasks | 6 files |
 | Phase 15-docker-deployment-enterprise-scale P03 | 25min | 2 tasks | 4 files |
+| Phase 16-openrewrite-recipe-based-migration-engine P01 | 24 | 2 tasks | 16 files |
 
 ## Accumulated Context
 
@@ -465,6 +466,9 @@ Recent decisions affecting current work:
 - [Phase 15-docker-deployment-enterprise-scale]: extract() overload accepts nullable jobId — null means no progress streaming (backward compat); sendProgress() is a no-op when jobId is null
 - [Phase Phase 15-docker-deployment-enterprise-scale]: SSE race condition for small codebases accepted as not a concern for enterprise-scale deployment target (40K+ file extractions take minutes)
 - [Phase Phase 15-docker-deployment-enterprise-scale]: 60-minute SseEmitter timeout chosen to cover largest realistic enterprise extraction runs
+- [Phase 16-openrewrite-recipe-based-migration-engine]: import-based detection via visitCompilationUnit() not visitImport(): imports appear before class declarations in OpenRewrite LST; CompilationUnit-level processing resolves class FQN from type declarations before iterating imports
+- [Phase 16-openrewrite-recipe-based-migration-engine]: MigrationActionData as record in ExtractionAccumulator: keeps all accumulator inner types co-located, avoids circular imports between visitor and model packages
+- [Phase 16-openrewrite-recipe-based-migration-engine]: actionId = classFqn + '#' + actionType.name() + '#' + source: composite business key enables stable deduplication without UUID generation; same class/type/source triple always produces same ID
 
 ### Roadmap Evolution
 
@@ -483,6 +487,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-28T13:04:36.152Z
-Stopped at: Phase 16 context gathered
-Resume file: .planning/phases/16-openrewrite-recipe-based-migration-engine/16-CONTEXT.md
+Last session: 2026-03-28T13:47:58.663Z
+Stopped at: Completed 16-openrewrite-recipe-based-migration-engine 16-01-PLAN.md
+Resume file: None
