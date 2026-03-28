@@ -148,6 +148,26 @@ public class ClassNode {
    */
   private double enhancedRiskScore;
 
+  // ---------- Phase 16: migration analysis metrics ----------
+
+  /** Total number of migration actions detected for this class. */
+  private int migrationActionCount;
+
+  /** Number of migration actions with automatable=YES (fully recipe-automatable). */
+  private int automatableActionCount;
+
+  /**
+   * Ratio of automatable actions: {@code (yesCount + 0.5 * partialCount) / totalCount}.
+   * Returns 0.0 if the class has no migration actions.
+   */
+  private double automationScore;
+
+  /**
+   * True if any migration action for this class has automatable=NO, meaning AI assistance or
+   * manual developer effort is required.
+   */
+  private boolean needsAiMigration;
+
   public ClassNode() {}
 
   public ClassNode(String fullyQualifiedName) {
@@ -392,5 +412,37 @@ public class ClassNode {
 
   public void setEnhancedRiskScore(double enhancedRiskScore) {
     this.enhancedRiskScore = enhancedRiskScore;
+  }
+
+  public int getMigrationActionCount() {
+    return migrationActionCount;
+  }
+
+  public void setMigrationActionCount(int migrationActionCount) {
+    this.migrationActionCount = migrationActionCount;
+  }
+
+  public int getAutomatableActionCount() {
+    return automatableActionCount;
+  }
+
+  public void setAutomatableActionCount(int automatableActionCount) {
+    this.automatableActionCount = automatableActionCount;
+  }
+
+  public double getAutomationScore() {
+    return automationScore;
+  }
+
+  public void setAutomationScore(double automationScore) {
+    this.automationScore = automationScore;
+  }
+
+  public boolean isNeedsAiMigration() {
+    return needsAiMigration;
+  }
+
+  public void setNeedsAiMigration(boolean needsAiMigration) {
+    this.needsAiMigration = needsAiMigration;
   }
 }

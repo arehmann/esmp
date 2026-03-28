@@ -4,6 +4,7 @@ import com.esmp.extraction.visitor.ExtractionAccumulator;
 import com.esmp.extraction.visitor.ExtractionAccumulator.BindsToRecord;
 import com.esmp.extraction.visitor.ExtractionAccumulator.BusinessTermData;
 import com.esmp.extraction.visitor.ExtractionAccumulator.DependencyEdge;
+import com.esmp.extraction.visitor.ExtractionAccumulator.MigrationActionData;
 import com.esmp.extraction.visitor.ExtractionAccumulator.QueryMethodRecord;
 import java.util.ArrayList;
 import java.util.List;
@@ -70,19 +71,20 @@ public class LinkingService {
     int bindsToCount = linkBindsToEdges(acc);
     int usesTermCount = linkBusinessTermUsages(acc);
     int definesRuleCount = linkBusinessRules(acc);
+    int migrationActionCount = linkMigrationActions(acc);
 
     log.info(
         "Linking complete: EXTENDS={}, DEPENDS_ON={}, MAPS_TO_TABLE={}, "
             + "QUERIES={}, HAS_ANNOTATION={}, CONTAINS_CLASS/PACKAGE={}, BINDS_TO={}, "
-            + "USES_TERM={}, DEFINES_RULE={}",
+            + "USES_TERM={}, DEFINES_RULE={}, HAS_MIGRATION_ACTION={}",
         extendsCount, dependsOnCount, mapsToTableCount,
         queriesCount, hasAnnotationCount, containsClassCount, bindsToCount,
-        usesTermCount, definesRuleCount);
+        usesTermCount, definesRuleCount, migrationActionCount);
 
     return new LinkingResult(
         extendsCount, dependsOnCount, mapsToTableCount,
         queriesCount, hasAnnotationCount, containsClassCount, bindsToCount,
-        usesTermCount, definesRuleCount);
+        usesTermCount, definesRuleCount, migrationActionCount);
   }
 
   // ---------------------------------------------------------------------------
@@ -585,6 +587,64 @@ public class LinkingService {
   }
 
   // ---------------------------------------------------------------------------
+  // Phase 16: Migration action linking: HAS_MIGRATION_ACTION
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Creates HAS_MIGRATION_ACTION edges from JavaClass nodes to their MigrationAction nodes.
+   *
+   * <p>Requires that MigrationAction nodes are already persisted (via batched UNWIND MERGE in
+   * ExtractionService) before this method runs.
+   *
+   * @param acc the accumulator containing migration action data
+   * @return total count of HAS_MIGRATION_ACTION edges created
+   */
+  @Transactional("neo4jTransactionManager")
+  public int linkMigrationActions(ExtractionAccumulator acc) {
+    if (acc.getMigrationActions().isEmpty()) {
+      return 0;
+    }
+
+    // Build flat list of (classFqn, actionId) pairs for UNWIND
+    List<Map<String, Object>> actionRows = new ArrayList<>();
+    for (Map.Entry<String, List<MigrationActionData>> entry :
+        acc.getMigrationActions().entrySet()) {
+      String classFqn = entry.getKey();
+      for (MigrationActionData action : entry.getValue()) {
+        String actionId = classFqn + "#" + action.type().name() + "#" + action.source();
+        actionRows.add(Map.of("classFqn", classFqn, "actionId", actionId));
+      }
+    }
+
+    if (actionRows.isEmpty()) {
+      return 0;
+    }
+
+    String cypher = """
+        UNWIND $actions AS action
+        MATCH (c:JavaClass {fullyQualifiedName: action.classFqn})
+        MATCH (ma:MigrationAction {actionId: action.actionId})
+        MERGE (c)-[r:HAS_MIGRATION_ACTION]->(ma)
+        RETURN count(r) AS cnt
+        """;
+
+    int totalCount = 0;
+    int batchSize = 2000;
+    for (int i = 0; i < actionRows.size(); i += batchSize) {
+      List<Map<String, Object>> batch = actionRows.subList(i, Math.min(i + batchSize, actionRows.size()));
+      Long cnt = neo4jClient.query(cypher)
+          .bind(batch).to("actions")
+          .fetchAs(Long.class)
+          .mappedBy((ts, record) -> record.get("cnt").asLong())
+          .one()
+          .orElse(0L);
+      totalCount += cnt.intValue();
+    }
+
+    return totalCount;
+  }
+
+  // ---------------------------------------------------------------------------
   // Result record
   // ---------------------------------------------------------------------------
 
@@ -598,5 +658,6 @@ public class LinkingService {
       int containsHierarchyCount,
       int bindsToCount,
       int usesTermCount,
-      int definesRuleCount) {}
+      int definesRuleCount,
+      int migrationActionCount) {}
 }

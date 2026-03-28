@@ -8,6 +8,7 @@ import com.esmp.extraction.model.ContainsComponentRelationship;
 import com.esmp.extraction.model.DBTableNode;
 import com.esmp.extraction.model.FieldNode;
 import com.esmp.extraction.model.MethodNode;
+import com.esmp.extraction.model.MigrationActionNode;
 import com.esmp.extraction.model.ModuleNode;
 import com.esmp.extraction.model.PackageNode;
 import com.esmp.extraction.visitor.ExtractionAccumulator;
@@ -19,6 +20,8 @@ import com.esmp.extraction.visitor.ExtractionAccumulator.ClassWriteData;
 import com.esmp.extraction.visitor.ExtractionAccumulator.ComponentEdge;
 import com.esmp.extraction.visitor.ExtractionAccumulator.FieldNodeData;
 import com.esmp.extraction.visitor.ExtractionAccumulator.MethodComplexityData;
+import com.esmp.extraction.visitor.ExtractionAccumulator.MigrationActionData;
+import com.esmp.extraction.visitor.ExtractionAccumulator.MigrationActionData.Automatable;
 import com.esmp.extraction.visitor.ExtractionAccumulator.MethodNodeData;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -180,6 +183,24 @@ public class AccumulatorToModelMapper {
       // Structural risk score is computed via Cypher in Plan 02 after fan-in/out are available
       classNode.setStructuralRiskScore(0.0);
 
+      // Phase 16: map migration analysis metrics from MigrationPatternVisitor output
+      List<MigrationActionData> migrationActions =
+          acc.getMigrationActions().getOrDefault(cData.fqn(), List.of());
+      int totalActions = migrationActions.size();
+      int yesCount = (int) migrationActions.stream()
+          .filter(a -> a.automatable() == Automatable.YES)
+          .count();
+      int partialCount = (int) migrationActions.stream()
+          .filter(a -> a.automatable() == Automatable.PARTIAL)
+          .count();
+      boolean hasNoAction = migrationActions.stream()
+          .anyMatch(a -> a.automatable() == Automatable.NO);
+      classNode.setMigrationActionCount(totalActions);
+      classNode.setAutomatableActionCount(yesCount);
+      classNode.setAutomationScore(
+          totalActions > 0 ? (yesCount + 0.5 * partialCount) / totalActions : 0.0);
+      classNode.setNeedsAiMigration(hasNoAction);
+
       classNodesByFqn.put(cData.fqn(), classNode);
     }
 
@@ -288,6 +309,35 @@ public class AccumulatorToModelMapper {
       byTableName.computeIfAbsent(tableName, name -> new DBTableNode(name));
     }
     return new ArrayList<>(byTableName.values());
+  }
+
+  /**
+   * Maps migration action data from the accumulator into {@link MigrationActionNode} entities.
+   *
+   * <p>The {@code actionId} is computed as {@code classFqn + "#" + action.type().name() + "#" +
+   * action.source()} for stable deduplication across extraction runs.
+   *
+   * @param acc the accumulator populated by visitor traversal
+   * @return list of MigrationActionNode entities ready for batched UNWIND MERGE persistence
+   */
+  public List<MigrationActionNode> mapToMigrationActionNodes(ExtractionAccumulator acc) {
+    List<MigrationActionNode> result = new ArrayList<>();
+    for (Map.Entry<String, List<MigrationActionData>> entry :
+        acc.getMigrationActions().entrySet()) {
+      String classFqn = entry.getKey();
+      for (MigrationActionData action : entry.getValue()) {
+        String actionId = classFqn + "#" + action.type().name() + "#" + action.source();
+        MigrationActionNode node = new MigrationActionNode(actionId);
+        node.setClassFqn(classFqn);
+        node.setActionType(action.type().name());
+        node.setSource(action.source());
+        node.setTarget(action.target() != null ? action.target() : "");
+        node.setAutomatable(action.automatable().name());
+        node.setContext(action.context() != null ? action.context() : "");
+        result.add(node);
+      }
+    }
+    return result;
   }
 
   /**

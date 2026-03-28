@@ -323,7 +323,8 @@ public class IncrementalIndexingService {
       LinkingResult lr = linkingService.linkAllRelationships(accumulator);
       edgesLinked = lr.extendsCount() + lr.dependsOnCount() + lr.mapsToTableCount()
           + lr.queriesCount() + lr.hasAnnotationCount() + lr.containsHierarchyCount()
-          + lr.bindsToCount() + lr.usesTermCount() + lr.definesRuleCount();
+          + lr.bindsToCount() + lr.usesTermCount() + lr.definesRuleCount()
+          + lr.migrationActionCount();
       log.info("Linking complete: {} total edges merged.", edgesLinked);
     } catch (Exception e) {
       String msg = "Linking step failed: " + e.getMessage();
