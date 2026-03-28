@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: planning
 stopped_at: Completed 16-openrewrite-recipe-based-migration-engine 16-03-PLAN.md
-last_updated: "2026-03-28T14:39:26.365Z"
+last_updated: "2026-03-28T14:44:00.265Z"
 last_activity: 2026-03-04 — Roadmap created, project initialized
 progress:
   total_phases: 16
