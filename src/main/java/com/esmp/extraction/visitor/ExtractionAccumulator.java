@@ -70,6 +70,10 @@ public class ExtractionAccumulator {
   private final Map<String, MethodComplexityData> methodComplexities = new HashMap<>();
   private final Map<String, ClassWriteData> classWriteData = new HashMap<>();
 
+  // ---------- Phase 16: migration pattern actions ----------
+
+  private final Map<String, List<MigrationActionData>> migrationActions = new HashMap<>();
+
   // =========================================================================
   // Mutation methods
   // =========================================================================
@@ -367,6 +371,20 @@ public class ExtractionAccumulator {
   }
 
   // =========================================================================
+  // Phase 16: Migration action mutation methods
+  // =========================================================================
+
+  /**
+   * Records a migration action for the given class FQN. Multiple actions can be recorded per class.
+   *
+   * @param classFqn fully qualified name of the class that contains this migration action
+   * @param action the migration action data (type, source, target, automatable, context)
+   */
+  public void addMigrationAction(String classFqn, MigrationActionData action) {
+    migrationActions.computeIfAbsent(classFqn, k -> new ArrayList<>()).add(action);
+  }
+
+  // =========================================================================
   // Merge (for parallel extraction)
   // =========================================================================
 
@@ -445,6 +463,9 @@ public class ExtractionAccumulator {
     other.classWriteData.forEach((fqn, otherWrite) ->
         this.classWriteData.merge(fqn, otherWrite,
             (existing, incoming) -> new ClassWriteData(fqn, existing.writeCount() + incoming.writeCount())));
+
+    // Migration actions — putAll is safe: each class FQN appears in exactly one partition
+    this.migrationActions.putAll(other.migrationActions);
 
     return this;
   }
@@ -540,6 +561,11 @@ public class ExtractionAccumulator {
     return Collections.unmodifiableMap(classWriteData);
   }
 
+  /** Returns an unmodifiable view of per-class migration actions, keyed by class FQN. */
+  public Map<String, List<MigrationActionData>> getMigrationActions() {
+    return Collections.unmodifiableMap(migrationActions);
+  }
+
   // =========================================================================
   // Inner record types
   // =========================================================================
@@ -613,6 +639,59 @@ public class ExtractionAccumulator {
 
   /** DB write count data for a single class. */
   public record ClassWriteData(String classFqn, int writeCount) {}
+
+  /**
+   * Represents a single migration action required for a Vaadin 7 → Vaadin 24 migration.
+   *
+   * <p>Captures the source type/package, target type/package, how automatable the action is, and
+   * optional context notes for complex cases.
+   *
+   * @param type the category of migration action needed
+   * @param source the fully qualified source type or package prefix (Vaadin 7 / javax)
+   * @param target the fully qualified target type or package prefix (Vaadin 24 / jakarta)
+   * @param automatable how automatable this action is (YES = recipe, PARTIAL = recipe + manual,
+   *     NO = AI/manual only)
+   * @param context optional context note explaining why the action is complex
+   */
+  public record MigrationActionData(
+      ActionType type, String source, String target, Automatable automatable, String context) {
+
+    /** The category of change required to migrate a Vaadin 7 type or pattern to Vaadin 24. */
+    public enum ActionType {
+      /** Rename a type to its Vaadin 24 equivalent (import update + usages). */
+      CHANGE_TYPE,
+      /** Change an import statement (used alongside CHANGE_TYPE for import-only renames). */
+      CHANGE_IMPORT,
+      /** Add a new annotation to the class or method (e.g., @Route). */
+      ADD_ANNOTATION,
+      /** Remove an obsolete annotation from the class or method. */
+      REMOVE_ANNOTATION,
+      /** Remove an implements clause (e.g., View interface no longer exists in Vaadin 24). */
+      REMOVE_IMPLEMENTS,
+      /** Change a method signature or rename a method call. */
+      CHANGE_METHOD,
+      /** Rename a package prefix (e.g., javax.servlet → jakarta.servlet). */
+      CHANGE_PACKAGE,
+      /**
+       * Complex rewrite required — type needs significant structural change or AI judgment.
+       * Examples: Table → Grid, BeanItemContainer → DataProvider, BeanFieldGroup → Binder.
+       */
+      COMPLEX_REWRITE
+    }
+
+    /** Automation classification for a migration action. */
+    public enum Automatable {
+      /** Fully automatable — an OpenRewrite recipe can handle this correctly. */
+      YES,
+      /**
+       * Partially automatable — the mechanical part (type rename) can be done by recipe, but
+       * styling, configuration, or layout adjustments require manual review after.
+       */
+      PARTIAL,
+      /** Not automatable — requires AI assistance or manual developer effort. */
+      NO
+    }
+  }
 
   /**
    * Holds extracted data for a single domain business term.
