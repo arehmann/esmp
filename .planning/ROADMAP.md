@@ -26,8 +26,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 12: Governance Dashboard** - Migration progress, risk clusters, dependency explorer, and lexicon coverage metrics (completed 2026-03-18)
 - [x] **Phase 13: Risk-Prioritized Scheduling** - Data-driven module migration order recommendations (completed 2026-03-18)
 - [x] **Phase 14: MCP Server for AI-Powered Migration Context** - MCP protocol layer exposing all ESMP knowledge services as Claude Code tools via SSE transport (completed 2026-03-19)
-- [x] **Phase 15: Docker Deployment & Enterprise Scale** - Deployable Docker image with runtime source access and enterprise-scale extraction performance (completed 2026-03-28)
+- [x] **Phase 15: Docker Deployment & Enterprise Scale** - Deployable Docker image with runtime source access and enterprise-scale extraction performance (completed 2026-03-28)
 - [x] **Phase 16: OpenRewrite Recipe-Based Migration Engine** - Automated Vaadin 7 → Vaadin 24 mechanical transforms via OpenRewrite recipes, integrated with knowledge graph (completed 2026-03-28)
+- [x] **Phase 17: Migration Recipe Book & Transitive Detection** - Externalized JSON recipe book, transitive Vaadin 7 detection via EXTENDS traversal, extraction-driven enrichment feedback loop (completed 2026-03-28)
 
 ## Phase Details
 
@@ -292,10 +293,48 @@ Plans:
 - [ ] 15-02-PLAN.md — ExtractionConfig parallel properties, ExtractionAccumulator.merge(), parallel extraction path, batched UNWIND MERGE persistence, integration tests
 - [ ] 15-03-PLAN.md — ExtractionProgressService (SseEmitter), async extraction trigger, SSE progress endpoint, unit tests, human verification of full Docker stack
 
+### Phase 16: OpenRewrite Recipe-Based Migration Engine
+
+**Goal**: System can catalog Vaadin 7 API usages per class with automation scores, generate and execute OpenRewrite recipes for mechanical transforms (type renames, import swaps, package changes), and expose migration planning and execution via REST API and MCP tools — leaving only complex rewrites (data binding, navigation, custom components) for AI
+**Depends on**: Phase 15
+**Requirements**: MIG-01, MIG-02, MIG-03, MIG-04, MIG-05, MIG-06
+**Success Criteria** (what must be TRUE):
+  1. MigrationPatternVisitor (8th extraction visitor) catalogs every Vaadin 7 type usage per class with source-target mapping and automatable/partial/no classification
+  2. Every ClassNode in Neo4j has migrationActionCount, automatableActionCount, automationScore, and needsAiMigration properties computed from detected migration actions
+  3. MigrationRecipeService generates a composite OpenRewrite recipe from a class's automatable actions and applies it to produce a diff without modifying the source file (preview mode)
+  4. MigrationRecipeService can apply recipes and write modified source back to disk (apply mode) with correct imports, type references, and formatting preserved
+  5. REST API exposes migration plan per class, preview diff, apply per class, and batch apply per module
+  6. Three new MCP tools (getMigrationPlan, applyMigrationRecipes, getModuleMigrationSummary) are callable from Claude Code
+**Plans:** 3/3 plans complete
+
+Plans:
+- [ ] 16-01-PLAN.md — MigrationPatternVisitor (8th visitor), ExtractionAccumulator extensions, MigrationActionNode model, ClassNode migration properties, Neo4j persistence
+- [ ] 16-02-PLAN.md — MigrationRecipeService (recipe generation, preview diff, apply mode), API records, MigrationValidationQueryRegistry, integration tests
+- [ ] 16-03-PLAN.md — MigrationController REST API (5 endpoints), 3 new MCP tools (getMigrationPlan, applyMigrationRecipes, getModuleMigrationSummary), integration tests
+
+### Phase 17: Migration Recipe Book & Transitive Detection
+
+**Goal**: Migration type mappings are externalized from hardcoded Java maps to a loadable JSON recipe book with base + custom overlay support, transitive Vaadin 7 usage is detected through EXTENDS graph traversal with per-class complexity profiling, the recipe book is enriched with usage counts and unmapped type discovery after each extraction, and recipe book management and enriched migration data are exposed via REST API and updated MCP tools
+**Depends on**: Phase 16
+**Requirements**: RB-01, RB-02, RB-03, RB-04, RB-05, RB-06
+**Success Criteria** (what must be TRUE):
+  1. Migration rules are loaded from an external JSON recipe book (not hardcoded Java maps) with 80+ rules covering Vaadin 7 components, data, server, navigator, and javax/jakarta types
+  2. Custom overlay file merges on top of base rules by source FQN key; base rules are protected from deletion
+  3. Classes inheriting from Vaadin 7 types are detected via EXTENDS*1..10 graph traversal and get inherited MigrationAction nodes with complexity profiling (pure wrapper vs. complex)
+  4. After each extraction, recipe book usageCount per rule is updated and unmapped com.vaadin.* types are auto-added as NEEDS_MAPPING/DISCOVERED entries
+  5. REST API exposes 5 recipe book management endpoints (list, gaps, upsert, delete, reload) and MCP tools surface enriched migration data
+  6. getMigrationPlan returns migrationSteps[], pureWrapper, vaadinAncestor, transitiveComplexity for each action; getModuleMigrationSummary returns coverageByType, coverageByUsage, topGaps
+**Plans:** 3/3 plans complete
+
+Plans:
+- [ ] 17-01-PLAN.md — RecipeBookRegistry, RecipeRule record, seed JSON (80+ rules), MigrationConfig extension, MigrationActionNode transitive fields, MigrationPatternVisitor refactor to use registry
+- [ ] 17-02-PLAN.md — migrationPostProcessing() (transitive detection + score recompute + enrichment), ExtractionService/IncrementalIndexingService pipeline hooks, integration tests
+- [ ] 17-03-PLAN.md — RecipeBookController REST API (5 endpoints), extended API records, MCP tool updates (getRecipeBookGaps), validation queries, integration tests
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15 -> 16
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15 -> 16 -> 17
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -315,22 +354,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 14. MCP Server | 2/2 | Complete | 2026-03-19 |
 | 15. Docker Deployment & Enterprise Scale | 3/3 | Complete    | 2026-03-28 |
 | 16. OpenRewrite Recipe-Based Migration Engine | 3/3 | Complete    | 2026-03-28 |
-
-### Phase 16: OpenRewrite Recipe-Based Migration Engine
-
-**Goal**: System can catalog Vaadin 7 API usages per class with automation scores, generate and execute OpenRewrite recipes for mechanical transforms (type renames, import swaps, package changes), and expose migration planning and execution via REST API and MCP tools — leaving only complex rewrites (data binding, navigation, custom components) for AI
-**Depends on**: Phase 15
-**Requirements**: MIG-01, MIG-02, MIG-03, MIG-04, MIG-05, MIG-06
-**Success Criteria** (what must be TRUE):
-  1. MigrationPatternVisitor (8th extraction visitor) catalogs every Vaadin 7 type usage per class with source-target mapping and automatable/partial/no classification
-  2. Every ClassNode in Neo4j has migrationActionCount, automatableActionCount, automationScore, and needsAiMigration properties computed from detected migration actions
-  3. MigrationRecipeService generates a composite OpenRewrite recipe from a class's automatable actions and applies it to produce a diff without modifying the source file (preview mode)
-  4. MigrationRecipeService can apply recipes and write modified source back to disk (apply mode) with correct imports, type references, and formatting preserved
-  5. REST API exposes migration plan per class, preview diff, apply per class, and batch apply per module
-  6. Three new MCP tools (getMigrationPlan, applyMigrationRecipes, getModuleMigrationSummary) are callable from Claude Code
-**Plans:** 3/3 plans complete
-
-Plans:
-- [ ] 16-01-PLAN.md — MigrationPatternVisitor (8th visitor), ExtractionAccumulator extensions, MigrationActionNode model, ClassNode migration properties, Neo4j persistence
-- [ ] 16-02-PLAN.md — MigrationRecipeService (recipe generation, preview diff, apply mode), API records, MigrationValidationQueryRegistry, integration tests
-- [ ] 16-03-PLAN.md — MigrationController REST API (5 endpoints), 3 new MCP tools (getMigrationPlan, applyMigrationRecipes, getModuleMigrationSummary), integration tests
+| 17. Migration Recipe Book & Transitive Detection | 3/3 | Complete    | 2026-03-28 |

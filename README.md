@@ -27,6 +27,7 @@ ESMP analyzes your legacy Java/Vaadin codebase, builds a knowledge graph of ever
   - [11. MCP Server](#11-mcp-server)
   - [12. Docker Deployment & Source Access](#12-docker-deployment--source-access)
   - [13. Migration Engine (OpenRewrite)](#13-migration-engine-openrewrite)
+  - [14. Recipe Book & Transitive Detection](#14-recipe-book--transitive-detection)
 - [REST API Reference](#rest-api-reference)
 - [Vaadin Dashboard Views](#vaadin-dashboard-views)
 - [Configuration Reference](#configuration-reference)
@@ -122,7 +123,7 @@ ESMP is a Spring Boot application backed by three specialized databases:
      |                | |                | |                  |
      | - 9 node types | | - 384-dim      | | - Migration jobs |
      | - 10 edge types| |   embeddings   | | - Audit trail    |
-     | - 44 validation| | - Cosine       | | - Flyway managed |
+     | - 47 validation| | - Cosine       | | - Flyway managed |
      |   queries      | |   similarity   | |                  |
      +----------------+ +----------------+ +------------------+
 
@@ -668,7 +669,7 @@ You can also explore the graph visually in the Neo4j Browser at **http://localho
 
 ### 3. Graph Validation
 
-**What it does:** Runs 44 automated quality checks against your code knowledge graph to ensure data integrity and highlight architectural issues.
+**What it does:** Runs 47 automated quality checks against your code knowledge graph to ensure data integrity and highlight architectural issues.
 
 ```
   Validation Categories
@@ -727,7 +728,7 @@ You can also explore the graph visually in the Neo4j Browser at **http://localho
 **How to use it:**
 
 ```bash
-# Run all 44 validation queries
+# Run all 47 validation queries
 curl "http://localhost:8080/api/graph/validation"
 ```
 
@@ -1217,7 +1218,7 @@ curl "http://localhost:8080/api/scheduling/recommend?sourceRoot=/path/to/project
   │  │ getDependencyCone     │──┼──▶ GraphQueryService (graph traversal)
   │  │ getRiskAnalysis       │──┼──▶ RiskService (structural + domain risk)
   │  │ browseDomainTerms     │──┼──▶ LexiconService (business vocabulary)
-  │  │ validateSystemHealth  │──┼──▶ ValidationService (44 integrity checks)
+  │  │ validateSystemHealth  │──┼──▶ ValidationService (47 integrity checks)
   │  │ getMigrationPlan      │──┼──▶ MigrationRecipeService (per-class migration plan)
   │  │ applyMigrationRecipes │──┼──▶ MigrationRecipeService (preview OpenRewrite diffs)
   │  │ getModuleMigrationSummary──▶ MigrationRecipeService (module-level summary)
@@ -1253,7 +1254,7 @@ docker compose up -d && ./gradlew bootRun -Dorg.gradle.java.home="/path/to/java2
 }
 ```
 
-**Step 3:** Open Claude Code in the ESMP project directory. It automatically discovers the MCP server and all 9 tools. Verify by asking:
+**Step 3:** Open Claude Code in the ESMP project directory. It automatically discovers the MCP server and all 10 tools. Verify by asking:
 
 ```
 You: "What tools do you have from ESMP?"
@@ -1427,7 +1428,7 @@ Browse the automatically extracted domain lexicon.
 
 ##### 6. `validateSystemHealth` — Integrity checks
 
-Runs all 44 validation queries. No parameters.
+Runs all 47 validation queries. No parameters.
 
 **Example response:**
 
@@ -1562,7 +1563,7 @@ Claude: "AuthenticationService depends on:
 You: "Before I start migrating, is the knowledge graph healthy?"
 
 Claude: [calls validateSystemHealth()]
-        → Returns 44 query results
+        → Returns 47 query results
 
 Claude: "System health: 42 pass, 1 warning, 1 error
          - WARNING: 3 orphan classes (no relationships) — likely utility classes
@@ -1786,7 +1787,8 @@ Progress phases: `SCANNING` → `PARSING` → `VISITING` → `PERSISTING` → `L
   Stage 1: CATALOG (MigrationPatternVisitor — 8th visitor)
   ────────────────────────────────────────────────────────
   Scans every .java file for Vaadin 7 type references.
-  30-entry TYPE_MAP maps old types to new types:
+  94-rule external JSON recipe book (loaded from
+  data/migration/vaadin-recipe-book.json) maps old types to new types:
 
   com.vaadin.ui.Table           → com.vaadin.flow.component.grid.Grid      (YES)
   com.vaadin.ui.TextField       → com.vaadin.flow.component.textfield.TextField (YES)
@@ -1844,15 +1846,66 @@ curl -X POST "http://localhost:8080/api/migration/apply-module" \
   -d '{"module": "billing", "sourceRoot": "/path/to/src/main/java"}'
 ```
 
-**Pipeline integration:** MigrationPatternVisitor runs as the 8th visitor during extraction. After extraction completes, every class has `migrationActionCount`, `automatableActionCount`, `automationScore`, and `needsAiMigration` properties on the ClassNode. MigrationAction nodes are persisted with HAS_MIGRATION_ACTION edges.
+**Pipeline integration:** MigrationPatternVisitor runs as the 8th visitor during extraction. After extraction completes, every class has `migrationActionCount`, `automatableActionCount`, `automationScore`, and `needsAiMigration` properties on the ClassNode. MigrationAction nodes are persisted with HAS_MIGRATION_ACTION edges. The recipe book is also enriched post-extraction: usage counts are updated and any unmapped Vaadin 7 types discovered in source are auto-added as NEEDS_MAPPING/DISCOVERED rules.
+
+**Transitive detection:** Classes that inherit from Vaadin 7 types (via `EXTENDS*1..10` graph traversal) are detected even if they don't directly import Vaadin packages. Each transitive class gets a complexity profile: pure wrapper (simple delegation), AI-assisted (moderate logic), or complex (significant custom behavior).
 
 **Safety model:** The MCP tool `applyMigrationRecipes` calls `preview()` (returns diffs) rather than `applyAndWrite()` (modifies files). This means AI assistants can safely explore migration plans without accidentally modifying source code. The REST API provides both preview and apply endpoints for explicit human-driven workflows.
 
 ---
 
+### 14. Recipe Book & Transitive Detection
+
+**What it does:** Replaces the hardcoded static type maps with an external, curated JSON recipe book. Adds transitive detection that finds classes inheriting from Vaadin 7 types through the graph, even if they never directly import Vaadin packages.
+
+**Recipe Book:**
+
+- **94 base rules** loaded from `data/migration/vaadin-recipe-book.json` at startup
+- **Custom overlay:** optional second JSON file merged on top of base rules (custom rules override base by ID)
+- **RecipeBookRegistry:** in-memory registry with lookup by old type, category, status, and automatable flag
+- **Enrichment loop:** after extraction, usage counts are updated on matching rules, and any unmapped Vaadin 7 types are auto-added as `NEEDS_MAPPING` / `DISCOVERED` rules — creating a feedback loop where gaps are surfaced automatically
+- **Base protection:** base rules cannot be deleted via API (returns 403); custom and discovered rules can be freely managed
+
+**Transitive Detection:**
+
+- `EXTENDS*1..10` Cypher traversal from known Vaadin 7 base types
+- Per-class complexity profiling with configurable weights:
+  - **Pure wrapper** (score < threshold): simple delegation, fully automatable
+  - **AI-assisted** (score >= threshold): moderate logic, needs AI help
+  - **Complex** (score well above threshold): significant custom behavior, manual migration
+- `MigrationActionEntry` records include `transitive` flag and `migrationSteps` list
+
+**Extended records:**
+
+- `MigrationActionEntry`: 13 fields including transitive detection flag and migration step instructions
+- `ModuleMigrationSummary`: 13 fields with coverage metrics (`coverageByType`, `coverageByUsage`) and `topGaps`
+
+**How to use it:**
+
+```bash
+# List all recipe book rules (filterable)
+curl "http://localhost:8080/api/migration/recipe-book?category=COMPONENT&status=MAPPED"
+
+# View unmapped gaps sorted by usage count
+curl "http://localhost:8080/api/migration/recipe-book/gaps"
+
+# Add or update a custom rule
+curl -X PUT "http://localhost:8080/api/migration/recipe-book/rules/my-custom-rule" \
+  -H "Content-Type: application/json" \
+  -d '{"oldType": "com.vaadin.ui.MyWidget", "newType": "com.vaadin.flow.component.MyWidget", "automation": "YES", "category": "COMPONENT"}'
+
+# Delete a custom/discovered rule (base rules return 403)
+curl -X DELETE "http://localhost:8080/api/migration/recipe-book/rules/discovered-001"
+
+# Reload recipe book from disk
+curl -X POST "http://localhost:8080/api/migration/recipe-book/reload"
+```
+
+---
+
 ## REST API Reference
 
-Complete list of all 27 endpoints:
+Complete list of all 32 endpoints:
 
 ### Extraction
 
@@ -1870,7 +1923,7 @@ Complete list of all 27 endpoints:
 | `GET` | `/api/graph/class/{fqn}/dependency-cone` | All transitively reachable nodes |
 | `GET` | `/api/graph/repository/{fqn}/service-dependents` | Services depending on a repository |
 | `GET` | `/api/graph/search?name=...` | Search classes by name |
-| `GET` | `/api/graph/validation` | Run all 44 validation queries |
+| `GET` | `/api/graph/validation` | Run all 47 validation queries |
 
 ### Domain & Risk
 
@@ -1910,6 +1963,16 @@ Complete list of all 27 endpoints:
 | `POST` | `/api/migration/apply/{fqn}` | Apply OpenRewrite recipes (writes to disk) |
 | `POST` | `/api/migration/apply-module` | Apply recipes to all classes in a module |
 
+### Recipe Book
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/migration/recipe-book` | List all rules (filterable by category/status/automatable) |
+| `GET` | `/api/migration/recipe-book/gaps` | NEEDS_MAPPING rules sorted by usage count |
+| `PUT` | `/api/migration/recipe-book/rules/{id}` | Add or update a custom rule |
+| `DELETE` | `/api/migration/recipe-book/rules/{id}` | Delete custom/discovered rule (base rules protected) |
+| `POST` | `/api/migration/recipe-book/reload` | Re-read recipe book from file |
+
 ### Source Access
 
 | Method | Endpoint | Description |
@@ -1920,7 +1983,7 @@ Complete list of all 27 endpoints:
 
 | Transport | Endpoint | Description |
 |-----------|----------|-------------|
-| `SSE` | `/mcp/sse` | MCP server — exposes 9 tools (getMigrationContext, searchKnowledge, getDependencyCone, getRiskAnalysis, browseDomainTerms, validateSystemHealth, getMigrationPlan, applyMigrationRecipes, getModuleMigrationSummary) |
+| `SSE` | `/mcp/sse` | MCP server — exposes 10 tools (getMigrationContext, searchKnowledge, getDependencyCone, getRiskAnalysis, browseDomainTerms, validateSystemHealth, getMigrationPlan, applyMigrationRecipes, getModuleMigrationSummary, getRecipeBookGaps) |
 
 ---
 
@@ -2030,6 +2093,21 @@ esmp:
       max-size: 500               # Max entries per cache
 ```
 
+### Recipe Book & Transitive Detection
+
+```yaml
+esmp:
+  migration:
+    recipe-book-path: ${ESMP_MIGRATION_RECIPE_BOOK_PATH:data/migration/vaadin-recipe-book.json}
+    custom-recipe-book-path: ${ESMP_MIGRATION_CUSTOM_RECIPE_BOOK_PATH:}
+    transitive:
+      override-weight: 0.3
+      own-calls-weight: 0.3
+      binding-weight: 0.2
+      component-weight: 0.2
+      ai-assisted-threshold: 0.4
+```
+
 ### Vector Index Settings
 
 ```yaml
@@ -2044,7 +2122,7 @@ esmp:
 
 ## Running Tests
 
-ESMP has comprehensive test coverage with 31 test suites:
+ESMP has comprehensive test coverage with 35 test suites:
 
 ```bash
 # Run all tests (skip Vaadin frontend compilation)
@@ -2079,7 +2157,7 @@ ESMP has comprehensive test coverage with 31 test suites:
 | Scheduling | 1 suite (3 tests) | 1 suite (6 tests) |
 | Dashboard | - | 1 suite (7 tests) |
 | MCP Server | 2 suites (5 tests) | 2 suites (11 tests) |
-| Migration Engine | 1 suite (8 tests) | 3 suites (18 tests) |
+| Migration Engine | 3 suites (29 tests) | 5 suites (36 tests) |
 | Source Access | 1 suite (3 tests) | - |
 | Infrastructure | - | 2 suites |
 
@@ -2328,7 +2406,7 @@ The workflow is a loop:
   |     RE-INDEX (update graph with new code)
   |            |
   |            v
-  |     VALIDATE (run 44 checks — anything broken?)
+  |     VALIDATE (run 47 checks — anything broken?)
   |            |
   |     NO ----+----> YES (fix before continuing)
   |            |
@@ -2638,7 +2716,7 @@ curl "http://localhost:8080/api/graph/validation" | python -m json.tool
   ------                          -----
   Vaadin 7 views: 28              Vaadin 7 views: 27  (-1!)
   Risk score: 0.12                Risk score: 0.05    (improved!)
-  Validation: 44/44 pass          Validation: 44/44 pass (still green!)
+  Validation: 47/47 pass          Validation: 47/47 pass (still green!)
 
   The graph automatically updated:
   - DateFormatter node now has Vaadin 24 patterns
@@ -2746,7 +2824,7 @@ Throughout the migration, ESMP acts as your safety net:
   =====================
 
   +----------------------------------------------------------+
-  |                    44 Validation Queries                   |
+  |                    47 Validation Queries                   |
   |                                                           |
   |  STRUCTURAL    |  Are all edges still valid?              |
   |  INTEGRITY     |  Any orphan nodes created?               |
@@ -2800,7 +2878,7 @@ Track your migration progress through the dashboard:
 
   +-------------------+-------------------+-------------------+
   |   Total Classes   | Vaadin 7 Remaining|  Validation Health|
-  |       342         |    28 --> 15 --> 0 |     44/44 pass   |
+  |       342         |    28 --> 15 --> 0 |     47/47 pass   |
   +-------------------+-------------------+-------------------+
 
   Risk heatmap shows modules getting "greener" over time:
@@ -3104,7 +3182,7 @@ Here's a concrete example of migrating `OrderFormView` (a Vaadin 7 view) using E
 
   $ curl -s localhost:8080/api/graph/validation | jq '{passCount, warnCount, errorCount}'
 
-  {"passCount": 44, "warnCount": 0, "errorCount": 0}
+  {"passCount": 47, "warnCount": 0, "errorCount": 0}
 
   All green! Move to the next class.
 ```

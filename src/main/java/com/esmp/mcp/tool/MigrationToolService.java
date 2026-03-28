@@ -14,13 +14,16 @@ import com.esmp.mcp.application.MigrationContextAssembler;
 import com.esmp.migration.api.MigrationPlan;
 import com.esmp.migration.api.MigrationResult;
 import com.esmp.migration.api.ModuleMigrationSummary;
+import com.esmp.migration.api.RecipeRule;
 import com.esmp.migration.application.MigrationRecipeService;
+import com.esmp.migration.application.RecipeBookRegistry;
 import com.esmp.vector.api.SearchRequest;
 import com.esmp.vector.api.SearchResponse;
 import com.esmp.vector.application.VectorSearchService;
 import io.micrometer.core.annotation.Timed;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -30,7 +33,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 
 /**
- * MCP tool service exposing 9 migration-assistance tools to AI assistants.
+ * MCP tool service exposing 10 migration-assistance tools to AI assistants.
  *
  * <p>Each method is annotated with {@link Tool} so that the Spring AI MCP server can discover
  * and expose it as a named tool via the SSE transport. All methods are also instrumented with
@@ -47,6 +50,7 @@ import org.springframework.stereotype.Component;
  *   <li>{@link #getMigrationPlan} — OpenRewrite recipe plan for a class
  *   <li>{@link #applyMigrationRecipes} — apply recipes and return diff (no disk write)
  *   <li>{@link #getModuleMigrationSummary} — module-level automation statistics
+ *   <li>{@link #getRecipeBookGaps} — NEEDS_MAPPING rules sorted by usageCount
  * </ol>
  */
 @Component
@@ -61,6 +65,7 @@ public class MigrationToolService {
   private final VectorSearchService vectorSearchService;
   private final ValidationService validationService;
   private final MigrationRecipeService migrationRecipeService;
+  private final RecipeBookRegistry recipeBookRegistry;
   private final MeterRegistry meterRegistry;
 
   public MigrationToolService(
@@ -71,6 +76,7 @@ public class MigrationToolService {
       VectorSearchService vectorSearchService,
       ValidationService validationService,
       MigrationRecipeService migrationRecipeService,
+      RecipeBookRegistry recipeBookRegistry,
       MeterRegistry meterRegistry) {
     this.assembler = assembler;
     this.graphQueryService = graphQueryService;
@@ -79,6 +85,7 @@ public class MigrationToolService {
     this.vectorSearchService = vectorSearchService;
     this.validationService = validationService;
     this.migrationRecipeService = migrationRecipeService;
+    this.recipeBookRegistry = recipeBookRegistry;
     this.meterRegistry = meterRegistry;
   }
 
@@ -312,10 +319,13 @@ public class MigrationToolService {
    * automatable, partially automatable, or need AI-only migration.
    *
    * @param module the module name (third segment of the package name, e.g., "billing")
-   * @return {@link ModuleMigrationSummary} with class counts, action counts, and average score
+   * @return {@link ModuleMigrationSummary} with class counts, action counts, average score,
+   *         transitiveClassCount, coverageByType, coverageByUsage, and topGaps
    */
   @Tool(description = "Get migration automation summary for a module showing how many classes are "
       + "fully automatable by OpenRewrite recipes, partially automatable, and need AI-only migration. "
+      + "Also returns transitiveClassCount (classes inheriting Vaadin 7 types), coverageByType, "
+      + "coverageByUsage (0.0-1.0), and topGaps (top unmapped types). "
       + "Use this to assess migration effort and decide which modules to tackle first.")
   @Timed("esmp.mcp.getModuleMigrationSummary")
   public ModuleMigrationSummary getModuleMigrationSummary(String module) {
@@ -327,5 +337,28 @@ public class MigrationToolService {
       log.error("getModuleMigrationSummary failed for {}: {}", module, e.getMessage(), e);
       throw e;
     }
+  }
+
+  /**
+   * Returns unmapped Vaadin 7 types (NEEDS_MAPPING) sorted by usageCount descending.
+   *
+   * <p>These are types that ESMP detected during extraction but the recipe book does not yet have
+   * a Vaadin 24 mapping for. Claude Code should research these types and add mappings via
+   * {@code PUT /api/migration/recipe-book/rules/{id}}.
+   *
+   * @return list of {@link RecipeRule} with status=NEEDS_MAPPING, sorted by usageCount descending
+   */
+  @Tool(description = "Returns unmapped Vaadin 7 types (NEEDS_MAPPING) sorted by usageCount "
+      + "descending. Use to discover what types Claude needs to research and add to the recipe book. "
+      + "Returns: list of RecipeRule with source FQN, usageCount, and category. "
+      + "Add mappings via PUT /api/migration/recipe-book/rules/{id}.")
+  @Timed("esmp.mcp.getRecipeBookGaps")
+  public List<RecipeRule> getRecipeBookGaps() {
+    log.info("MCP getRecipeBookGaps called");
+    meterRegistry.counter("esmp.mcp.calls", "tool", "getRecipeBookGaps").increment();
+    return recipeBookRegistry.getRules().stream()
+        .filter(r -> "NEEDS_MAPPING".equals(r.status()))
+        .sorted(Comparator.comparingInt(RecipeRule::usageCount).reversed())
+        .collect(java.util.stream.Collectors.toList());
   }
 }

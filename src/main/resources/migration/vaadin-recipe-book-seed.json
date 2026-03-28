@@ -1,0 +1,1631 @@
+{
+  "rules": [
+    {
+      "id": "COMP-001",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.TextField",
+      "target": "com.vaadin.flow.component.textfield.TextField",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.TextField → com.vaadin.flow.component.textfield.TextField",
+        "Remove deprecated setValue/getValue and use standard Flow API",
+        "Verify label placement (Flow uses label as constructor arg differently)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-002",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.TextArea",
+      "target": "com.vaadin.flow.component.textfield.TextArea",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.TextArea → com.vaadin.flow.component.textfield.TextArea",
+        "Update rows/cols configuration using setMinRows/setMaxRows",
+        "Verify resize handling (Flow uses CSS resize instead of API)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-003",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.PasswordField",
+      "target": "com.vaadin.flow.component.textfield.PasswordField",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.PasswordField → com.vaadin.flow.component.textfield.PasswordField",
+        "Verify reveal button configuration if any custom reveal logic exists"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-004",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Button",
+      "target": "com.vaadin.flow.component.button.Button",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.Button → com.vaadin.flow.component.button.Button",
+        "Replace addClickListener lambda (API is identical)",
+        "Replace setIcon() with Vaadin Flow icon API (VaadinIcon.create())"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-005",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Label",
+      "target": "com.vaadin.flow.component.html.Span",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.Label → com.vaadin.flow.component.html.Span",
+        "Replace setValue(text) with setText(text) or use Div for block-level display",
+        "If ContentMode.HTML was used, use Div with getElement().setProperty('innerHTML', html)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-006",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.CheckBox",
+      "target": "com.vaadin.flow.component.checkbox.Checkbox",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.CheckBox → com.vaadin.flow.component.checkbox.Checkbox",
+        "Note: Flow class is Checkbox (lowercase 'b') vs Vaadin 7 CheckBox (uppercase 'B')"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-007",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.ComboBox",
+      "target": "com.vaadin.flow.component.combobox.ComboBox",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.ComboBox → com.vaadin.flow.component.combobox.ComboBox",
+        "Replace addItem/setContainerDataSource with setItems(List) or setItemLabelGenerator",
+        "Verify filtering: Flow ComboBox uses setItems(query → stream) for lazy loading"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-008",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.DateField",
+      "target": "com.vaadin.flow.component.datepicker.DatePicker",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.DateField → com.vaadin.flow.component.datepicker.DatePicker",
+        "Update value type: Flow DatePicker uses LocalDate not java.util.Date",
+        "Replace format string with DatePickerI18n if locale formatting was customized"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-009",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Image",
+      "target": "com.vaadin.flow.component.html.Image",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.Image → com.vaadin.flow.component.html.Image",
+        "Replace setSource(Resource) with setSrc(String url) or StreamResource",
+        "Remove Vaadin 7 ThemeResource/ExternalResource usage"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-010",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Link",
+      "target": "com.vaadin.flow.component.html.Anchor",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.Link → com.vaadin.flow.component.html.Anchor",
+        "Replace setResource/setCaption with setHref/setText",
+        "For router links use RouterLink instead of Anchor"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-011",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.MenuBar",
+      "target": "com.vaadin.flow.component.menubar.MenuBar",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.MenuBar → com.vaadin.flow.component.menubar.MenuBar",
+        "Replace addItem(caption, command) with addItem(text, e -> ...) lambda",
+        "Verify submenu nesting: Flow uses addSubMenu().addItem()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-012",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.ProgressBar",
+      "target": "com.vaadin.flow.component.progressbar.ProgressBar",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.ProgressBar → com.vaadin.flow.component.progressbar.ProgressBar",
+        "Verify setIndeterminate(true/false) — same API in Flow"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-013",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Upload",
+      "target": "com.vaadin.flow.component.upload.Upload",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.Upload → com.vaadin.flow.component.upload.Upload",
+        "Replace Receiver/SucceededListener with SucceededEvent lambda",
+        "Use MemoryBuffer or MultiFileMemoryBuffer for in-memory uploads"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-014",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Notification",
+      "target": "com.vaadin.flow.component.notification.Notification",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.Notification → com.vaadin.flow.component.notification.Notification",
+        "Replace Notification.show(msg) with Notification.show(msg) — same static API",
+        "Replace delay via setDuration(ms) instead of Vaadin 7 int delay arg"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-015",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.VerticalLayout",
+      "target": "com.vaadin.flow.component.orderedlayout.VerticalLayout",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.VerticalLayout → com.vaadin.flow.component.orderedlayout.VerticalLayout",
+        "Replace addComponent(c) with add(c)",
+        "Verify spacing/margin: Flow uses setSpacing/setPadding booleans"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-016",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.HorizontalLayout",
+      "target": "com.vaadin.flow.component.orderedlayout.HorizontalLayout",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.HorizontalLayout → com.vaadin.flow.component.orderedlayout.HorizontalLayout",
+        "Replace addComponent(c) with add(c)",
+        "Replace setExpandRatio(c, ratio) with setFlexGrow(ratio, c)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-017",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.FormLayout",
+      "target": "com.vaadin.flow.component.formlayout.FormLayout",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.FormLayout → com.vaadin.flow.component.formlayout.FormLayout",
+        "Replace addComponent(c) with add(c)",
+        "Columns now defined via setResponsiveSteps() instead of setColumns()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-018",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.CssLayout",
+      "target": "com.vaadin.flow.component.html.Div",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.CssLayout → com.vaadin.flow.component.html.Div",
+        "Replace addComponent(c) with add(c)",
+        "CSS class styling remains the same via addClassName()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-019",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Panel",
+      "target": "com.vaadin.flow.component.html.Div",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "Styling and layout properties need manual adjustment after type rename",
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.Panel → com.vaadin.flow.component.html.Div",
+        "Add CSS border/padding styling to replicate Panel visual appearance",
+        "If caption was used, add a header element manually",
+        "Review scrolling behavior — Panel had built-in scroll; Div needs overflow CSS"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-020",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.NativeSelect",
+      "target": "com.vaadin.flow.component.select.Select",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.NativeSelect → com.vaadin.flow.component.select.Select",
+        "Replace addItem/setContainerDataSource with setItems(List)",
+        "Verify value change listener — Flow uses addValueChangeListener"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-021",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.ListSelect",
+      "target": "com.vaadin.flow.component.listbox.ListBox",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.ListSelect → com.vaadin.flow.component.listbox.ListBox",
+        "Replace addItem/setContainerDataSource with setItems(List)",
+        "For multi-select use MultiSelectListBox instead"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-022",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.OptionGroup",
+      "target": "com.vaadin.flow.component.radiobutton.RadioButtonGroup",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "OptionGroup supported both single and multi-select; must determine which mode was used",
+      "migrationSteps": [
+        "Determine if OptionGroup was used in single-select or multi-select mode",
+        "Single-select: replace with RadioButtonGroup from com.vaadin.flow.component.radiobutton",
+        "Multi-select: replace with CheckboxGroup from com.vaadin.flow.component.checkbox",
+        "Replace addItem/setContainerDataSource with setItems(List)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-023",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Slider",
+      "target": "com.vaadin.flow.component.textfield.NumberField",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "No direct Slider equivalent in Vaadin 24 core; use NumberField or web component",
+      "migrationSteps": [
+        "Replace with NumberField (com.vaadin.flow.component.textfield.NumberField) for simple numeric input",
+        "Or use vcf-slider web component from Vaadin Directory for slider UI",
+        "Set min/max/step constraints on NumberField: setMin(), setMax(), setStep()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-024",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.RichTextArea",
+      "target": "com.vaadin.flow.component.richtexteditor.RichTextEditor",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.RichTextArea → com.vaadin.flow.component.richtexteditor.RichTextEditor",
+        "Add dependency: vaadin-rich-text-editor (from Vaadin Pro components)",
+        "Replace getValue/setValue with the Flow RichTextEditor API"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-025",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.TwinColSelect",
+      "target": "com.vaadin.flow.component.listbox.MultiSelectListBox",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "No direct twin-column UI in Vaadin 24 core; use MultiSelectListBox or a custom layout",
+      "migrationSteps": [
+        "Replace with MultiSelectListBox for functional equivalence",
+        "Or create a two-column layout with two ListBoxes and transfer buttons",
+        "Replace addItem/setContainerDataSource with setItems(List)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-026",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.InlineDateField",
+      "target": "com.vaadin.flow.component.datepicker.DatePicker",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "Inline mode not directly available; use DatePicker with setOpened(true) or a calendar web component",
+      "migrationSteps": [
+        "Replace with DatePicker (com.vaadin.flow.component.datepicker.DatePicker)",
+        "Call setOpened(true) to show picker inline if always-open behavior is required",
+        "Update value type from java.util.Date to java.time.LocalDate"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-027",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.PopupDateField",
+      "target": "com.vaadin.flow.component.datepicker.DatePicker",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.PopupDateField → com.vaadin.flow.component.datepicker.DatePicker",
+        "DatePicker is popup by default — no additional configuration needed",
+        "Update value type from java.util.Date to java.time.LocalDate"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-028",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.ColorPicker",
+      "target": "com.vaadin.flow.component.colorpicker.ColorPicker",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.ColorPicker → com.vaadin.flow.component.colorpicker.ColorPicker",
+        "Add dependency: vaadin-color-picker (Vaadin Pro component)",
+        "Replace Color object usage with String hex values in Flow"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-029",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Audio",
+      "target": "com.vaadin.flow.component.html.Audio",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.Audio → com.vaadin.flow.component.html.Audio",
+        "Replace setSource(Resource) with setSrc(String url)",
+        "Verify autoplay/controls attribute handling"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-030",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Video",
+      "target": "com.vaadin.flow.component.html.Video",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.Video → com.vaadin.flow.component.html.Video",
+        "Replace setSource(Resource) with setSrc(String url)",
+        "Verify poster/controls attribute handling"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-031",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Embedded",
+      "target": "com.vaadin.flow.component.html.IFrame",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "Embedded served multiple purposes; determine whether it embedded a URL (use IFrame) or Flash/image",
+      "migrationSteps": [
+        "If source was an ExternalResource URL: replace with IFrame (com.vaadin.flow.component.html.IFrame)",
+        "If source was an image: replace with Image (com.vaadin.flow.component.html.Image)",
+        "If source was Flash: Flash is no longer supported; remove Flash content"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-032",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Flash",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Flash is no longer supported in any browser. Flash content must be replaced with HTML5 equivalents.",
+      "migrationSteps": [
+        "Remove Flash component entirely",
+        "Replace Flash video/animation with HTML5 video/canvas or a JS library",
+        "Identify what the Flash content was doing and find a modern HTML5 equivalent"
+      ],
+      "status": "NEEDS_MAPPING",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-033",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.BrowserFrame",
+      "target": "com.vaadin.flow.component.html.IFrame",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.BrowserFrame → com.vaadin.flow.component.html.IFrame",
+        "Replace setSource(Resource) with setSrc(String url)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-034",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.NativeButton",
+      "target": "com.vaadin.flow.component.button.Button",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.NativeButton → com.vaadin.flow.component.button.Button",
+        "Add addThemeVariants(ButtonVariant.LUMO_TERTIARY) if minimal styling is needed",
+        "Replace addClickListener lambda — same API in Flow"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-035",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.AbsoluteLayout",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AbsoluteLayout has no equivalent in Vaadin 24. Absolute positioning must be implemented via CSS.",
+      "migrationSteps": [
+        "Replace AbsoluteLayout with a Div (com.vaadin.flow.component.html.Div)",
+        "Apply CSS position: relative to the Div container",
+        "For each child, apply position: absolute with top/left coordinates via getStyle()",
+        "Review whether absolute positioning is still needed or can be replaced with Flexbox"
+      ],
+      "status": "NEEDS_MAPPING",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-036",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.GridLayout",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "GridLayout has no direct equivalent in Vaadin 24. CSS Grid or FormLayout must be used.",
+      "migrationSteps": [
+        "Identify grid dimensions (rows/columns) from GridLayout configuration",
+        "Replace with FormLayout for form-style grids or a Div with CSS grid styling",
+        "Apply grid-template-columns/rows via getStyle().set('display','grid')",
+        "Re-implement span/align logic using grid-column-start/end CSS properties"
+      ],
+      "status": "NEEDS_MAPPING",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-037",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.SplitPanel",
+      "target": "com.vaadin.flow.component.splitlayout.SplitLayout",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "SplitPanel API changed significantly; component placement and split position API differ",
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.SplitPanel → com.vaadin.flow.component.splitlayout.SplitLayout",
+        "Replace setFirstComponent/setSecondComponent with addToPrimary/addToSecondary",
+        "Replace setSplitPosition(percent) with setSplitterPosition(percent)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-038",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.HorizontalSplitPanel",
+      "target": "com.vaadin.flow.component.splitlayout.SplitLayout",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "Use SplitLayout with HORIZONTAL orientation",
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.HorizontalSplitPanel → com.vaadin.flow.component.splitlayout.SplitLayout",
+        "Set orientation: new SplitLayout(SplitLayout.Orientation.HORIZONTAL)",
+        "Replace setFirstComponent/setSecondComponent with addToPrimary/addToSecondary"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-039",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.VerticalSplitPanel",
+      "target": "com.vaadin.flow.component.splitlayout.SplitLayout",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "Use SplitLayout with VERTICAL orientation",
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.VerticalSplitPanel → com.vaadin.flow.component.splitlayout.SplitLayout",
+        "Set orientation: new SplitLayout(SplitLayout.Orientation.VERTICAL)",
+        "Replace setFirstComponent/setSecondComponent with addToPrimary/addToSecondary"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-040",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Accordion",
+      "target": "com.vaadin.flow.component.accordion.Accordion",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.Accordion → com.vaadin.flow.component.accordion.Accordion",
+        "Replace addTab(caption, content) with add(AccordionPanel) or add(caption, content)",
+        "Verify open/close listener API changes"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-041",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.PopupView",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "No direct PopupView equivalent in Vaadin 24; use Dialog or ContextMenu",
+      "migrationSteps": [
+        "Replace with Dialog (com.vaadin.flow.component.dialog.Dialog) for modal popups",
+        "Replace with ContextMenu (com.vaadin.flow.component.contextmenu.ContextMenu) for contextual popups",
+        "Implement popup trigger logic manually using Button click → dialog.open()"
+      ],
+      "status": "NEEDS_MAPPING",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-042",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.DragAndDropWrapper",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Vaadin 24 has a new drag-and-drop API (DragSource/DropTarget) that is structurally different",
+      "migrationSteps": [
+        "Remove DragAndDropWrapper usage",
+        "Implement drag source using DragSource.create(component)",
+        "Implement drop target using DropTarget.create(component)",
+        "Replace DragAndDropEvent handlers with DragStartEvent/DropEvent listeners",
+        "Verify browser drag-and-drop data transfer if file drops were involved"
+      ],
+      "status": "NEEDS_MAPPING",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-043",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Calendar",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Vaadin Calendar is not included in Vaadin 24 core; a third-party calendar component is needed",
+      "migrationSteps": [
+        "Identify which calendar features were used (events, scheduling, date navigation)",
+        "Evaluate Full Calendar for Vaadin add-on (vcalendar)",
+        "Or use a plain DatePicker/DateTimePicker for simple date selection use cases",
+        "Migrate event data model to the new component's data API"
+      ],
+      "status": "NEEDS_MAPPING",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-044",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Table",
+      "target": "com.vaadin.flow.component.grid.Grid",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Table has no direct equivalent in Vaadin 24. Migration requires replacing with Grid, adding column definitions, and migrating container data sources to DataProvider.",
+      "migrationSteps": [
+        "Replace com.vaadin.ui.Table with com.vaadin.flow.component.grid.Grid<T>",
+        "Define columns: grid.addColumn(T::getField).setHeader('Header')",
+        "Replace Container/BeanItemContainer data source with setItems(list) or DataProvider",
+        "Migrate row click listeners: grid.addItemClickListener(e -> ...)",
+        "Review column generators: use ComponentRenderer for custom cell content"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-045",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Grid",
+      "target": "com.vaadin.flow.component.grid.Grid",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "Vaadin 7 Grid API differs significantly from Vaadin 24 Grid; column and data binding patterns changed",
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.Grid → com.vaadin.flow.component.grid.Grid",
+        "Replace addColumn(propertyId) with addColumn(T::getMethod).setHeader('...')",
+        "Replace setContainerDataSource with setItems(list) or DataProvider",
+        "Migrate SelectionMode and selection listeners to new API",
+        "Review editor (inline editing) configuration if used"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-046",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Window",
+      "target": "com.vaadin.flow.component.dialog.Dialog",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Window is replaced by Dialog in Vaadin 24. Layout and positioning API has changed.",
+      "migrationSteps": [
+        "Replace com.vaadin.ui.Window with com.vaadin.flow.component.dialog.Dialog",
+        "Replace setContent(component) by adding components via dialog.add(component)",
+        "Replace open()/close() with setOpened(true/false) or open()/close()",
+        "Draggable behavior: call dialog.setDraggable(true) explicitly",
+        "Replace WindowMoveListener with MoveEvent if window position tracking is needed"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-047",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.TabSheet",
+      "target": "com.vaadin.flow.component.tabs.Tabs",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "TabSheet is replaced by Tabs component in Vaadin 24. Tab content wiring pattern changed.",
+      "migrationSteps": [
+        "Replace com.vaadin.ui.TabSheet with com.vaadin.flow.component.tabs.Tabs",
+        "Create Tab objects: Tab tab = new Tab('Caption')",
+        "Wire tab-to-content: maintain a Map<Tab, Component> and show/hide on selection change",
+        "Listen to selection: tabs.addSelectedChangeListener(e -> showTab(e.getSelectedTab()))",
+        "Place Tabs and content Div side by side in a VerticalLayout"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-048",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Tree",
+      "target": "com.vaadin.flow.component.treegrid.TreeGrid",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Tree/TreeTable are replaced by TreeGrid in Vaadin 24. Hierarchical data model must be migrated to TreeDataProvider or HierarchicalDataProvider.",
+      "migrationSteps": [
+        "Replace com.vaadin.ui.Tree with com.vaadin.flow.component.treegrid.TreeGrid<T>",
+        "Create TreeDataProvider<T> with getChildren() lambda or implement HierarchicalDataProvider",
+        "Replace HierarchicalContainer with TreeData<T> and TreeDataProvider<T>",
+        "Replace Item/Property API with bean property access",
+        "Add expand/collapse listeners if needed"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-049",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.TreeTable",
+      "target": "com.vaadin.flow.component.treegrid.TreeGrid",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Tree/TreeTable are replaced by TreeGrid in Vaadin 24. Hierarchical data model must be migrated to TreeDataProvider or HierarchicalDataProvider.",
+      "migrationSteps": [
+        "Replace com.vaadin.ui.TreeTable with com.vaadin.flow.component.treegrid.TreeGrid<T>",
+        "Add columns: grid.addHierarchyColumn(T::getName).setHeader('Name')",
+        "Create TreeDataProvider<T> with getChildren() lambda",
+        "Migrate all column generators to ColumnRenderers",
+        "Replace ContainerHierarchicalWrapper with TreeData<T>"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-050",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.CustomComponent",
+      "target": "com.vaadin.flow.component.Composite",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "CustomComponent is replaced by Composite in Vaadin 24. Component composition pattern may need structural changes.",
+      "migrationSteps": [
+        "Replace extends CustomComponent with extends Composite<T> where T is the root component type",
+        "Replace setCompositionRoot(component) with overriding initContent() returning the root component",
+        "Remove Vaadin 7 constructor pattern and adopt Flow lifecycle",
+        "Verify that component state is managed correctly with the new composition model"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-051",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.UI",
+      "target": "@Route + AppLayout",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "UI class extension is replaced by @Route + AppLayout pattern in Vaadin 24. Application structure must be redesigned.",
+      "migrationSteps": [
+        "Remove extends UI — there is no UI subclassing in Vaadin 24",
+        "Create a MainLayout class extending AppLayout for shell/navigation",
+        "Replace init(VaadinRequest) with @Route views and @PreserveOnRefresh if needed",
+        "Move global error handling to VaadinServiceInitListener",
+        "Register route targets with @Route(value='path', layout=MainLayout.class)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "DATA-001",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.data.util.BeanItemContainer",
+      "target": "DataProvider",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "BeanItemContainer is replaced by DataProvider in Vaadin 24. Requires structural changes to data loading and filtering patterns.",
+      "migrationSteps": [
+        "Replace BeanItemContainer<T> with DataProvider<T, Void> or ListDataProvider<T>",
+        "Use DataProvider.ofCollection(list) for simple in-memory lists",
+        "Implement CallbackDataProvider for lazy/backend-driven data loading",
+        "Replace addBean/addAll with DataProvider backed by the underlying collection",
+        "Replace Container.Filter with DataProvider filter predicates"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "DATA-002",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.data.fieldgroup.BeanFieldGroup",
+      "target": "com.vaadin.flow.data.binder.Binder",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "FieldGroup/BeanFieldGroup is replaced by Binder in Vaadin 24. Binding declarations and commit/discard patterns must be rewritten.",
+      "migrationSteps": [
+        "Replace BeanFieldGroup<T> with Binder<T>",
+        "Replace buildAndBind(propertyId) with binder.forField(field).bind(T::getX, T::setX)",
+        "Replace commit() with binder.writeBeanIfValid(bean) or binder.writeBean(bean)",
+        "Replace discard() with binder.readBean(bean)",
+        "Add validation: binder.forField(field).withValidator(...).bind(...)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "DATA-003",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.data.fieldgroup.FieldGroup",
+      "target": "com.vaadin.flow.data.binder.Binder",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "FieldGroup/BeanFieldGroup is replaced by Binder in Vaadin 24. Binding declarations and commit/discard patterns must be rewritten.",
+      "migrationSteps": [
+        "Replace FieldGroup with Binder<T>",
+        "Replace bind(field, propertyId) with binder.forField(field).bind(T::getX, T::setX)",
+        "Replace commit() with binder.writeBeanIfValid(bean)",
+        "Replace discard() with binder.readBean(bean)",
+        "Migrate FieldGroup.CommitException handling to BinderValidationStatus"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "DATA-004",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.data.Property",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "The Vaadin 7 Property interface is removed in Vaadin 24; use direct field binding via Binder or ValueProvider",
+      "migrationSteps": [
+        "Remove all com.vaadin.data.Property usages",
+        "Replace Property<T> value sources with Binder bindings or ValueProvider lambdas",
+        "Replace ObjectProperty with simple fields or JavaFX-style observable properties",
+        "Replace ValueChangeListener with Flow addValueChangeListener events"
+      ],
+      "status": "NEEDS_MAPPING",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "DATA-005",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.data.Item",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "The Vaadin 7 Item interface is removed in Vaadin 24; use bean objects directly with Binder or DataProvider",
+      "migrationSteps": [
+        "Remove all com.vaadin.data.Item usages",
+        "Replace Item with a plain POJO/bean and use Binder for field binding",
+        "Replace getItemProperty(id) with direct bean getter methods",
+        "If Item was used as table row, use typed Grid<T> with bean objects"
+      ],
+      "status": "NEEDS_MAPPING",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "DATA-006",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.data.Container",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "The Vaadin 7 Container interface is removed in Vaadin 24; use DataProvider instead",
+      "migrationSteps": [
+        "Remove all com.vaadin.data.Container usages",
+        "Replace Container with DataProvider<T, F> or ListDataProvider<T>",
+        "Replace Container.addItem / getItem with DataProvider backed collections",
+        "Replace Container.Filter with Predicate or DataProvider filter functions"
+      ],
+      "status": "NEEDS_MAPPING",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "DATA-007",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.data.Validator",
+      "target": "com.vaadin.flow.data.validator.AbstractValidator",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "Vaadin 7 Validator interface differs from Flow Validator<T>; validation is now part of Binder",
+      "migrationSteps": [
+        "Replace com.vaadin.data.Validator with com.vaadin.flow.data.binder.Validator<T>",
+        "Rewrite validate() to return ValidationResult.ok() or ValidationResult.error(msg)",
+        "Wire validators via binder.forField(field).withValidator(validator).bind(...)",
+        "Replace InvalidValueException with returning ValidationResult.error(message)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "DATA-008",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.data.util.converter.Converter",
+      "target": "com.vaadin.flow.data.converter.Converter",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "Converter API changed from Vaadin 7 to Flow; method signatures differ",
+      "migrationSteps": [
+        "Replace import: com.vaadin.data.util.converter.Converter → com.vaadin.flow.data.converter.Converter",
+        "Rewrite convertToModel(value, locale) as convertToModel(value, context)",
+        "Rewrite convertToPresentation(value, locale) as convertToPresentation(value, context)",
+        "Replace ConversionException with returning Result.error(message)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "DATA-009",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.data.util.IndexedContainer",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "IndexedContainer is removed in Vaadin 24; replace with typed DataProvider or ListDataProvider",
+      "migrationSteps": [
+        "Identify the data type stored in IndexedContainer",
+        "Create a typed List<T> and wrap with DataProvider.ofCollection(list)",
+        "Replace addContainerProperty / getItem / addItem with bean-based operations",
+        "Wire to Grid or other components via typed DataProvider"
+      ],
+      "status": "NEEDS_MAPPING",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "DATA-010",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.data.util.HierarchicalContainer",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "HierarchicalContainer is removed in Vaadin 24; use TreeDataProvider for hierarchical data",
+      "migrationSteps": [
+        "Replace HierarchicalContainer with TreeData<T> and TreeDataProvider<T>",
+        "Implement T::getChildren as the child supplier for TreeDataProvider",
+        "Wire to TreeGrid<T> instead of Tree or TreeTable"
+      ],
+      "status": "NEEDS_MAPPING",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "DATA-011",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.data.util.filter.SimpleStringFilter",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Container filters are removed in Vaadin 24; filtering is done at DataProvider level",
+      "migrationSteps": [
+        "Replace SimpleStringFilter with a Predicate<T> passed to ListDataProvider.setFilter()",
+        "Or implement filtering in a CallbackDataProvider query handler",
+        "Remove all Container.Filter and Container.Filterable usage"
+      ],
+      "status": "NEEDS_MAPPING",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "NAV-001",
+      "category": "COMPONENT",
+      "source": "com.vaadin.navigator.View",
+      "target": "@Route annotation",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "View interface is replaced by @Route annotation in Vaadin 24. Navigator lifecycle methods (enter/beforeLeave) must be replaced with BeforeEnterObserver/etc.",
+      "migrationSteps": [
+        "Remove implements View from the class",
+        "Add @Route(value='path') annotation to the class",
+        "Replace enter(ViewChangeListener.ViewChangeEvent event) with beforeEnter(BeforeEnterEvent event) from BeforeEnterObserver",
+        "Replace beforeLeave() with BeforeLeaveObserver.beforeLeave(BeforeLeaveEvent)",
+        "Remove Navigator references and use UI.navigate(Class) or RouteParameters instead"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "NAV-002",
+      "category": "COMPONENT",
+      "source": "com.vaadin.navigator.Navigator",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Navigator is removed in Vaadin 24; the Flow router handles navigation declaratively via @Route",
+      "migrationSteps": [
+        "Remove Navigator instantiation and configuration",
+        "Replace navigator.navigateTo('path') with UI.getCurrent().navigate('path') or navigate(ViewClass.class)",
+        "Replace addView(name, viewClass) with @Route annotation on the view class",
+        "Remove ViewProvider implementations — use @RouteAlias for aliases"
+      ],
+      "status": "NEEDS_MAPPING",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "NAV-003",
+      "category": "COMPONENT",
+      "source": "com.vaadin.navigator.ViewChangeListener",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "ViewChangeListener is removed; use BeforeEnterObserver / AfterNavigationObserver in Vaadin 24",
+      "migrationSteps": [
+        "Remove ViewChangeListener implementations",
+        "For navigation-in: implement BeforeEnterObserver on the view class",
+        "For navigation-out: implement BeforeLeaveObserver on the view class",
+        "For post-navigation: implement AfterNavigationObserver"
+      ],
+      "status": "NEEDS_MAPPING",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "NAV-004",
+      "category": "COMPONENT",
+      "source": "com.vaadin.navigator.ViewDisplay",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "ViewDisplay is removed in Vaadin 24; the router handles view rendering automatically",
+      "migrationSteps": [
+        "Remove ViewDisplay implementations",
+        "Use RouterLayout interface if a shell layout is needed",
+        "The router automatically renders @Route views into the layout slot"
+      ],
+      "status": "NEEDS_MAPPING",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "NAV-005",
+      "category": "COMPONENT",
+      "source": "com.vaadin.navigator.ViewProvider",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "ViewProvider is removed in Vaadin 24; use dynamic route parameters or RouteAlias",
+      "migrationSteps": [
+        "Remove ViewProvider implementations",
+        "For parameterized views: implement HasUrlParameter<T> on the view or use @RouteParameters",
+        "For aliases: use @RouteAlias annotation",
+        "For dynamic routing: implement DynamicRoute (advanced, rarely needed)"
+      ],
+      "status": "NEEDS_MAPPING",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-001",
+      "category": "SERVER",
+      "source": "com.vaadin.server.VaadinServlet",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "VaadinServlet is no longer extended; Vaadin 24 auto-configures via Spring Boot integration",
+      "migrationSteps": [
+        "Remove extends VaadinServlet — no Servlet extension needed in Spring Boot",
+        "Remove web.xml or @WebServlet configuration",
+        "Spring Boot auto-configuration registers the Vaadin servlet automatically",
+        "Move any custom servlet logic to VaadinServiceInitListener"
+      ],
+      "status": "NEEDS_MAPPING",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-002",
+      "category": "SERVER",
+      "source": "com.vaadin.server.VaadinService",
+      "target": "com.vaadin.flow.server.VaadinService",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.server.VaadinService → com.vaadin.flow.server.VaadinService",
+        "Review API changes: some Vaadin 7 methods may have been removed or renamed",
+        "Verify getCurrent() usage — same pattern in Flow"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-003",
+      "category": "SERVER",
+      "source": "com.vaadin.server.VaadinSession",
+      "target": "com.vaadin.flow.server.VaadinSession",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.server.VaadinSession → com.vaadin.flow.server.VaadinSession",
+        "getCurrent() and setAttribute/getAttribute API is the same",
+        "Review lock/unlock patterns if manual session locking was used"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-004",
+      "category": "SERVER",
+      "source": "com.vaadin.server.VaadinRequest",
+      "target": "com.vaadin.flow.server.VaadinRequest",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.server.VaadinRequest → com.vaadin.flow.server.VaadinRequest",
+        "Review API: getParameter, getHeader, getPathInfo — same in Flow",
+        "Replace VaadinServletRequest with VaadinRequest.getCurrent() if needed"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-005",
+      "category": "SERVER",
+      "source": "com.vaadin.server.VaadinResponse",
+      "target": "com.vaadin.flow.server.VaadinResponse",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.server.VaadinResponse → com.vaadin.flow.server.VaadinResponse",
+        "Review API for header/cookie manipulation — generally same in Flow"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-006",
+      "category": "SERVER",
+      "source": "com.vaadin.server.Page",
+      "target": "com.vaadin.flow.component.page.Page",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.server.Page → com.vaadin.flow.component.page.Page",
+        "Replace Page.getCurrent() with UI.getCurrent().getPage()",
+        "Replace open(url, windowName) with UI.getCurrent().getPage().open(url)",
+        "Replace setTitle(title) with UI.getCurrent().getPage().setTitle(title)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-007",
+      "category": "SERVER",
+      "source": "com.vaadin.server.ClientConnector",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "ClientConnector is an internal Vaadin 7 extension point; Vaadin 24 uses web components and Element API",
+      "migrationSteps": [
+        "Remove ClientConnector extension",
+        "Use Element API (getElement()) for low-level component interaction",
+        "Use custom web components for advanced UI extension scenarios",
+        "Review if the connector logic can be replaced by a plain Flow component"
+      ],
+      "status": "NEEDS_MAPPING",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-008",
+      "category": "SERVER",
+      "source": "com.vaadin.server.Resource",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "Resource interface replaced by String URLs or StreamResource in Vaadin 24",
+      "migrationSteps": [
+        "Replace ExternalResource with a String URL passed directly to component setters",
+        "Replace ClassResource/ThemeResource with URL string from StaticFileHandler or @Theme",
+        "Replace StreamResource with com.vaadin.flow.server.StreamResource (same concept, updated API)"
+      ],
+      "status": "NEEDS_MAPPING",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-009",
+      "category": "SERVER",
+      "source": "com.vaadin.server.ExternalResource",
+      "target": "java.lang.String",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace ExternalResource with a plain String URL",
+        "Pass the URL string directly to component.setSrc() or component.setHref()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-010",
+      "category": "SERVER",
+      "source": "com.vaadin.server.FileResource",
+      "target": "com.vaadin.flow.server.StreamResource",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "FileResource replaced by StreamResource in Vaadin 24; requires InputStream factory",
+      "migrationSteps": [
+        "Replace FileResource with StreamResource",
+        "Provide InputStreamFactory: new StreamResource(filename, () -> new FileInputStream(file))",
+        "Register with UI.getCurrent().getSession().getResourceRegistry() if needed"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-011",
+      "category": "SERVER",
+      "source": "com.vaadin.server.ThemeResource",
+      "target": null,
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "ThemeResource replaced by Lumo CSS custom properties or @Theme annotation in Vaadin 24",
+      "migrationSteps": [
+        "Replace ThemeResource image paths with static resource URLs (frontend/ folder)",
+        "Use @CssImport or @Theme annotation for theme-level resources",
+        "Move images to src/main/frontend/images/ and reference via relative URL"
+      ],
+      "status": "NEEDS_MAPPING",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-012",
+      "category": "SERVER",
+      "source": "com.vaadin.server.StreamResource",
+      "target": "com.vaadin.flow.server.StreamResource",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "StreamResource API changed from Vaadin 7 to Flow",
+      "migrationSteps": [
+        "Replace import: com.vaadin.server.StreamResource → com.vaadin.flow.server.StreamResource",
+        "Change constructor: new StreamResource(filename, inputStreamSource) where source is InputStreamFactory",
+        "Replace StreamSource.getStream() with InputStreamFactory.createInputStream()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-013",
+      "category": "SERVER",
+      "source": "com.vaadin.server.ErrorHandler",
+      "target": "com.vaadin.flow.server.ErrorHandler",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.server.ErrorHandler → com.vaadin.flow.server.ErrorHandler",
+        "Replace error(ErrorEvent event) with error(ErrorEvent event) — same method signature",
+        "Wire via VaadinSession.getCurrent().setErrorHandler(handler)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-014",
+      "category": "SERVER",
+      "source": "com.vaadin.server.SessionDestroyListener",
+      "target": "com.vaadin.flow.server.SessionDestroyListener",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.server.SessionDestroyListener → com.vaadin.flow.server.SessionDestroyListener",
+        "Register via VaadinService.addSessionDestroyListener() — same pattern"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-015",
+      "category": "SERVER",
+      "source": "com.vaadin.server.RequestHandler",
+      "target": "com.vaadin.flow.server.RequestHandler",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace import: com.vaadin.server.RequestHandler → com.vaadin.flow.server.RequestHandler",
+        "handleRequest(VaadinSession, VaadinRequest, VaadinResponse) signature is identical",
+        "Register via VaadinService.addRequestHandler() or VaadinServiceInitListener"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "EVT-001",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.event.ItemClickEvent",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "ItemClickEvent is removed; use Grid.addItemClickListener returning ItemClickEvent<T>",
+      "migrationSteps": [
+        "Remove com.vaadin.event.ItemClickEvent import",
+        "Replace table.addItemClickListener with grid.addItemClickListener(e -> ...)",
+        "Access clicked item via e.getItem() returning typed T",
+        "Column clicked: e.getColumn() is a Grid.Column<T>"
+      ],
+      "status": "NEEDS_MAPPING",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "EVT-002",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.event.LayoutEvents",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "LayoutEvents click handling removed; use component-level click events in Vaadin 24",
+      "migrationSteps": [
+        "Remove com.vaadin.event.LayoutEvents import",
+        "Replace LayoutClickListener with individual component click listeners",
+        "Use component.addClickListener(e -> ...) for direct click handling",
+        "For layout-level clicks, attach click listener to the root Div element"
+      ],
+      "status": "NEEDS_MAPPING",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "JXJK-001",
+      "category": "JAVAX_JAKARTA",
+      "source": "javax.servlet",
+      "target": "jakarta.servlet",
+      "actionType": "CHANGE_PACKAGE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace all javax.servlet.* imports with jakarta.servlet.*",
+        "Run OpenRewrite ChangePackage recipe: org.openrewrite.java.ChangePackage"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "JXJK-002",
+      "category": "JAVAX_JAKARTA",
+      "source": "javax.validation",
+      "target": "jakarta.validation",
+      "actionType": "CHANGE_PACKAGE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace all javax.validation.* imports with jakarta.validation.*",
+        "Run OpenRewrite ChangePackage recipe: org.openrewrite.java.ChangePackage"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "JXJK-003",
+      "category": "JAVAX_JAKARTA",
+      "source": "javax.persistence",
+      "target": "jakarta.persistence",
+      "actionType": "CHANGE_PACKAGE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace all javax.persistence.* imports with jakarta.persistence.*",
+        "Run OpenRewrite ChangePackage recipe: org.openrewrite.java.ChangePackage",
+        "Verify Spring Data JPA annotations (@Entity, @Table, @Column, @Id) still resolve"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "JXJK-004",
+      "category": "JAVAX_JAKARTA",
+      "source": "javax.annotation",
+      "target": "jakarta.annotation",
+      "actionType": "CHANGE_PACKAGE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace all javax.annotation.* imports with jakarta.annotation.*",
+        "Specifically: javax.annotation.PostConstruct → jakarta.annotation.PostConstruct",
+        "Specifically: javax.annotation.PreDestroy → jakarta.annotation.PreDestroy"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "JXJK-005",
+      "category": "JAVAX_JAKARTA",
+      "source": "javax.inject",
+      "target": "jakarta.inject",
+      "actionType": "CHANGE_PACKAGE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace all javax.inject.* imports with jakarta.inject.*",
+        "Note: Spring Boot uses @Autowired/constructor injection by convention over @Inject"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "JXJK-006",
+      "category": "JAVAX_JAKARTA",
+      "source": "javax.transaction",
+      "target": "jakarta.transaction",
+      "actionType": "CHANGE_PACKAGE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace all javax.transaction.* imports with jakarta.transaction.*",
+        "Note: Spring @Transactional is preferred over javax/jakarta @Transactional in Spring apps"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "JXJK-007",
+      "category": "JAVAX_JAKARTA",
+      "source": "javax.ws.rs",
+      "target": "jakarta.ws.rs",
+      "actionType": "CHANGE_PACKAGE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace all javax.ws.rs.* imports with jakarta.ws.rs.*",
+        "Note: Consider migrating JAX-RS to Spring MVC @RestController if feasible"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "JXJK-008",
+      "category": "JAVAX_JAKARTA",
+      "source": "javax.mail",
+      "target": "jakarta.mail",
+      "actionType": "CHANGE_PACKAGE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace all javax.mail.* imports with jakarta.mail.*",
+        "Update dependency: javax.mail:mail → jakarta.mail:jakarta.mail-api or org.eclipse.angus:angus-mail"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "JXJK-009",
+      "category": "JAVAX_JAKARTA",
+      "source": "javax.xml.bind",
+      "target": "jakarta.xml.bind",
+      "actionType": "CHANGE_PACKAGE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace all javax.xml.bind.* imports with jakarta.xml.bind.*",
+        "Add dependency: jakarta.xml.bind:jakarta.xml.bind-api and an implementation like glassfish jaxb"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "JXJK-010",
+      "category": "JAVAX_JAKARTA",
+      "source": "javax.ejb",
+      "target": "jakarta.ejb",
+      "actionType": "CHANGE_PACKAGE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": [
+        "Replace all javax.ejb.* imports with jakarta.ejb.*",
+        "Consider migrating EJBs to Spring @Service beans for modern Spring Boot architecture"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    }
+  ]
+}

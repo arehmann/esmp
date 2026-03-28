@@ -81,6 +81,14 @@ esmp:
     partition-size: ${ESMP_EXTRACTION_PARTITION_SIZE:200}
   migration:
     custom-mappings: {}
+    recipe-book-path: ${ESMP_MIGRATION_RECIPE_BOOK_PATH:data/migration/vaadin-recipe-book.json}
+    custom-recipe-book-path: ${ESMP_MIGRATION_CUSTOM_RECIPE_BOOK_PATH:}
+    transitive:
+      override-weight: 0.3
+      own-calls-weight: 0.3
+      binding-weight: 0.2
+      component-weight: 0.2
+      ai-assisted-threshold: 0.4
   vector:
     collection-name: code_chunks
     vector-dimension: 384

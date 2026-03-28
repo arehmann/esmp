@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 /**
  * Migration analysis validation query registry.
  *
- * <p>Contributes 3 graph validation queries that verify the migration action data produced by
+ * <p>Contributes 6 graph validation queries that verify the migration action data produced by
  * {@link com.esmp.extraction.visitor.MigrationPatternVisitor}. These checks ensure that the
  * OpenRewrite recipe engine has the required data to operate.
  *
@@ -21,10 +21,16 @@ import org.springframework.stereotype.Component;
  *       (automationScore is set on classes with actions).
  *   <li>{@code MIGRATION_ACTION_EDGES_INTACT} — verifies that the edge count from
  *       HAS_MIGRATION_ACTION edges matches the migrationActionCount property on each class.
+ *   <li>{@code RECIPE_BOOK_LOADED} — verifies that MigrationAction sources exist (recipe book
+ *       was loaded and extraction populated actions).
+ *   <li>{@code TRANSITIVE_ACTIONS_DETECTED} — warns if no inherited MigrationAction nodes exist
+ *       (transitive detection may not have run).
+ *   <li>{@code MIGRATION_COVERAGE_GAPS} — warns if more than 10 unmapped Vaadin 7 type usages
+ *       exist (review recipe book gaps).
  * </ol>
  *
- * <p>With these queries added, the total validation query count becomes 44 (41 from prior phases
- * + 3 migration queries).
+ * <p>With these 6 queries added, the total validation query count becomes 47 (41 from prior
+ * phases + 6 migration queries).
  */
 @Component
 public class MigrationValidationQueryRegistry extends ValidationQueryRegistry {
@@ -82,6 +88,60 @@ public class MigrationValidationQueryRegistry extends ValidationQueryRegistry {
                        collect(c.fullyQualifiedName + ' edges=' + toString(edgeCount)
                                + ' prop=' + toString(c.migrationActionCount))[0..20] AS details
                 """,
-                ValidationSeverity.ERROR)));
+                ValidationSeverity.ERROR),
+
+            // 4. RECIPE_BOOK_LOADED (WARNING)
+            // Verifies that at least some MigrationAction nodes have a source field set —
+            // a graph-based proxy for "recipe book was loaded and extraction populated actions".
+            new ValidationQuery(
+                "RECIPE_BOOK_LOADED",
+                "MigrationAction nodes have source fields populated (recipe book was used during extraction)",
+                """
+                MATCH (ma:MigrationAction)
+                WITH count(DISTINCT ma.source) AS uniqueSources
+                RETURN CASE WHEN uniqueSources = 0 THEN 1 ELSE 0 END AS count,
+                       CASE WHEN uniqueSources = 0
+                            THEN ['No MigrationAction sources found — recipe book may not be loaded']
+                            ELSE []
+                       END AS details
+                """,
+                ValidationSeverity.WARNING),
+
+            // 5. TRANSITIVE_ACTIONS_DETECTED (WARNING)
+            // Verifies that at least some inherited MigrationAction nodes exist.
+            // count = 1 when no inherited nodes — transitive detection may not have run.
+            new ValidationQuery(
+                "TRANSITIVE_ACTIONS_DETECTED",
+                "Inherited MigrationAction nodes exist (transitive detection has been run on inheritors of Vaadin 7 types)",
+                """
+                MATCH (ma:MigrationAction {isInherited: true})
+                WITH count(ma) AS total
+                RETURN CASE WHEN total = 0 THEN 1 ELSE 0 END AS count,
+                       CASE WHEN total = 0
+                            THEN ['No inherited MigrationAction nodes found — transitive detection may not have run']
+                            ELSE []
+                       END AS details
+                """,
+                ValidationSeverity.WARNING),
+
+            // 6. MIGRATION_COVERAGE_GAPS (WARNING)
+            // Warns when more than 10 unmapped Vaadin 7 type usages exist.
+            // count = 1 when the condition fires (> 10 unmapped usages).
+            new ValidationQuery(
+                "MIGRATION_COVERAGE_GAPS",
+                "Recipe book coverage gaps: fewer than 10 unmapped Vaadin 7 type usages",
+                """
+                MATCH (ma:MigrationAction)
+                WHERE ma.automatable = 'NO'
+                  AND ma.actionType = 'COMPLEX_REWRITE'
+                  AND ma.context CONTAINS 'Unknown Vaadin 7 type'
+                WITH count(ma) AS unmapped
+                RETURN CASE WHEN unmapped > 10 THEN 1 ELSE 0 END AS count,
+                       CASE WHEN unmapped > 10
+                            THEN ['More than 10 unmapped Vaadin 7 type usages — review recipe book gaps']
+                            ELSE []
+                       END AS details
+                """,
+                ValidationSeverity.WARNING)));
   }
 }

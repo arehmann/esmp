@@ -2,17 +2,23 @@ package com.esmp.extraction.visitor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.esmp.extraction.config.MigrationConfig;
 import com.esmp.extraction.parser.ClasspathLoader;
 import com.esmp.extraction.parser.JavaSourceParser;
 import com.esmp.extraction.visitor.ExtractionAccumulator.MigrationActionData;
 import com.esmp.extraction.visitor.ExtractionAccumulator.MigrationActionData.ActionType;
 import com.esmp.extraction.visitor.ExtractionAccumulator.MigrationActionData.Automatable;
+import com.esmp.migration.application.RecipeBookRegistry;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.SourceFile;
 
@@ -32,6 +38,29 @@ import org.openrewrite.SourceFile;
  * </ul>
  */
 class MigrationPatternVisitorTest {
+
+  private static RecipeBookRegistry registry;
+
+  @BeforeAll
+  static void setupRegistry() throws IOException {
+    // Copy seed JSON to a temp file for the registry to load from
+    Path tempDir = Files.createTempDirectory("migration-visitor-test-registry");
+    Path runtimePath = tempDir.resolve("vaadin-recipe-book.json");
+    String seedResource = "/migration/vaadin-recipe-book-seed.json";
+    try (InputStream in = MigrationPatternVisitorTest.class.getResourceAsStream(seedResource)) {
+      if (in == null) {
+        throw new IllegalStateException("Seed JSON not found on classpath: " + seedResource);
+      }
+      Files.copy(in, runtimePath, StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    MigrationConfig config = new MigrationConfig();
+    config.setRecipeBookPath(runtimePath.toString());
+    config.setCustomRecipeBookPath("");
+
+    registry = new RecipeBookRegistry(config, new ObjectMapper());
+    registry.load();
+  }
 
   // ---------------------------------------------------------------------------
   // Simple Vaadin view: TextField, Button, VerticalLayout all have auto=YES
@@ -299,7 +328,7 @@ class MigrationPatternVisitorTest {
 
   private ExtractionAccumulator runVisitor(String... sources) throws Exception {
     ExtractionAccumulator acc = new ExtractionAccumulator();
-    MigrationPatternVisitor visitor = new MigrationPatternVisitor();
+    MigrationPatternVisitor visitor = new MigrationPatternVisitor(registry);
     for (SourceFile source : parseJava(sources)) {
       visitor.visit(source, acc);
     }
