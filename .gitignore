@@ -18,3 +18,6 @@ out/
 
 # Secrets — copy .env.example to .env and customize; never commit real credentials
 .env
+
+# Runtime data directory (recipe book copy, migration state)
+data/
