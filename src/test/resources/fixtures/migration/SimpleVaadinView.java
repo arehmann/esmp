@@ -1,8 +1,8 @@
 package com.example.migration;
 
-import com.vaadin.ui.TextField;
-import com.vaadin.ui.Button;
-import com.vaadin.ui.VerticalLayout;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.TextField;
 
 /**
  * A simple Vaadin 7 view with basic UI components that can be automatically migrated.
