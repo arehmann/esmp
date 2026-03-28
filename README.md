@@ -1,6 +1,6 @@
 # ESMP - Enterprise Source Migration Platform
 
-> **Intelligent, risk-aware Vaadin 7 to Vaadin 24 migration planning powered by graph analysis, AI embeddings, and domain-aware scoring.**
+> **Intelligent, risk-aware Vaadin 7 to Vaadin 24 migration powered by graph analysis, AI embeddings, domain-aware scoring, and automated OpenRewrite recipes.**
 
 ESMP analyzes your legacy Java/Vaadin codebase, builds a knowledge graph of every class, method, and relationship, scores migration risk across multiple dimensions, and recommends the safest order to migrate module by module.
 
@@ -26,6 +26,7 @@ ESMP analyzes your legacy Java/Vaadin codebase, builds a knowledge graph of ever
   - [10. Migration Scheduling](#10-migration-scheduling)
   - [11. MCP Server](#11-mcp-server)
   - [12. Docker Deployment & Source Access](#12-docker-deployment--source-access)
+  - [13. Migration Engine (OpenRewrite)](#13-migration-engine-openrewrite)
 - [REST API Reference](#rest-api-reference)
 - [Vaadin Dashboard Views](#vaadin-dashboard-views)
 - [Configuration Reference](#configuration-reference)
@@ -73,6 +74,7 @@ ESMP solves this by:
   |  4. Extract business terms from code          |
   |  5. Embed code into vectors for AI search     |
   |  6. Recommend safest migration order          |
+  |  7. Auto-migrate with OpenRewrite recipes     |
   +----------------------------------------------+
          |
          v
@@ -118,9 +120,9 @@ ESMP is a Spring Boot application backed by three specialized databases:
      |     Neo4j      | |     Qdrant     | |      MySQL       |
      |  Graph Database | | Vector Database| | Relational Store |
      |                | |                | |                  |
-     | - 8 node types | | - 384-dim      | | - Migration jobs |
-     | - 9 edge types | |   embeddings   | | - Audit trail    |
-     | - 41 validation| | - Cosine       | | - Flyway managed |
+     | - 9 node types | | - 384-dim      | | - Migration jobs |
+     | - 10 edge types| |   embeddings   | | - Audit trail    |
+     | - 44 validation| | - Cosine       | | - Flyway managed |
      |   queries      | |   similarity   | |                  |
      +----------------+ +----------------+ +------------------+
 
@@ -538,7 +540,7 @@ Plan your migration order based on risk and dependencies:
          |
          v
   +----------------------------------+
-  |        Seven Visitors            |
+  |        Eight Visitors            |
   |                                  |
   |  ClassMetadata  --> classes,     |
   |                     fields,      |
@@ -565,12 +567,17 @@ Plan your migration order based on risk and dependencies:
   |  Lexicon        --> business     |
   |                     terms from   |
   |                     naming       |
+  |                                  |
+  |  Migration      --> Vaadin 7     |
+  |  Pattern           type usages,  |
+  |                     automation   |
+  |                     classification|
   +----------------------------------+
          |
          v
   +----------------------------------+
   |         Neo4j Graph DB           |
-  |  8 node types, 9 edge types      |
+  |  9 node types, 10 edge types     |
   +----------------------------------+
 ```
 
@@ -605,6 +612,7 @@ curl -N "http://localhost:8080/api/extraction/progress?jobId=abc-123"
 | `ModuleNode` | A module (3rd package segment) | `billing` |
 | `DBTableNode` | A database table (from `@Table`) | `invoices` |
 | `BusinessTerm` | A domain concept from naming | `Invoice`, `Payment` |
+| `MigrationAction` | A Vaadin 7 type migration action | `Table` -> `Grid` (YES automation) |
 
 | Edge Type | What it means | Example |
 |-----------|--------------|---------|
@@ -617,6 +625,7 @@ curl -N "http://localhost:8080/api/extraction/progress?jobId=abc-123"
 | `MAPS_TO_TABLE` | ORM table mapping | `User` -> `users` |
 | `USES_TERM` | Class uses business term | `InvoiceService` -> `Invoice` |
 | `DEFINES_RULE` | Class defines business rule | `PriceCalculator` -> `Price` |
+| `HAS_MIGRATION_ACTION` | Class has a migration action | `OrderView` -> `Table->Grid` |
 
 ---
 
@@ -659,7 +668,7 @@ You can also explore the graph visually in the Neo4j Browser at **http://localho
 
 ### 3. Graph Validation
 
-**What it does:** Runs 41 automated quality checks against your code knowledge graph to ensure data integrity and highlight architectural issues.
+**What it does:** Runs 44 automated quality checks against your code knowledge graph to ensure data integrity and highlight architectural issues.
 
 ```
   Validation Categories
@@ -708,12 +717,17 @@ You can also explore the graph visually in the Neo4j Browser at **http://localho
   - Modules exist
   - Risk scores populated
   - Dependency edges exist
+
+  MIGRATION (3 queries)
+  - Migration actions populated
+  - Automation scores computed
+  - HAS_MIGRATION_ACTION edge integrity
 ```
 
 **How to use it:**
 
 ```bash
-# Run all 41 validation queries
+# Run all 44 validation queries
 curl "http://localhost:8080/api/graph/validation"
 ```
 
@@ -1196,14 +1210,17 @@ curl "http://localhost:8080/api/scheduling/recommend?sourceRoot=/path/to/project
   ┌─────────────────────────────┐
   │   MCP Server (Spring AI)    │
   │                             │
-  │  6 Tools:                   │
+  │  9 Tools:                   │
   │  ┌───────────────────────┐  │
   │  │ getMigrationContext   │──┼──▶ MigrationContextAssembler (5 services in parallel)
   │  │ searchKnowledge       │──┼──▶ VectorSearchService (semantic code search)
   │  │ getDependencyCone     │──┼──▶ GraphQueryService (graph traversal)
   │  │ getRiskAnalysis       │──┼──▶ RiskService (structural + domain risk)
   │  │ browseDomainTerms     │──┼──▶ LexiconService (business vocabulary)
-  │  │ validateSystemHealth  │──┼──▶ ValidationService (41 integrity checks)
+  │  │ validateSystemHealth  │──┼──▶ ValidationService (44 integrity checks)
+  │  │ getMigrationPlan      │──┼──▶ MigrationRecipeService (per-class migration plan)
+  │  │ applyMigrationRecipes │──┼──▶ MigrationRecipeService (preview OpenRewrite diffs)
+  │  │ getModuleMigrationSummary──▶ MigrationRecipeService (module-level summary)
   │  └───────────────────────┘  │
   │                             │
   │  Caffeine Cache (3 caches)  │
@@ -1236,17 +1253,20 @@ docker compose up -d && ./gradlew bootRun -Dorg.gradle.java.home="/path/to/java2
 }
 ```
 
-**Step 3:** Open Claude Code in the ESMP project directory. It automatically discovers the MCP server and all 6 tools. Verify by asking:
+**Step 3:** Open Claude Code in the ESMP project directory. It automatically discovers the MCP server and all 9 tools. Verify by asking:
 
 ```
 You: "What tools do you have from ESMP?"
-Claude: I have 6 ESMP tools available:
+Claude: I have 9 ESMP tools available:
         - getMigrationContext
         - searchKnowledge
         - getDependencyCone
         - getRiskAnalysis
         - browseDomainTerms
         - validateSystemHealth
+        - getMigrationPlan
+        - applyMigrationRecipes
+        - getModuleMigrationSummary
 ```
 
 > **For other MCP clients** (Cursor, custom agents): point your MCP client's SSE transport at `http://localhost:8080/mcp/sse`. The server conforms to the standard MCP SSE protocol.
@@ -1407,7 +1427,7 @@ Browse the automatically extracted domain lexicon.
 
 ##### 6. `validateSystemHealth` — Integrity checks
 
-Runs all 41 validation queries. No parameters.
+Runs all 44 validation queries. No parameters.
 
 **Example response:**
 
@@ -1421,6 +1441,71 @@ Runs all 41 validation queries. No parameters.
     {"name": "ORPHAN_CLASSES", "severity": "WARNING", "status": "WARN", "count": 3},
     {"name": "VECTOR_INDEX_POPULATED", "severity": "ERROR", "status": "PASS", "count": 1250}
   ]
+}
+```
+
+##### 7. `getMigrationPlan` — Per-class migration plan
+
+Generates a detailed migration plan for a class showing all Vaadin 7 type usages, their Vaadin 24 targets, and automation classification (YES/PARTIAL/NO).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `classFqn` | String | Yes | Fully-qualified class name |
+
+**Example response:**
+
+```json
+{
+  "classFqn": "com.acme.ui.OrderFormView",
+  "migrationActions": [
+    {"sourceType": "com.vaadin.ui.Table", "targetType": "com.vaadin.flow.component.grid.Grid", "automation": "YES"},
+    {"sourceType": "com.vaadin.ui.CustomComponent", "targetType": "com.vaadin.flow.component.Composite", "automation": "PARTIAL"},
+    {"sourceType": "com.vaadin.ui.Window", "targetType": "com.vaadin.flow.component.dialog.Dialog", "automation": "NO"}
+  ],
+  "automationScore": 0.67,
+  "needsAiMigration": true
+}
+```
+
+##### 8. `applyMigrationRecipes` — Preview OpenRewrite diffs
+
+Generates and executes OpenRewrite ChangeType/ChangePackage recipes in **preview mode** (returns diffs, does NOT write files). Safe for exploration.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `classFqn` | String | Yes | Fully-qualified class name |
+| `sourceRoot` | String | Yes | Path to source root |
+
+**Example response:**
+
+```json
+{
+  "classFqn": "com.acme.ui.OrderFormView",
+  "recipesApplied": 3,
+  "diff": "--- a/OrderFormView.java\n+++ b/OrderFormView.java\n@@ -1,5 +1,5 @@\n-import com.vaadin.ui.Table;\n+import com.vaadin.flow.component.grid.Grid;\n...",
+  "remainingManualActions": 1
+}
+```
+
+##### 9. `getModuleMigrationSummary` — Module-level migration summary
+
+Returns aggregate migration statistics for all classes in a module: total actions, automatable actions, average automation score, and classes needing AI migration.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `module` | String | Yes | Module name (3rd package segment) |
+
+**Example response:**
+
+```json
+{
+  "module": "billing",
+  "totalClasses": 45,
+  "classesWithMigrationActions": 12,
+  "totalActions": 34,
+  "automatableActions": 22,
+  "avgAutomationScore": 0.65,
+  "classesNeedingAiMigration": 8
 }
 ```
 
@@ -1477,9 +1562,9 @@ Claude: "AuthenticationService depends on:
 You: "Before I start migrating, is the knowledge graph healthy?"
 
 Claude: [calls validateSystemHealth()]
-        → Returns 41 query results
+        → Returns 44 query results
 
-Claude: "System health: 39 pass, 1 warning, 1 error
+Claude: "System health: 42 pass, 1 warning, 1 error
          - WARNING: 3 orphan classes (no relationships) — likely utility classes
          - ERROR: Vector index not populated — run extraction first
 
@@ -1531,6 +1616,33 @@ Claude: "BillingConfig has risk 0.12 (safe to migrate):
          - No business terms
 
          Here's the migrated code: ..."
+```
+
+##### Workflow 6: Automated migration with OpenRewrite
+
+```
+You: "I want to auto-migrate as much of the billing module as possible
+      before manually handling the rest."
+
+Claude: [calls getModuleMigrationSummary("billing")]
+        → 45 classes, 12 with migration actions, 22/34 automatable, avg score 0.65
+
+Claude: "The billing module has 34 Vaadin 7 type usages across 12 classes.
+         22 of those (65%) can be auto-migrated with OpenRewrite recipes.
+         8 classes still need AI-assisted migration for complex patterns.
+
+         Let me start with the automatable ones..."
+
+Claude: [calls getMigrationPlan("com.acme.billing.InvoiceListView")]
+        → 3 actions: Table→Grid (YES), DateField→DatePicker (YES), Window→Dialog (NO)
+
+Claude: [calls applyMigrationRecipes("com.acme.billing.InvoiceListView", "/path/to/src")]
+        → Preview diff with 2 import changes applied
+
+Claude: "Here's the preview diff for InvoiceListView. The Table→Grid and
+         DateField→DatePicker changes are applied automatically.
+         The Window→Dialog conversion needs manual handling.
+         Shall I apply this and proceed to the next class?"
 ```
 
 #### Infrastructure Details
@@ -1663,9 +1775,84 @@ Progress phases: `SCANNING` → `PARSING` → `VISITING` → `PERSISTING` → `L
 
 ---
 
+### 13. Migration Engine (OpenRewrite)
+
+**What it does:** Catalogs every Vaadin 7 type usage in your codebase, classifies each as fully automatable (YES), partially automatable (PARTIAL), or requiring manual/AI migration (NO), and generates OpenRewrite ChangeType/ChangePackage recipes that can be previewed as diffs or applied to source files.
+
+```
+  Migration Engine Pipeline
+  =========================
+
+  Stage 1: CATALOG (MigrationPatternVisitor — 8th visitor)
+  ────────────────────────────────────────────────────────
+  Scans every .java file for Vaadin 7 type references.
+  30-entry TYPE_MAP maps old types to new types:
+
+  com.vaadin.ui.Table           → com.vaadin.flow.component.grid.Grid      (YES)
+  com.vaadin.ui.TextField       → com.vaadin.flow.component.textfield.TextField (YES)
+  com.vaadin.ui.DateField       → com.vaadin.flow.component.datepicker.DatePicker (YES)
+  com.vaadin.ui.CustomComponent → com.vaadin.flow.component.Composite      (PARTIAL)
+  com.vaadin.ui.Window          → com.vaadin.flow.component.dialog.Dialog   (NO)
+  com.vaadin.navigator.View     → (no direct equivalent — @Route pattern)   (NO)
+  ...
+
+  Each usage becomes a MigrationAction node linked via HAS_MIGRATION_ACTION.
+
+  Stage 2: CLASSIFY
+  ─────────────────
+  Per-class automation scores:
+
+  migrationActionCount   = total Vaadin 7 type usages in class
+  automatableActionCount = count where automation = YES
+  automationScore        = automatableActionCount / migrationActionCount
+  needsAiMigration       = true if any action is PARTIAL or NO
+
+  Stage 3: EXECUTE (MigrationRecipeService)
+  ──────────────────────────────────────────
+  For YES actions: generates OpenRewrite ChangeType recipes
+  For javax.* packages: generates ChangePackage recipes
+
+  Two modes:
+  - preview()      → returns unified diff (safe, no file changes)
+  - applyAndWrite() → writes transformed source to disk
+
+  MCP safety: applyMigrationRecipes tool calls preview() NOT applyAndWrite()
+```
+
+**How to use it:**
+
+```bash
+# Get migration plan for a class
+curl "http://localhost:8080/api/migration/plan/com.acme.ui.OrderFormView"
+
+# Get module-level migration summary
+curl "http://localhost:8080/api/migration/summary?module=billing"
+
+# Preview OpenRewrite changes (returns diff, does NOT modify files)
+curl -X POST "http://localhost:8080/api/migration/preview/com.acme.ui.OrderFormView" \
+  -H "Content-Type: application/json" \
+  -d '{"sourceRoot": "/path/to/src/main/java"}'
+
+# Apply OpenRewrite changes (writes to disk)
+curl -X POST "http://localhost:8080/api/migration/apply/com.acme.ui.OrderFormView" \
+  -H "Content-Type: application/json" \
+  -d '{"sourceRoot": "/path/to/src/main/java"}'
+
+# Apply to entire module
+curl -X POST "http://localhost:8080/api/migration/apply-module" \
+  -H "Content-Type: application/json" \
+  -d '{"module": "billing", "sourceRoot": "/path/to/src/main/java"}'
+```
+
+**Pipeline integration:** MigrationPatternVisitor runs as the 8th visitor during extraction. After extraction completes, every class has `migrationActionCount`, `automatableActionCount`, `automationScore`, and `needsAiMigration` properties on the ClassNode. MigrationAction nodes are persisted with HAS_MIGRATION_ACTION edges.
+
+**Safety model:** The MCP tool `applyMigrationRecipes` calls `preview()` (returns diffs) rather than `applyAndWrite()` (modifies files). This means AI assistants can safely explore migration plans without accidentally modifying source code. The REST API provides both preview and apply endpoints for explicit human-driven workflows.
+
+---
+
 ## REST API Reference
 
-Complete list of all 22 endpoints:
+Complete list of all 27 endpoints:
 
 ### Extraction
 
@@ -1683,7 +1870,7 @@ Complete list of all 22 endpoints:
 | `GET` | `/api/graph/class/{fqn}/dependency-cone` | All transitively reachable nodes |
 | `GET` | `/api/graph/repository/{fqn}/service-dependents` | Services depending on a repository |
 | `GET` | `/api/graph/search?name=...` | Search classes by name |
-| `GET` | `/api/graph/validation` | Run all 41 validation queries |
+| `GET` | `/api/graph/validation` | Run all 44 validation queries |
 
 ### Domain & Risk
 
@@ -1713,6 +1900,16 @@ Complete list of all 22 endpoints:
 | `GET` | `/api/pilot/validate/{module}` | Module pilot readiness check |
 | `GET` | `/api/scheduling/recommend` | Migration wave schedule |
 
+### Migration Engine
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/migration/plan/{fqn}` | Migration plan for a class (actions + automation scores) |
+| `GET` | `/api/migration/summary` | Module-level migration summary |
+| `POST` | `/api/migration/preview/{fqn}` | Preview OpenRewrite diffs (no file changes) |
+| `POST` | `/api/migration/apply/{fqn}` | Apply OpenRewrite recipes (writes to disk) |
+| `POST` | `/api/migration/apply-module` | Apply recipes to all classes in a module |
+
 ### Source Access
 
 | Method | Endpoint | Description |
@@ -1723,7 +1920,7 @@ Complete list of all 22 endpoints:
 
 | Transport | Endpoint | Description |
 |-----------|----------|-------------|
-| `SSE` | `/mcp/sse` | MCP server — exposes 6 tools (getMigrationContext, searchKnowledge, getDependencyCone, getRiskAnalysis, browseDomainTerms, validateSystemHealth) |
+| `SSE` | `/mcp/sse` | MCP server — exposes 9 tools (getMigrationContext, searchKnowledge, getDependencyCone, getRiskAnalysis, browseDomainTerms, validateSystemHealth, getMigrationPlan, applyMigrationRecipes, getModuleMigrationSummary) |
 
 ---
 
@@ -1882,6 +2079,7 @@ ESMP has comprehensive test coverage with 31 test suites:
 | Scheduling | 1 suite (3 tests) | 1 suite (6 tests) |
 | Dashboard | - | 1 suite (7 tests) |
 | MCP Server | 2 suites (5 tests) | 2 suites (11 tests) |
+| Migration Engine | 1 suite (8 tests) | 3 suites (18 tests) |
 | Source Access | 1 suite (3 tests) | - |
 | Infrastructure | - | 2 suites |
 
@@ -2121,13 +2319,16 @@ The workflow is a loop:
   |     RETRIEVE CONTEXT (RAG for each class)
   |            |
   |            v
-  |     AI MIGRATES (with full dependency + risk context)
+  |     AUTO-MIGRATE (OpenRewrite recipes for YES actions)
+  |            |
+  |            v
+  |     AI MIGRATES (remaining PARTIAL/NO patterns with full context)
   |            |
   |            v
   |     RE-INDEX (update graph with new code)
   |            |
   |            v
-  |     VALIDATE (run 41 checks — anything broken?)
+  |     VALIDATE (run 44 checks — anything broken?)
   |            |
   |     NO ----+----> YES (fix before continuing)
   |            |
@@ -2158,9 +2359,9 @@ curl -X POST "http://localhost:8080/api/extraction/trigger" \
   Your 500+ Java files
          |
          v
-  7 AST visitors extract:
-  - 8 node types (classes, methods, fields, annotations, ...)
-  - 9 relationship types (CALLS, EXTENDS, DEPENDS_ON, ...)
+  8 AST visitors extract:
+  - 9 node types (classes, methods, fields, annotations, migration actions...)
+  - 10 relationship types (CALLS, EXTENDS, DEPENDS_ON, HAS_MIGRATION_ACTION...)
   - Business terms from naming conventions
   - Cyclomatic complexity per method
   - Vaadin 7 patterns (views, components, data bindings)
@@ -2344,7 +2545,15 @@ RISK=$(curl -s "http://localhost:8080/api/risk/class/$FQN")
 # 3. Get inheritance chain
 INHERITANCE=$(curl -s "http://localhost:8080/api/graph/class/$FQN/inheritance")
 
-# 4. Combine into AI prompt
+# 4. Get migration plan (automatable type mappings)
+MIGRATION_PLAN=$(curl -s "http://localhost:8080/api/migration/plan/$FQN")
+
+# 5. Preview OpenRewrite auto-migration diff
+PREVIEW=$(curl -s -X POST "http://localhost:8080/api/migration/preview/$FQN" \
+  -H "Content-Type: application/json" \
+  -d "{\"sourceRoot\": \"$SOURCE_ROOT\"}")
+
+# 6. Combine into AI prompt
 cat <<PROMPT
 Migrate this Vaadin 7 class to Vaadin 24.
 
@@ -2355,6 +2564,12 @@ $RISK
 
 ## Inheritance Chain:
 $INHERITANCE
+
+## Migration Plan (automatable type mappings):
+$MIGRATION_PLAN
+
+## OpenRewrite Preview Diff (auto-applied changes):
+$PREVIEW
 
 ## Full Dependency Context (from code knowledge graph):
 $CONTEXT
@@ -2423,7 +2638,7 @@ curl "http://localhost:8080/api/graph/validation" | python -m json.tool
   ------                          -----
   Vaadin 7 views: 28              Vaadin 7 views: 27  (-1!)
   Risk score: 0.12                Risk score: 0.05    (improved!)
-  Validation: 41/41 pass          Validation: 41/41 pass (still green!)
+  Validation: 44/44 pass          Validation: 44/44 pass (still green!)
 
   The graph automatically updated:
   - DateFormatter node now has Vaadin 24 patterns
@@ -2531,7 +2746,7 @@ Throughout the migration, ESMP acts as your safety net:
   =====================
 
   +----------------------------------------------------------+
-  |                    41 Validation Queries                   |
+  |                    44 Validation Queries                   |
   |                                                           |
   |  STRUCTURAL    |  Are all edges still valid?              |
   |  INTEGRITY     |  Any orphan nodes created?               |
@@ -2585,7 +2800,7 @@ Track your migration progress through the dashboard:
 
   +-------------------+-------------------+-------------------+
   |   Total Classes   | Vaadin 7 Remaining|  Validation Health|
-  |       342         |    28 --> 15 --> 0 |     41/41 pass   |
+  |       342         |    28 --> 15 --> 0 |     44/44 pass   |
   +-------------------+-------------------+-------------------+
 
   Risk heatmap shows modules getting "greener" over time:
@@ -2889,7 +3104,7 @@ Here's a concrete example of migrating `OrderFormView` (a Vaadin 7 view) using E
 
   $ curl -s localhost:8080/api/graph/validation | jq '{passCount, warnCount, errorCount}'
 
-  {"passCount": 41, "warnCount": 0, "errorCount": 0}
+  {"passCount": 44, "warnCount": 0, "errorCount": 0}
 
   All green! Move to the next class.
 ```
@@ -3052,7 +3267,7 @@ The core engine that ties everything together. It replaces the manual "copy cont
                          │
   ┌──────────────────────▼──────────────────────────┐
   │ 2. RAG CONTEXT RETRIEVAL                        │
-  │    - Dependency cone (10 hops, all 9 edge types)│
+  │    - Dependency cone (10 hops, all 10 edge types│
   │    - Vector search within cone (top 25 chunks)  │
   │    - Risk scores + business terms               │
   │    - Vaadin 7 pattern detection flags           │
