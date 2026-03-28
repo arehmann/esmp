@@ -105,8 +105,8 @@
 
 - [x] **MIG-01**: MigrationPatternVisitor catalogs every Vaadin 7 type usage per class with source-target mapping and automatable/partial/no classification
 - [x] **MIG-02**: ClassNode stores migrationActionCount, automatableActionCount, automationScore, and needsAiMigration properties
-- [ ] **MIG-03**: MigrationRecipeService generates composite OpenRewrite recipes from automatable actions and produces preview diffs
-- [ ] **MIG-04**: MigrationRecipeService applies recipes and writes modified source with correct imports and formatting
+- [x] **MIG-03**: MigrationRecipeService generates composite OpenRewrite recipes from automatable actions and produces preview diffs
+- [x] **MIG-04**: MigrationRecipeService applies recipes and writes modified source with correct imports and formatting
 - [ ] **MIG-05**: REST API exposes migration plan, preview, apply, and batch-apply-module endpoints
 - [ ] **MIG-06**: MCP tools (getMigrationPlan, applyMigrationRecipes, getModuleMigrationSummary) callable from Claude Code
 

@@ -314,7 +314,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 13. Risk-Prioritized Scheduling | 2/2 | Complete | 2026-03-18 |
 | 14. MCP Server | 2/2 | Complete | 2026-03-19 |
 | 15. Docker Deployment & Enterprise Scale | 3/3 | Complete    | 2026-03-28 |
-| 16. OpenRewrite Recipe-Based Migration Engine | 1/3 | In Progress|  |
+| 16. OpenRewrite Recipe-Based Migration Engine | 2/3 | In Progress|  |
 
 ### Phase 16: OpenRewrite Recipe-Based Migration Engine
 
@@ -328,7 +328,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
   4. MigrationRecipeService can apply recipes and write modified source back to disk (apply mode) with correct imports, type references, and formatting preserved
   5. REST API exposes migration plan per class, preview diff, apply per class, and batch apply per module
   6. Three new MCP tools (getMigrationPlan, applyMigrationRecipes, getModuleMigrationSummary) are callable from Claude Code
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 - [ ] 16-01-PLAN.md — MigrationPatternVisitor (8th visitor), ExtractionAccumulator extensions, MigrationActionNode model, ClassNode migration properties, Neo4j persistence
