@@ -11,6 +11,10 @@ import com.esmp.graph.application.RiskService;
 import com.esmp.graph.validation.ValidationService;
 import com.esmp.mcp.api.MigrationContext;
 import com.esmp.mcp.application.MigrationContextAssembler;
+import com.esmp.migration.api.MigrationPlan;
+import com.esmp.migration.api.MigrationResult;
+import com.esmp.migration.api.ModuleMigrationSummary;
+import com.esmp.migration.application.MigrationRecipeService;
 import com.esmp.vector.api.SearchRequest;
 import com.esmp.vector.api.SearchResponse;
 import com.esmp.vector.application.VectorSearchService;
@@ -26,7 +30,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 
 /**
- * MCP tool service exposing 6 migration-assistance tools to AI assistants.
+ * MCP tool service exposing 9 migration-assistance tools to AI assistants.
  *
  * <p>Each method is annotated with {@link Tool} so that the Spring AI MCP server can discover
  * and expose it as a named tool via the SSE transport. All methods are also instrumented with
@@ -40,6 +44,9 @@ import org.springframework.stereotype.Component;
  *   <li>{@link #getRiskAnalysis} — risk heatmap or class-level risk detail
  *   <li>{@link #browseDomainTerms} — lexicon browsing and search
  *   <li>{@link #validateSystemHealth} — full graph + vector validation report
+ *   <li>{@link #getMigrationPlan} — OpenRewrite recipe plan for a class
+ *   <li>{@link #applyMigrationRecipes} — apply recipes and return diff (no disk write)
+ *   <li>{@link #getModuleMigrationSummary} — module-level automation statistics
  * </ol>
  */
 @Component
@@ -53,6 +60,7 @@ public class MigrationToolService {
   private final LexiconService lexiconService;
   private final VectorSearchService vectorSearchService;
   private final ValidationService validationService;
+  private final MigrationRecipeService migrationRecipeService;
   private final MeterRegistry meterRegistry;
 
   public MigrationToolService(
@@ -62,6 +70,7 @@ public class MigrationToolService {
       LexiconService lexiconService,
       VectorSearchService vectorSearchService,
       ValidationService validationService,
+      MigrationRecipeService migrationRecipeService,
       MeterRegistry meterRegistry) {
     this.assembler = assembler;
     this.graphQueryService = graphQueryService;
@@ -69,6 +78,7 @@ public class MigrationToolService {
     this.lexiconService = lexiconService;
     this.vectorSearchService = vectorSearchService;
     this.validationService = validationService;
+    this.migrationRecipeService = migrationRecipeService;
     this.meterRegistry = meterRegistry;
   }
 
@@ -245,5 +255,77 @@ public class MigrationToolService {
         System.currentTimeMillis() - startMs);
 
     return result;
+  }
+
+  /**
+   * Returns the OpenRewrite migration plan for a Java class, showing which Vaadin 7 transforms
+   * can be automated and which require AI-assisted migration.
+   *
+   * @param classFqn fully-qualified class name (e.g. com.example.PaymentView)
+   * @return {@link MigrationPlan} with automatable actions, manual actions, and automation score
+   */
+  @Tool(description = "Get migration plan for a Java class showing which Vaadin 7 to Vaadin 24 "
+      + "transforms are automatable by OpenRewrite recipe and which need AI-assisted migration. "
+      + "Returns automation score, automatable action list (type renames, import swaps), and "
+      + "manual action list (complex rewrites like Table to Grid, data binding changes).")
+  @Timed("esmp.mcp.getMigrationPlan")
+  public MigrationPlan getMigrationPlan(String classFqn) {
+    log.info("MCP getMigrationPlan called for: {}", classFqn);
+    meterRegistry.counter("esmp.mcp.calls", "tool", "getMigrationPlan").increment();
+    try {
+      return migrationRecipeService.generatePlan(classFqn);
+    } catch (Exception e) {
+      log.error("getMigrationPlan failed for {}: {}", classFqn, e.getMessage(), e);
+      throw e;
+    }
+  }
+
+  /**
+   * Applies OpenRewrite recipes to automate mechanical Vaadin 7 to Vaadin 24 transforms for a
+   * class. Returns unified diff and modified source text. Does NOT write to disk.
+   *
+   * @param classFqn fully-qualified class name
+   * @return {@link MigrationResult} with diff and modified source (no file is written)
+   */
+  @Tool(description = "Apply OpenRewrite recipes to automate mechanical Vaadin 7 to Vaadin 24 "
+      + "transforms for a class. Returns unified diff and modified source text. Does NOT write "
+      + "to disk — use your own file writing tools to apply the changes. Only applies transforms "
+      + "classified as automatable (type renames, import swaps, package changes). Complex rewrites "
+      + "like Table-to-Grid and data binding are left for AI.")
+  @Timed("esmp.mcp.applyMigrationRecipes")
+  public MigrationResult applyMigrationRecipes(String classFqn) {
+    log.info("MCP applyMigrationRecipes called for: {}", classFqn);
+    meterRegistry.counter("esmp.mcp.calls", "tool", "applyMigrationRecipes").increment();
+    try {
+      // Uses preview() intentionally — MCP tools return diff + modified source only.
+      // Claude handles all filesystem writes via its own tools. ESMP never writes to the
+      // target codebase through MCP.
+      return migrationRecipeService.preview(classFqn);
+    } catch (Exception e) {
+      log.error("applyMigrationRecipes failed for {}: {}", classFqn, e.getMessage(), e);
+      throw e;
+    }
+  }
+
+  /**
+   * Returns module-level migration automation statistics showing how many classes are fully
+   * automatable, partially automatable, or need AI-only migration.
+   *
+   * @param module the module name (third segment of the package name, e.g., "billing")
+   * @return {@link ModuleMigrationSummary} with class counts, action counts, and average score
+   */
+  @Tool(description = "Get migration automation summary for a module showing how many classes are "
+      + "fully automatable by OpenRewrite recipes, partially automatable, and need AI-only migration. "
+      + "Use this to assess migration effort and decide which modules to tackle first.")
+  @Timed("esmp.mcp.getModuleMigrationSummary")
+  public ModuleMigrationSummary getModuleMigrationSummary(String module) {
+    log.info("MCP getModuleMigrationSummary called for: {}", module);
+    meterRegistry.counter("esmp.mcp.calls", "tool", "getModuleMigrationSummary").increment();
+    try {
+      return migrationRecipeService.getModuleSummary(module);
+    } catch (Exception e) {
+      log.error("getModuleMigrationSummary failed for {}: {}", module, e.getMessage(), e);
+      throw e;
+    }
   }
 }
