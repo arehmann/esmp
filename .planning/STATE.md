@@ -481,6 +481,7 @@ Recent decisions affecting current work:
 - Phase 14 added: MCP server for AI-powered migration context
 - Phase 15 added: Docker Deployment & Enterprise Scale
 - Phase 16 added: OpenRewrite Recipe-Based Migration Engine
+- Phase 17 added: Migration Recipe Book & Transitive Detection
 
 ### Pending Todos
 

@@ -334,3 +334,13 @@ Plans:
 - [ ] 16-01-PLAN.md — MigrationPatternVisitor (8th visitor), ExtractionAccumulator extensions, MigrationActionNode model, ClassNode migration properties, Neo4j persistence
 - [ ] 16-02-PLAN.md — MigrationRecipeService (recipe generation, preview diff, apply mode), API records, MigrationValidationQueryRegistry, integration tests
 - [ ] 16-03-PLAN.md — MigrationController REST API (5 endpoints), 3 new MCP tools (getMigrationPlan, applyMigrationRecipes, getModuleMigrationSummary), integration tests
+
+### Phase 17: Migration Recipe Book & Transitive Detection
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 16
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 17 to break down)
