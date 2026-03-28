@@ -265,8 +265,16 @@ public class MigrationRecipeService {
   /**
    * Returns aggregated migration statistics for all classes in a module.
    *
+   * <p>Extended in Phase 17 to also return:
+   * <ul>
+   *   <li>{@code transitiveClassCount} — classes with at least one inherited MigrationAction
+   *   <li>{@code coverageByType} — fraction of unique source types with a mapped recipe
+   *   <li>{@code coverageByUsage} — fraction of usage instances that are mapped
+   *   <li>{@code topGaps} — top-5 NEEDS_MAPPING sources by usageCount from recipe book
+   * </ul>
+   *
    * @param module the module name (third segment of the package name)
-   * @return summary with class counts, action counts, and average automation score
+   * @return summary with class counts, action counts, automation score, and coverage metrics
    */
   public ModuleMigrationSummary getModuleSummary(String module) {
     String query =
@@ -275,7 +283,8 @@ public class MigrationRecipeService {
         WHERE split(c.packageName, '.')[2] = $module
         OPTIONAL MATCH (c)-[:HAS_MIGRATION_ACTION]->(ma:MigrationAction)
         WITH c, count(ma) AS actionCount,
-             sum(CASE WHEN ma.automatable = 'YES' THEN 1 ELSE 0 END) AS yesCount
+             sum(CASE WHEN ma.automatable = 'YES' THEN 1 ELSE 0 END) AS yesCount,
+             sum(CASE WHEN ma.isInherited = true THEN 1 ELSE 0 END) AS inheritedCount
         RETURN
           count(c) AS totalClasses,
           sum(CASE WHEN actionCount > 0 THEN 1 ELSE 0 END) AS classesWithActions,
@@ -284,29 +293,107 @@ public class MigrationRecipeService {
           sum(CASE WHEN actionCount > 0 AND c.automationScore = 0.0 THEN 1 ELSE 0 END) AS needsAiOnly,
           avg(CASE WHEN actionCount > 0 THEN c.automationScore ELSE null END) AS avgScore,
           sum(actionCount) AS totalActions,
-          sum(yesCount) AS totalAutomatable
+          sum(yesCount) AS totalAutomatable,
+          sum(CASE WHEN inheritedCount > 0 THEN 1 ELSE 0 END) AS transitiveClassCount
         """;
 
-    return neo4jClient
+    // Coverage by type query: unique source types in module and how many are mapped
+    String coverageQuery =
+        """
+        MATCH (c:JavaClass)-[:HAS_MIGRATION_ACTION]->(ma:MigrationAction)
+        WHERE split(c.packageName, '.')[2] = $module
+          AND NOT ma.isInherited
+        WITH DISTINCT ma.source AS src, ma.automatable AS auto
+        RETURN count(src) AS totalTypes,
+               sum(CASE WHEN auto <> 'NO' THEN 1 ELSE 0 END) AS mappedTypes
+        """;
+
+    // Top 5 NEEDS_MAPPING gaps from the recipe book
+    List<String> topGaps = recipeBookRegistry.getRules().stream()
+        .filter(r -> "NEEDS_MAPPING".equals(r.status()))
+        .sorted(java.util.Comparator.comparingInt(RecipeRule::usageCount).reversed())
+        .limit(5)
+        .map(RecipeRule::source)
+        .collect(Collectors.toList());
+
+    // Execute primary query
+    var result = neo4jClient
         .query(query)
         .bind(module)
         .to("module")
         .fetchAs(ModuleMigrationSummary.class)
         .mappedBy(
-            (ts, record) ->
-                new ModuleMigrationSummary(
-                    module,
-                    record.get("totalClasses").asInt(0),
-                    record.get("classesWithActions").asInt(0),
-                    record.get("fullyAutomatable").asInt(0),
-                    record.get("partiallyAutomatable").asInt(0),
-                    record.get("needsAiOnly").asInt(0),
-                    record.get("avgScore").isNull() ? 0.0 : record.get("avgScore").asDouble(0.0),
-                    record.get("totalActions").asInt(0),
-                    record.get("totalAutomatable").asInt(0)))
-        .one()
-        .orElse(
-            new ModuleMigrationSummary(module, 0, 0, 0, 0, 0, 0.0, 0, 0));
+            (ts, record) -> {
+              int totalClasses = record.get("totalClasses").asInt(0);
+              int classesWithActions = record.get("classesWithActions").asInt(0);
+              int fullyAutomatable = record.get("fullyAutomatable").asInt(0);
+              int partiallyAutomatable = record.get("partiallyAutomatable").asInt(0);
+              int needsAiOnly = record.get("needsAiOnly").asInt(0);
+              double avgScore = record.get("avgScore").isNull() ? 0.0
+                  : record.get("avgScore").asDouble(0.0);
+              int totalActions = record.get("totalActions").asInt(0);
+              int totalAutomatable = record.get("totalAutomatable").asInt(0);
+              int transitiveClassCount = record.get("transitiveClassCount").asInt(0);
+              return new ModuleMigrationSummary(
+                  module, totalClasses, classesWithActions, fullyAutomatable,
+                  partiallyAutomatable, needsAiOnly, avgScore, totalActions,
+                  totalAutomatable, transitiveClassCount, 0.0, 0.0, topGaps);
+            })
+        .one();
+
+    if (result.isEmpty()) {
+      return new ModuleMigrationSummary(module, 0, 0, 0, 0, 0, 0.0, 0, 0, 0, 0.0, 0.0,
+          topGaps);
+    }
+
+    // Execute coverage query to fill coverageByType and coverageByUsage
+    var coverageResult = neo4jClient
+        .query(coverageQuery)
+        .bind(module)
+        .to("module")
+        .fetchAs(double[].class)
+        .mappedBy((ts, record) -> {
+          int totalTypes = record.get("totalTypes").asInt(0);
+          int mappedTypes = record.get("mappedTypes").asInt(0);
+          double byType = totalTypes > 0 ? (double) mappedTypes / totalTypes : 0.0;
+          return new double[]{byType};
+        })
+        .one();
+
+    double coverageByType = coverageResult.map(arr -> arr[0]).orElse(0.0);
+
+    // coverageByUsage: non-NO actions / total non-inherited actions for the module
+    String usageQuery =
+        """
+        MATCH (c:JavaClass)-[:HAS_MIGRATION_ACTION]->(ma:MigrationAction)
+        WHERE split(c.packageName, '.')[2] = $module
+          AND NOT ma.isInherited
+        RETURN count(ma) AS totalUsages,
+               sum(CASE WHEN ma.automatable <> 'NO' THEN 1 ELSE 0 END) AS mappedUsages
+        """;
+
+    var usageResult = neo4jClient
+        .query(usageQuery)
+        .bind(module)
+        .to("module")
+        .fetchAs(double[].class)
+        .mappedBy((ts, record) -> {
+          int totalUsages = record.get("totalUsages").asInt(0);
+          int mappedUsages = record.get("mappedUsages").asInt(0);
+          double byUsage = totalUsages > 0 ? (double) mappedUsages / totalUsages : 0.0;
+          return new double[]{byUsage};
+        })
+        .one();
+
+    double coverageByUsage = usageResult.map(arr -> arr[0]).orElse(0.0);
+
+    ModuleMigrationSummary base = result.get();
+    return new ModuleMigrationSummary(
+        base.module(), base.totalClasses(), base.classesWithActions(),
+        base.fullyAutomatableClasses(), base.partiallyAutomatableClasses(),
+        base.needsAiOnlyClasses(), base.averageAutomationScore(),
+        base.totalActions(), base.totalAutomatableActions(),
+        base.transitiveClassCount(), coverageByType, coverageByUsage, topGaps);
   }
 
   // ---------------------------------------------------------------------------
@@ -653,6 +740,10 @@ public class MigrationRecipeService {
   /**
    * Loads all migration actions for a class from Neo4j via HAS_MIGRATION_ACTION edges.
    *
+   * <p>Extended in Phase 17 to include transitive fields (isInherited, vaadinAncestor,
+   * pureWrapper, transitiveComplexity, overrideCount, ownVaadinCalls) and to enrich
+   * each entry with migrationSteps from the recipe book.
+   *
    * @param classFqn fully qualified class name
    * @return list of migration action entries (empty if none found)
    */
@@ -661,7 +752,13 @@ public class MigrationRecipeService {
         """
         MATCH (c:JavaClass {fullyQualifiedName: $fqn})-[:HAS_MIGRATION_ACTION]->(ma:MigrationAction)
         RETURN ma.actionType AS actionType, ma.source AS source, ma.target AS target,
-               ma.automatable AS automatable, ma.context AS context
+               ma.automatable AS automatable, ma.context AS context,
+               COALESCE(ma.isInherited, false) AS isInherited,
+               ma.vaadinAncestor AS vaadinAncestor,
+               ma.pureWrapper AS pureWrapper,
+               ma.transitiveComplexity AS transitiveComplexity,
+               ma.overrideCount AS overrideCount,
+               ma.ownVaadinCalls AS ownVaadinCalls
         """;
 
     return new ArrayList<>(
@@ -671,13 +768,40 @@ public class MigrationRecipeService {
             .to("fqn")
             .fetchAs(MigrationActionEntry.class)
             .mappedBy(
-                (ts, record) ->
-                    new MigrationActionEntry(
-                        record.get("actionType").asString(null),
-                        record.get("source").asString(null),
-                        record.get("target").asString(null),
-                        record.get("automatable").asString(null),
-                        record.get("context").isNull() ? null : record.get("context").asString()))
+                (ts, record) -> {
+                  String source = record.get("source").asString(null);
+                  // Enrich with migrationSteps from recipe book
+                  List<String> steps = source != null
+                      ? recipeBookRegistry.findBySource(source)
+                          .map(RecipeRule::migrationSteps)
+                          .orElse(List.of())
+                      : List.of();
+                  boolean isInherited = record.get("isInherited").asBoolean(false);
+                  String vaadinAncestor = record.get("vaadinAncestor").isNull()
+                      ? null : record.get("vaadinAncestor").asString();
+                  Boolean pureWrapper = record.get("pureWrapper").isNull()
+                      ? null : record.get("pureWrapper").asBoolean();
+                  Double transitiveComplexity = record.get("transitiveComplexity").isNull()
+                      ? null : record.get("transitiveComplexity").asDouble();
+                  Integer overrideCount = record.get("overrideCount").isNull()
+                      ? null : record.get("overrideCount").asInt();
+                  Integer ownVaadinCalls = record.get("ownVaadinCalls").isNull()
+                      ? null : record.get("ownVaadinCalls").asInt();
+                  return new MigrationActionEntry(
+                      record.get("actionType").asString(null),
+                      source,
+                      record.get("target").asString(null),
+                      record.get("automatable").asString(null),
+                      record.get("context").isNull() ? null : record.get("context").asString(),
+                      isInherited,
+                      vaadinAncestor,   // inheritedFrom same as vaadinAncestor
+                      vaadinAncestor,
+                      pureWrapper,
+                      transitiveComplexity,
+                      overrideCount,
+                      ownVaadinCalls,
+                      steps);
+                })
             .all());
   }
 
