@@ -1187,7 +1187,7 @@ curl "http://localhost:8080/api/scheduling/recommend?sourceRoot=/path/to/project
 **What it does:** Exposes all ESMP knowledge services as [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) tools via SSE transport, so AI assistants like Claude Code can query migration context, search code, explore dependencies, assess risk, browse domain terms, and validate system health — all through a single connection.
 
 ```
-  AI Assistant (Claude Code)
+  AI Assistant (Claude Code, Cursor, etc.)
          │
          │ MCP SSE (Server-Sent Events)
          │ http://localhost:8080/mcp/sse
@@ -1198,12 +1198,12 @@ curl "http://localhost:8080/api/scheduling/recommend?sourceRoot=/path/to/project
   │                             │
   │  6 Tools:                   │
   │  ┌───────────────────────┐  │
-  │  │ getMigrationContext   │──┼──▶ MigrationContextAssembler
-  │  │ searchKnowledge       │──┼──▶ VectorSearchService
-  │  │ getDependencyCone     │──┼──▶ GraphQueryService
-  │  │ getRiskAnalysis       │──┼──▶ RiskService
-  │  │ browseDomainTerms     │──┼──▶ LexiconService
-  │  │ validateSystemHealth  │──┼──▶ ValidationService
+  │  │ getMigrationContext   │──┼──▶ MigrationContextAssembler (5 services in parallel)
+  │  │ searchKnowledge       │──┼──▶ VectorSearchService (semantic code search)
+  │  │ getDependencyCone     │──┼──▶ GraphQueryService (graph traversal)
+  │  │ getRiskAnalysis       │──┼──▶ RiskService (structural + domain risk)
+  │  │ browseDomainTerms     │──┼──▶ LexiconService (business vocabulary)
+  │  │ validateSystemHealth  │──┼──▶ ValidationService (41 integrity checks)
   │  └───────────────────────┘  │
   │                             │
   │  Caffeine Cache (3 caches)  │
@@ -1211,23 +1211,19 @@ curl "http://localhost:8080/api/scheduling/recommend?sourceRoot=/path/to/project
   └─────────────────────────────┘
 ```
 
-**Key tool: `getMigrationContext`** — the primary context tool for migration. Assembles a unified `MigrationContext` by calling 5 services in parallel:
+#### Setup: Connecting Claude Code to ESMP
 
-1. **Dependency cone** from GraphQueryService (all transitively reachable nodes)
-2. **Risk analysis** from RiskService (complexity, fan-in/out, domain criticality)
-3. **Domain terms** via Neo4j USES_TERM traversal (business terms linked to the class)
-4. **Business rules** via Neo4j DEFINES_RULE traversal (rule/policy/validator classes)
-5. **Code chunks** from RagService (vector search + graph proximity + risk re-ranking)
+**Step 1:** Start ESMP (either via Docker or locally):
 
-Features:
-- **Token budgeting**: Truncates code chunks first (then cone nodes) to stay within configurable token limit (default 8000)
-- **Graceful degradation**: If any service fails, returns partial context with warnings and reduced completeness score
-- **Caffeine caching**: Three named caches (dependencyCones 5min, domainTermsByClass 10min, semanticQueries 3min) with automatic eviction when incremental reindexing runs
-- **Observability**: Every tool call is instrumented with `@Timed` metrics and structured logging
+```bash
+# Docker (recommended)
+docker compose -f docker-compose.full.yml up -d
 
-**How to connect Claude Code:**
+# Or locally
+docker compose up -d && ./gradlew bootRun -Dorg.gradle.java.home="/path/to/java21"
+```
 
-The `.mcp.json` file at the project root auto-configures the connection:
+**Step 2:** The `.mcp.json` file at the project root auto-configures the connection:
 
 ```json
 {
@@ -1240,19 +1236,313 @@ The `.mcp.json` file at the project root auto-configures the connection:
 }
 ```
 
-Start the app, and Claude Code will automatically discover all 6 tools. Example usage:
+**Step 3:** Open Claude Code in the ESMP project directory. It automatically discovers the MCP server and all 6 tools. Verify by asking:
 
 ```
-You: "Get migration context for com.example.PaymentService"
-Claude: [calls getMigrationContext] → returns dependency cone, risk scores,
-        business terms, rules, and relevant code chunks
-
-You: "What classes deal with authentication?"
-Claude: [calls searchKnowledge] → returns ranked code chunks matching the query
-
-You: "Is the knowledge graph healthy?"
-Claude: [calls validateSystemHealth] → returns pass/fail for all 41 validation queries
+You: "What tools do you have from ESMP?"
+Claude: I have 6 ESMP tools available:
+        - getMigrationContext
+        - searchKnowledge
+        - getDependencyCone
+        - getRiskAnalysis
+        - browseDomainTerms
+        - validateSystemHealth
 ```
+
+> **For other MCP clients** (Cursor, custom agents): point your MCP client's SSE transport at `http://localhost:8080/mcp/sse`. The server conforms to the standard MCP SSE protocol.
+
+#### Tool Reference
+
+##### 1. `getMigrationContext` — Primary context tool
+
+The most important tool. Assembles comprehensive migration context for a class by calling 5 services in parallel.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `classFqn` | String | Yes | Fully-qualified class name (e.g. `com.acme.billing.InvoiceService`) |
+
+**What it returns:**
+
+```json
+{
+  "classFqn": "com.acme.billing.InvoiceService",
+  "dependencyCone": {
+    "fqn": "com.acme.billing.InvoiceService",
+    "nodes": [
+      {"fqn": "com.acme.billing.InvoiceRepository", "labels": ["JavaClass", "Repository"]},
+      {"fqn": "com.acme.billing.Invoice", "labels": ["JavaClass", "Entity"]},
+      {"fqn": "com.acme.common.BaseService", "labels": ["JavaClass", "Service"]}
+    ]
+  },
+  "riskAnalysis": {
+    "fqn": "com.acme.billing.InvoiceService",
+    "enhancedRiskScore": 0.72,
+    "structuralRiskScore": 0.58,
+    "domainCriticality": 0.9,
+    "securitySensitivity": 0.0,
+    "financialInvolvement": 0.8,
+    "businessRuleDensity": 0.3,
+    "methods": [
+      {"simpleName": "calculateTotal", "cyclomaticComplexity": 12}
+    ]
+  },
+  "domainTerms": [
+    {"termId": "invoice", "displayName": "Invoice", "criticality": "High", "usageCount": 23}
+  ],
+  "businessRules": ["PriceCalculator", "DiscountValidator"],
+  "codeChunks": [
+    {
+      "classFqn": "com.acme.billing.InvoiceRepository",
+      "chunkType": "METHOD",
+      "methodId": "findByCustomerId",
+      "text": "public List<Invoice> findByCustomerId(Long id) { ... }",
+      "scores": {"vectorScore": 0.89, "graphProximityScore": 0.95, "riskScore": 0.3, "finalScore": 0.74}
+    }
+  ],
+  "truncated": false,
+  "truncatedItems": 0,
+  "contextCompleteness": 1.0,
+  "warnings": [],
+  "durationMs": 450
+}
+```
+
+**Key fields:**
+- `contextCompleteness` (0.0–1.0): How many of the 5 services returned data. 1.0 = all services contributed. Below 1.0 means some services failed (check `warnings`).
+- `truncated`: true if code chunks were dropped to fit the token budget (default 8000 tokens).
+- `warnings`: Lists any services that failed with reason. Migration still works with partial context.
+
+##### 2. `searchKnowledge` — Semantic code search
+
+Find relevant code by meaning, not just keywords. Uses vector embeddings (all-MiniLM-L6-v2, 384-dim).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `query` | String | Yes | Natural language query (e.g. `"payment processing logic"`) |
+| `module` | String | No | Filter by module (e.g. `"billing"`) |
+| `stereotype` | String | No | Filter by stereotype (`"Service"`, `"Repository"`, `"Entity"`, etc.) |
+| `topK` | int | No | Max results (default 10) |
+
+**Example response:**
+
+```json
+{
+  "results": [
+    {
+      "classFqn": "com.acme.billing.PaymentProcessor",
+      "chunkType": "METHOD",
+      "methodId": "processPayment",
+      "text": "public PaymentResult processPayment(Order order, PaymentMethod method) { ... }",
+      "score": 0.91,
+      "module": "billing",
+      "stereotype": "Service",
+      "enhancedRiskScore": 0.65
+    }
+  ],
+  "totalResults": 8,
+  "durationMs": 120
+}
+```
+
+##### 3. `getDependencyCone` — Dependency graph exploration
+
+Traverses all 7 relationship types (DEPENDS_ON, EXTENDS, IMPLEMENTS, CALLS, BINDS_TO, QUERIES, MAPS_TO_TABLE) up to 10 hops.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `classFqn` | String | Yes | Fully-qualified class name |
+| `maxDepth` | int | No | Traversal depth (default 10) |
+
+**Example response:**
+
+```json
+{
+  "fqn": "com.acme.billing.InvoiceService",
+  "nodes": [
+    {"fqn": "com.acme.billing.InvoiceRepository", "labels": ["JavaClass", "Repository"]},
+    {"fqn": "com.acme.billing.Invoice", "labels": ["JavaClass", "Entity"]},
+    {"fqn": "invoices", "labels": ["DBTable"]}
+  ]
+}
+```
+
+##### 4. `getRiskAnalysis` — Risk assessment
+
+Two modes: class detail (when `classFqn` provided) or heatmap (when `classFqn` is empty/null).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `classFqn` | String | No | Class FQN for detail mode; empty/null for heatmap |
+| `module` | String | No | Module filter (heatmap mode only) |
+| `sortBy` | String | No | `"structural"` or `"enhanced"` (default) |
+| `limit` | int | No | Max heatmap entries (default 20) |
+
+**Detail mode** returns per-method complexity breakdown, all 6 risk dimensions (structural, domain criticality, security sensitivity, financial involvement, business rule density, enhanced composite).
+
+**Heatmap mode** returns a ranked list of the riskiest classes across the codebase.
+
+##### 5. `browseDomainTerms` — Business vocabulary
+
+Browse the automatically extracted domain lexicon.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `search` | String | No | Case-insensitive text search on term names |
+| `criticality` | String | No | Filter: `"High"`, `"Medium"`, or `"Low"` |
+
+**Example response:**
+
+```json
+[
+  {
+    "termId": "invoice",
+    "displayName": "Invoice",
+    "definition": "A financial document sent to customers for payment",
+    "criticality": "High",
+    "usageCount": 23,
+    "relatedClasses": ["com.acme.billing.InvoiceService", "com.acme.billing.Invoice"]
+  }
+]
+```
+
+##### 6. `validateSystemHealth` — Integrity checks
+
+Runs all 41 validation queries. No parameters.
+
+**Example response:**
+
+```json
+{
+  "generatedAt": "2026-03-28T10:30:00Z",
+  "passCount": 39,
+  "warnCount": 1,
+  "errorCount": 1,
+  "results": [
+    {"name": "ORPHAN_CLASSES", "severity": "WARNING", "status": "WARN", "count": 3},
+    {"name": "VECTOR_INDEX_POPULATED", "severity": "ERROR", "status": "PASS", "count": 1250}
+  ]
+}
+```
+
+#### Practical Usage Workflows
+
+##### Workflow 1: Migrate a class with full AI assistance
+
+```
+You: "I need to migrate com.acme.billing.InvoiceService from Vaadin 7 to Vaadin 24.
+      Get the full migration context first."
+
+Claude: [calls getMigrationContext("com.acme.billing.InvoiceService")]
+        → Receives dependency cone (18 nodes), risk analysis (enhanced: 0.72, financial: 0.8),
+          3 domain terms (Invoice, Payment, Order), 2 business rules, 12 code chunks
+
+Claude: "Here's what I found about InvoiceService:
+         - HIGH financial involvement (0.8) — handle payment logic carefully
+         - 18 transitive dependencies — InvoiceRepository, Invoice entity, ...
+         - Key business rules: PriceCalculator, DiscountValidator
+         - Vaadin 7 patterns detected: uses com.vaadin.ui.Table
+
+         Here's the migrated Vaadin 24 code: ..."
+```
+
+##### Workflow 2: Explore unfamiliar code areas
+
+```
+You: "What classes handle authentication in this codebase?"
+
+Claude: [calls searchKnowledge("authentication login security", null, null, 15)]
+        → Returns 15 ranked code chunks with auth-related classes
+
+Claude: "Found 8 classes related to authentication:
+         1. AuthenticationService (risk: 0.85 — high security sensitivity)
+         2. LoginView (Vaadin 7 view — needs migration)
+         3. SessionManager ..."
+
+You: "What does AuthenticationService depend on?"
+
+Claude: [calls getDependencyCone("com.acme.auth.AuthenticationService", 5)]
+        → Returns dependency tree
+
+Claude: "AuthenticationService depends on:
+         - UserRepository (1 hop)
+         - User entity (2 hops)
+         - users table (3 hops)
+         - SessionManager (1 hop)
+         - PasswordEncoder (1 hop)"
+```
+
+##### Workflow 3: Pre-migration health check
+
+```
+You: "Before I start migrating, is the knowledge graph healthy?"
+
+Claude: [calls validateSystemHealth()]
+        → Returns 41 query results
+
+Claude: "System health: 39 pass, 1 warning, 1 error
+         - WARNING: 3 orphan classes (no relationships) — likely utility classes
+         - ERROR: Vector index not populated — run extraction first
+
+         Recommendation: Run POST /api/extraction/trigger followed by
+         POST /api/vector/index before starting migration."
+```
+
+##### Workflow 4: Understand business impact before migrating
+
+```
+You: "What business terms are HIGH criticality? I want to migrate those last."
+
+Claude: [calls browseDomainTerms(null, "High")]
+        → Returns all high-criticality terms
+
+Claude: "12 high-criticality business terms found:
+         - Invoice (23 usages) — used by InvoiceService, InvoiceCalculator, ...
+         - Payment (18 usages) — PaymentProcessor, PaymentGateway, ...
+         - Account (15 usages) — AccountService, AccountBalance, ...
+
+         These modules have the highest business impact.
+         Recommend migrating them in later waves with extra review."
+```
+
+##### Workflow 5: Risk-driven migration planning
+
+```
+You: "Show me the riskiest classes in the billing module"
+
+Claude: [calls getRiskAnalysis(null, "billing", "enhanced", 10)]
+        → Returns top 10 riskiest billing classes
+
+Claude: "Top 3 riskiest classes in billing:
+         1. InvoiceCalculator (0.78) — CC:15, financial:0.8, 3 business rules
+         2. PaymentProcessor (0.72) — CC:12, security:0.6, DB writes
+         3. BillingScheduler (0.65) — CC:8, 5 dependencies
+
+         Start with low-risk classes first (OrderDTO, BillingConfig) and
+         save these for last."
+
+You: "Now give me the full context for BillingConfig so I can migrate it"
+
+Claude: [calls getMigrationContext("com.acme.billing.BillingConfig")]
+        → Assembles context for the low-risk class
+
+Claude: "BillingConfig has risk 0.12 (safe to migrate):
+         - No Vaadin 7 patterns (pure configuration)
+         - 2 dependents: InvoiceService, PaymentProcessor
+         - No business terms
+
+         Here's the migrated code: ..."
+```
+
+#### Infrastructure Details
+
+- **Token budgeting**: `getMigrationContext` truncates code chunks first (then cone nodes) to stay within configurable token limit (default 8000). Configure via `esmp.mcp.context.max-tokens`.
+- **Graceful degradation**: If any of the 5 parallel services fail, returns partial context with warnings and reduced `contextCompleteness` score. Migration can proceed with partial data.
+- **Caffeine caching**: Three named caches with configurable TTLs:
+  - `dependencyCones` (5 min) — cone traversals are expensive
+  - `domainTermsByClass` (10 min) — terms change infrequently
+  - `semanticQueries` (3 min) — embedding results
+  - All caches auto-evict when incremental reindexing runs
+- **Observability**: Every tool call is instrumented with `@Timed` Micrometer metrics and structured logging. Query Prometheus for `esmp.mcp.request.duration` and `esmp.mcp.tool.invocations`.
 
 ---
 
