@@ -28,6 +28,7 @@ import com.esmp.extraction.visitor.JpaPatternVisitor;
 import com.esmp.extraction.visitor.LexiconVisitor;
 import com.esmp.extraction.visitor.MigrationPatternVisitor;
 import com.esmp.extraction.visitor.VaadinPatternVisitor;
+import com.esmp.migration.application.RecipeBookRegistry;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -78,6 +79,7 @@ public class ExtractionService {
   private final ExtractionConfig extractionConfig;
   private final TaskExecutor extractionExecutor;
   private final ExtractionProgressService progressService;
+  private final RecipeBookRegistry recipeBookRegistry;
 
   public ExtractionService(
       JavaSourceParser javaSourceParser,
@@ -95,7 +97,8 @@ public class ExtractionService {
       VaadinAuditService vaadinAuditService,
       ExtractionConfig extractionConfig,
       @Qualifier("extractionExecutor") TaskExecutor extractionExecutor,
-      ExtractionProgressService progressService) {
+      ExtractionProgressService progressService,
+      RecipeBookRegistry recipeBookRegistry) {
     this.javaSourceParser = javaSourceParser;
     this.mapper = mapper;
     this.classNodeRepository = classNodeRepository;
@@ -112,6 +115,7 @@ public class ExtractionService {
     this.extractionConfig = extractionConfig;
     this.extractionExecutor = extractionExecutor;
     this.progressService = progressService;
+    this.recipeBookRegistry = recipeBookRegistry;
   }
 
   /**
@@ -267,7 +271,7 @@ public class ExtractionService {
     JpaPatternVisitor jpaPatternVisitor = new JpaPatternVisitor();
     LexiconVisitor lexiconVisitor = new LexiconVisitor();
     ComplexityVisitor complexityVisitor = new ComplexityVisitor();
-    MigrationPatternVisitor migrationPatternVisitor = new MigrationPatternVisitor();
+    MigrationPatternVisitor migrationPatternVisitor = new MigrationPatternVisitor(recipeBookRegistry);
 
     int total = sourceFiles.size();
     int processed = 0;
@@ -368,7 +372,7 @@ public class ExtractionService {
     JpaPatternVisitor jpaPatternVisitor = new JpaPatternVisitor();
     LexiconVisitor lexiconVisitor = new LexiconVisitor();
     ComplexityVisitor complexityVisitor = new ComplexityVisitor();
-    MigrationPatternVisitor migrationPatternVisitor = new MigrationPatternVisitor();
+    MigrationPatternVisitor migrationPatternVisitor = new MigrationPatternVisitor(recipeBookRegistry);
 
     for (SourceFile sf : batch) {
       try {

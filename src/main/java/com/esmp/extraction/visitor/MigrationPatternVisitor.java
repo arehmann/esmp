@@ -1,10 +1,14 @@
 package com.esmp.extraction.visitor;
 
+import com.esmp.migration.api.RecipeRule;
+import com.esmp.migration.application.RecipeBookRegistry;
 import com.esmp.extraction.visitor.ExtractionAccumulator.MigrationActionData;
 import com.esmp.extraction.visitor.ExtractionAccumulator.MigrationActionData.ActionType;
 import com.esmp.extraction.visitor.ExtractionAccumulator.MigrationActionData.Automatable;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 
@@ -16,126 +20,44 @@ import org.openrewrite.java.tree.J;
  * <h3>Detection Strategy</h3>
  *
  * <p>Detection is import-based — imports are processed at the CompilationUnit level so that the
- * primary class FQN (from type declarations) is already known. Each import is checked against:
+ * primary class FQN (from type declarations) is already known. Each import is checked against
+ * the {@link RecipeBookRegistry}:
  * <ol>
- *   <li>{@code TYPE_MAP} — direct Vaadin 7 → Vaadin 24 type renames (auto=YES)
- *   <li>{@code PARTIAL_MAP} — types where mechanical rename is possible but styling needs review
- *       (auto=PARTIAL)
- *   <li>{@code COMPLEX_TYPES} — types that need significant structural rewrite (auto=NO)
- *   <li>{@code JAVAX_PACKAGE_MAP} — javax.* → jakarta.* package renames (auto=YES)
- *   <li>Any unknown {@code com.vaadin.*} type not in {@code com.vaadin.flow.*} gets
- *       COMPLEX_REWRITE/NO
+ *   <li>Direct source FQN lookup — if a rule exists with matching source, use it
+ *   <li>JAVAX_JAKARTA prefix rules — rules with CHANGE_PACKAGE action and JAVAX_JAKARTA category
+ *       are applied as package prefix replacements
+ *   <li>Unknown com.vaadin.* type (not in com.vaadin.flow.*) — produces COMPLEX_REWRITE/NO
  * </ol>
+ *
+ * <p>Rules are captured as a snapshot from the registry at construction time for thread safety.
+ * The registry itself may be reloaded concurrently; each visitor instance works on its snapshot.
  */
 public class MigrationPatternVisitor extends JavaIsoVisitor<ExtractionAccumulator> {
 
-  /**
-   * Direct Vaadin 7 UI type → Vaadin 24 FQN mappings.
-   * All types in this map can be mechanically renamed by an OpenRewrite recipe (auto=YES).
-   */
-  private static final Map<String, String> TYPE_MAP = Map.ofEntries(
-      Map.entry("com.vaadin.ui.TextField",
-          "com.vaadin.flow.component.textfield.TextField"),
-      Map.entry("com.vaadin.ui.TextArea",
-          "com.vaadin.flow.component.textfield.TextArea"),
-      Map.entry("com.vaadin.ui.PasswordField",
-          "com.vaadin.flow.component.textfield.PasswordField"),
-      Map.entry("com.vaadin.ui.Button",
-          "com.vaadin.flow.component.button.Button"),
-      Map.entry("com.vaadin.ui.Label",
-          "com.vaadin.flow.component.html.Span"),
-      Map.entry("com.vaadin.ui.CheckBox",
-          "com.vaadin.flow.component.checkbox.Checkbox"),
-      Map.entry("com.vaadin.ui.ComboBox",
-          "com.vaadin.flow.component.combobox.ComboBox"),
-      Map.entry("com.vaadin.ui.DateField",
-          "com.vaadin.flow.component.datepicker.DatePicker"),
-      Map.entry("com.vaadin.ui.Image",
-          "com.vaadin.flow.component.html.Image"),
-      Map.entry("com.vaadin.ui.Link",
-          "com.vaadin.flow.component.html.Anchor"),
-      Map.entry("com.vaadin.ui.MenuBar",
-          "com.vaadin.flow.component.menubar.MenuBar"),
-      Map.entry("com.vaadin.ui.ProgressBar",
-          "com.vaadin.flow.component.progressbar.ProgressBar"),
-      Map.entry("com.vaadin.ui.Upload",
-          "com.vaadin.flow.component.upload.Upload"),
-      Map.entry("com.vaadin.ui.Notification",
-          "com.vaadin.flow.component.notification.Notification"),
-      Map.entry("com.vaadin.ui.VerticalLayout",
-          "com.vaadin.flow.component.orderedlayout.VerticalLayout"),
-      Map.entry("com.vaadin.ui.HorizontalLayout",
-          "com.vaadin.flow.component.orderedlayout.HorizontalLayout"),
-      Map.entry("com.vaadin.ui.FormLayout",
-          "com.vaadin.flow.component.formlayout.FormLayout"),
-      Map.entry("com.vaadin.ui.CssLayout",
-          "com.vaadin.flow.component.html.Div")
-  );
+  /** Rule lookup by source FQN — snapshot taken at construction time. */
+  private final Map<String, RecipeRule> rulesBySource;
+
+  /** Ordered list of JAVAX_JAKARTA rules for prefix-based matching. */
+  private final List<RecipeRule> javaxJakartaRules;
 
   /**
-   * Vaadin 7 types where the type rename is mechanical (recipe can handle it) but the result
-   * requires manual styling/configuration review. These get auto=PARTIAL.
+   * Primary constructor: takes a snapshot of all rules from the registry.
+   * Thread-safe: each visitor instance holds an immutable snapshot.
+   *
+   * @param registry the recipe book registry to snapshot rules from
    */
-  private static final Map<String, String> PARTIAL_MAP = Map.ofEntries(
-      Map.entry("com.vaadin.ui.Panel",
-          "com.vaadin.flow.component.html.Div")
-  );
+  public MigrationPatternVisitor(RecipeBookRegistry registry) {
+    List<RecipeRule> snapshot = new ArrayList<>(registry.getRules());
+    this.rulesBySource = new LinkedHashMap<>();
+    this.javaxJakartaRules = new ArrayList<>();
 
-  /**
-   * Vaadin 7 types that require significant structural rewrite — AI assistance or manual developer
-   * effort is required. These get auto=NO with COMPLEX_REWRITE action type.
-   */
-  private static final Set<String> COMPLEX_TYPES = Set.of(
-      "com.vaadin.ui.Table",
-      "com.vaadin.data.util.BeanItemContainer",
-      "com.vaadin.data.fieldgroup.BeanFieldGroup",
-      "com.vaadin.data.fieldgroup.FieldGroup",
-      "com.vaadin.ui.Window",
-      "com.vaadin.ui.TabSheet",
-      "com.vaadin.ui.Tree",
-      "com.vaadin.ui.TreeTable",
-      "com.vaadin.ui.CustomComponent",
-      "com.vaadin.navigator.View",
-      "com.vaadin.ui.UI"
-  );
-
-  /**
-   * Description of what each complex Vaadin 7 type maps to in Vaadin 24.
-   * Used as the {@code target} field in the migration action.
-   */
-  private static final Map<String, String> COMPLEX_TARGETS = Map.ofEntries(
-      Map.entry("com.vaadin.ui.Table",
-          "com.vaadin.flow.component.grid.Grid"),
-      Map.entry("com.vaadin.data.util.BeanItemContainer",
-          "DataProvider"),
-      Map.entry("com.vaadin.data.fieldgroup.BeanFieldGroup",
-          "com.vaadin.flow.data.binder.Binder"),
-      Map.entry("com.vaadin.data.fieldgroup.FieldGroup",
-          "com.vaadin.flow.data.binder.Binder"),
-      Map.entry("com.vaadin.ui.Window",
-          "com.vaadin.flow.component.dialog.Dialog"),
-      Map.entry("com.vaadin.ui.TabSheet",
-          "com.vaadin.flow.component.tabs.Tabs"),
-      Map.entry("com.vaadin.ui.Tree",
-          "com.vaadin.flow.component.treegrid.TreeGrid"),
-      Map.entry("com.vaadin.ui.TreeTable",
-          "com.vaadin.flow.component.treegrid.TreeGrid"),
-      Map.entry("com.vaadin.ui.CustomComponent",
-          "com.vaadin.flow.component.Composite"),
-      Map.entry("com.vaadin.navigator.View",
-          "@Route annotation"),
-      Map.entry("com.vaadin.ui.UI",
-          "@Route + AppLayout")
-  );
-
-  /**
-   * javax.* package prefixes that should be renamed to jakarta.* in Spring Boot 3 / Vaadin 24.
-   * Key: javax package prefix, Value: jakarta equivalent prefix.
-   */
-  private static final Map<String, String> JAVAX_PACKAGE_MAP = Map.of(
-      "javax.servlet", "jakarta.servlet",
-      "javax.validation", "jakarta.validation"
-  );
+    for (RecipeRule rule : snapshot) {
+      rulesBySource.put(rule.source(), rule);
+      if ("JAVAX_JAKARTA".equals(rule.category()) && "CHANGE_PACKAGE".equals(rule.actionType())) {
+        javaxJakartaRules.add(rule);
+      }
+    }
+  }
 
   // =========================================================================
   // Visitor overrides
@@ -182,50 +104,23 @@ public class MigrationPatternVisitor extends JavaIsoVisitor<ExtractionAccumulato
    */
   private void processImport(String importFqn, String classFqn, ExtractionAccumulator acc) {
 
-    // 1. Check TYPE_MAP — direct rename, fully automatable (YES)
-    if (TYPE_MAP.containsKey(importFqn)) {
-      String target = TYPE_MAP.get(importFqn);
+    // 1. Direct lookup by source FQN
+    RecipeRule rule = rulesBySource.get(importFqn);
+    if (rule != null && !"NEEDS_MAPPING".equals(rule.status())) {
       acc.addMigrationAction(classFqn, new MigrationActionData(
-          ActionType.CHANGE_TYPE,
+          ActionType.valueOf(rule.actionType()),
           importFqn,
-          target,
-          Automatable.YES,
-          null
+          rule.target(),
+          Automatable.valueOf(rule.automatable()),
+          rule.context()
       ));
       return;
     }
 
-    // 2. Check PARTIAL_MAP — mechanical rename but needs styling review (PARTIAL)
-    if (PARTIAL_MAP.containsKey(importFqn)) {
-      String target = PARTIAL_MAP.get(importFqn);
-      acc.addMigrationAction(classFqn, new MigrationActionData(
-          ActionType.CHANGE_TYPE,
-          importFqn,
-          target,
-          Automatable.PARTIAL,
-          "Styling and layout properties need manual adjustment after type rename"
-      ));
-      return;
-    }
-
-    // 3. Check COMPLEX_TYPES — requires structural rewrite (NO)
-    if (COMPLEX_TYPES.contains(importFqn)) {
-      String target = COMPLEX_TARGETS.getOrDefault(importFqn, "Manual migration required");
-      acc.addMigrationAction(classFqn, new MigrationActionData(
-          ActionType.COMPLEX_REWRITE,
-          importFqn,
-          target,
-          Automatable.NO,
-          buildComplexContext(importFqn)
-      ));
-      return;
-    }
-
-    // 4. Check javax.* package prefixes → jakarta.* (YES)
-    for (Map.Entry<String, String> entry : JAVAX_PACKAGE_MAP.entrySet()) {
-      String javaxPrefix = entry.getKey();
-      if (importFqn.startsWith(javaxPrefix)) {
-        String target = entry.getValue() + importFqn.substring(javaxPrefix.length());
+    // 2. JAVAX_JAKARTA prefix matching — check package prefix rules
+    for (RecipeRule r : javaxJakartaRules) {
+      if (importFqn.startsWith(r.source())) {
+        String target = r.target() + importFqn.substring(r.source().length());
         acc.addMigrationAction(classFqn, new MigrationActionData(
             ActionType.CHANGE_PACKAGE,
             importFqn,
@@ -237,7 +132,7 @@ public class MigrationPatternVisitor extends JavaIsoVisitor<ExtractionAccumulato
       }
     }
 
-    // 5. Unknown com.vaadin.* type (not in com.vaadin.flow.* — those are already Vaadin 24)
+    // 3. Unknown com.vaadin.* type (not in com.vaadin.flow.* — those are already Vaadin 24)
     if (importFqn.startsWith("com.vaadin.") && !importFqn.startsWith("com.vaadin.flow.")) {
       acc.addMigrationAction(classFqn, new MigrationActionData(
           ActionType.COMPLEX_REWRITE,
@@ -276,41 +171,5 @@ public class MigrationPatternVisitor extends JavaIsoVisitor<ExtractionAccumulato
       return pkg.isEmpty() ? simpleName : pkg + "." + simpleName;
     }
     return null;
-  }
-
-  /**
-   * Builds a descriptive context message for a known complex Vaadin 7 type, explaining what the
-   * migration involves and why AI/manual effort is required.
-   */
-  private static String buildComplexContext(String sourceFqn) {
-    return switch (sourceFqn) {
-      case "com.vaadin.ui.Table" ->
-          "Table has no direct equivalent in Vaadin 24. Migration requires replacing with Grid, "
-              + "adding column definitions, and migrating container data sources to DataProvider.";
-      case "com.vaadin.data.util.BeanItemContainer" ->
-          "BeanItemContainer is replaced by DataProvider in Vaadin 24. Requires structural changes "
-              + "to data loading and filtering patterns.";
-      case "com.vaadin.data.fieldgroup.BeanFieldGroup",
-          "com.vaadin.data.fieldgroup.FieldGroup" ->
-          "FieldGroup/BeanFieldGroup is replaced by Binder in Vaadin 24. Binding declarations and "
-              + "commit/discard patterns must be rewritten.";
-      case "com.vaadin.ui.Window" ->
-          "Window is replaced by Dialog in Vaadin 24. Layout and positioning API has changed.";
-      case "com.vaadin.ui.TabSheet" ->
-          "TabSheet is replaced by Tabs component in Vaadin 24. Tab content wiring pattern changed.";
-      case "com.vaadin.ui.Tree", "com.vaadin.ui.TreeTable" ->
-          "Tree/TreeTable are replaced by TreeGrid in Vaadin 24. Hierarchical data model must be "
-              + "migrated to TreeDataProvider or HierarchicalDataProvider.";
-      case "com.vaadin.ui.CustomComponent" ->
-          "CustomComponent is replaced by Composite in Vaadin 24. Component composition pattern "
-              + "may need structural changes.";
-      case "com.vaadin.navigator.View" ->
-          "View interface is replaced by @Route annotation in Vaadin 24. Navigator lifecycle "
-              + "methods (enter/beforeLeave) must be replaced with BeforeEnterObserver/etc.";
-      case "com.vaadin.ui.UI" ->
-          "UI class extension is replaced by @Route + AppLayout pattern in Vaadin 24. Application "
-              + "structure must be redesigned.";
-      default -> "Complex Vaadin 7 type requiring structural migration to Vaadin 24.";
-    };
   }
 }

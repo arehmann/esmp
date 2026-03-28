@@ -1316,7 +1316,7 @@
       "id": "SRV-009",
       "category": "SERVER",
       "source": "com.vaadin.server.ExternalResource",
-      "target": null,
+      "target": "java.lang.String",
       "actionType": "CHANGE_TYPE",
       "automatable": "YES",
       "context": null,

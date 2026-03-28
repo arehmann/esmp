@@ -1,0 +1,69 @@
+{
+  "rules": [
+    {
+      "id": "TEST-001",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.TextField",
+      "target": "com.vaadin.flow.component.textfield.TextField",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": ["Replace import"],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "TEST-002",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Table",
+      "target": "com.vaadin.flow.component.grid.Grid",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Table needs Grid migration",
+      "migrationSteps": ["Replace with Grid"],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "TEST-003",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Panel",
+      "target": "com.vaadin.flow.component.html.Div",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "Styling review needed",
+      "migrationSteps": ["Replace import", "Review styling"],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "TEST-004",
+      "category": "JAVAX_JAKARTA",
+      "source": "javax.servlet",
+      "target": "jakarta.servlet",
+      "actionType": "CHANGE_PACKAGE",
+      "automatable": "YES",
+      "context": null,
+      "migrationSteps": ["Replace package prefix"],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "TEST-005",
+      "category": "DISCOVERED",
+      "source": "com.vaadin.ui.Unknown",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": null,
+      "migrationSteps": [],
+      "status": "NEEDS_MAPPING",
+      "usageCount": 5,
+      "discoveredAt": "2026-03-28"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "rules": [
+    {
+      "id": "CUSTOM-001",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.TextField",
+      "target": "com.myapp.CustomTextField",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "Custom override",
+      "migrationSteps": ["Use custom component"],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    }
+  ]
+}
