@@ -107,8 +107,8 @@
 - [x] **MIG-02**: ClassNode stores migrationActionCount, automatableActionCount, automationScore, and needsAiMigration properties
 - [x] **MIG-03**: MigrationRecipeService generates composite OpenRewrite recipes from automatable actions and produces preview diffs
 - [x] **MIG-04**: MigrationRecipeService applies recipes and writes modified source with correct imports and formatting
-- [ ] **MIG-05**: REST API exposes migration plan, preview, apply, and batch-apply-module endpoints
-- [ ] **MIG-06**: MCP tools (getMigrationPlan, applyMigrationRecipes, getModuleMigrationSummary) callable from Claude Code
+- [x] **MIG-05**: REST API exposes migration plan, preview, apply, and batch-apply-module endpoints
+- [x] **MIG-06**: MCP tools (getMigrationPlan, applyMigrationRecipes, getModuleMigrationSummary) callable from Claude Code
 
 ## v2 Requirements
 

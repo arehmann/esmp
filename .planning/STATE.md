@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 16-openrewrite-recipe-based-migration-engine 16-02-PLAN.md
-last_updated: "2026-03-28T14:26:21.850Z"
+stopped_at: Completed 16-openrewrite-recipe-based-migration-engine 16-03-PLAN.md
+last_updated: "2026-03-28T14:39:26.365Z"
 last_activity: 2026-03-04 — Roadmap created, project initialized
 progress:
   total_phases: 16
-  completed_phases: 15
+  completed_phases: 16
   total_plans: 41
-  completed_plans: 40
+  completed_plans: 41
 ---
 
 ---
@@ -364,6 +364,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 15-docker-deployment-enterprise-scale P03 | 25min | 2 tasks | 4 files |
 | Phase 16-openrewrite-recipe-based-migration-engine P01 | 24 | 2 tasks | 16 files |
 | Phase 16-openrewrite-recipe-based-migration-engine P02 | 35min | 2 tasks | 11 files |
+| Phase 16-openrewrite-recipe-based-migration-engine P03 | 10min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -472,6 +473,8 @@ Recent decisions affecting current work:
 - [Phase 16-openrewrite-recipe-based-migration-engine]: actionId = classFqn + '#' + actionType.name() + '#' + source: composite business key enables stable deduplication without UUID generation; same class/type/source triple always produces same ID
 - [Phase 16-openrewrite-recipe-based-migration-engine]: ChangeType requires JVM classpath for type resolution: JavaType.Unknown prevents import matching without Vaadin 7 JARs; parseWithJvmClasspath() uses System.getProperty('java.class.path') to resolve types
 - [Phase 16-openrewrite-recipe-based-migration-engine]: slf4j-nop exclusion from rewrite-test: rewrite-test ships NOP logger conflicting with Spring Boot logback; exclude org.slf4j:slf4j-nop from openrewrite-testing in build.gradle.kts
+- [Phase 16]: applyMigrationRecipes MCP tool calls preview() not applyAndWrite() — Claude handles all filesystem writes via its own tools; ESMP never writes to target codebase through MCP
+- [Phase 16]: getPlan returns 200 with empty plan (0 actions) for unknown classes rather than 404 — generatePlan always returns non-null record
 
 ### Roadmap Evolution
 
@@ -490,6 +493,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-28T14:26:21.843Z
-Stopped at: Completed 16-openrewrite-recipe-based-migration-engine 16-02-PLAN.md
+Last session: 2026-03-28T14:39:26.359Z
+Stopped at: Completed 16-openrewrite-recipe-based-migration-engine 16-03-PLAN.md
 Resume file: None

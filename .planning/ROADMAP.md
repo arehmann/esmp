@@ -27,7 +27,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 13: Risk-Prioritized Scheduling** - Data-driven module migration order recommendations (completed 2026-03-18)
 - [x] **Phase 14: MCP Server for AI-Powered Migration Context** - MCP protocol layer exposing all ESMP knowledge services as Claude Code tools via SSE transport (completed 2026-03-19)
 - [x] **Phase 15: Docker Deployment & Enterprise Scale** - Deployable Docker image with runtime source access and enterprise-scale extraction performance (completed 2026-03-28)
-- [ ] **Phase 16: OpenRewrite Recipe-Based Migration Engine** - Automated Vaadin 7 → Vaadin 24 mechanical transforms via OpenRewrite recipes, integrated with knowledge graph
+- [x] **Phase 16: OpenRewrite Recipe-Based Migration Engine** - Automated Vaadin 7 → Vaadin 24 mechanical transforms via OpenRewrite recipes, integrated with knowledge graph (completed 2026-03-28)
 
 ## Phase Details
 
@@ -314,7 +314,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 13. Risk-Prioritized Scheduling | 2/2 | Complete | 2026-03-18 |
 | 14. MCP Server | 2/2 | Complete | 2026-03-19 |
 | 15. Docker Deployment & Enterprise Scale | 3/3 | Complete    | 2026-03-28 |
-| 16. OpenRewrite Recipe-Based Migration Engine | 2/3 | In Progress|  |
+| 16. OpenRewrite Recipe-Based Migration Engine | 3/3 | Complete   | 2026-03-28 |
 
 ### Phase 16: OpenRewrite Recipe-Based Migration Engine
 
@@ -328,7 +328,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
   4. MigrationRecipeService can apply recipes and write modified source back to disk (apply mode) with correct imports, type references, and formatting preserved
   5. REST API exposes migration plan per class, preview diff, apply per class, and batch apply per module
   6. Three new MCP tools (getMigrationPlan, applyMigrationRecipes, getModuleMigrationSummary) are callable from Claude Code
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [ ] 16-01-PLAN.md — MigrationPatternVisitor (8th visitor), ExtractionAccumulator extensions, MigrationActionNode model, ClassNode migration properties, Neo4j persistence
