@@ -79,6 +79,8 @@ esmp:
     classpath-file: ""
     parallel-threshold: ${ESMP_EXTRACTION_PARALLEL_THRESHOLD:500}
     partition-size: ${ESMP_EXTRACTION_PARTITION_SIZE:200}
+  migration:
+    custom-mappings: {}
   vector:
     collection-name: code_chunks
     vector-dimension: 384

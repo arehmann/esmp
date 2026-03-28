@@ -17,6 +17,8 @@ import com.esmp.extraction.persistence.ClassNodeRepository;
 import com.esmp.extraction.persistence.DBTableNodeRepository;
 import com.esmp.extraction.persistence.ModuleNodeRepository;
 import com.esmp.extraction.persistence.PackageNodeRepository;
+import com.esmp.extraction.model.MigrationActionNode;
+import com.esmp.extraction.persistence.MigrationActionNodeRepository;
 import com.esmp.extraction.visitor.CallGraphVisitor;
 import com.esmp.extraction.visitor.ClassMetadataVisitor;
 import com.esmp.extraction.visitor.ComplexityVisitor;
@@ -24,6 +26,7 @@ import com.esmp.extraction.visitor.DependencyVisitor;
 import com.esmp.extraction.visitor.ExtractionAccumulator;
 import com.esmp.extraction.visitor.JpaPatternVisitor;
 import com.esmp.extraction.visitor.LexiconVisitor;
+import com.esmp.extraction.visitor.MigrationPatternVisitor;
 import com.esmp.extraction.visitor.VaadinPatternVisitor;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -67,6 +70,7 @@ public class ExtractionService {
   private final ModuleNodeRepository moduleNodeRepository;
   private final DBTableNodeRepository dbTableNodeRepository;
   private final BusinessTermNodeRepository businessTermNodeRepository;
+  private final MigrationActionNodeRepository migrationActionNodeRepository;
   private final Neo4jClient neo4jClient;
   private final LinkingService linkingService;
   private final RiskService riskService;
@@ -84,6 +88,7 @@ public class ExtractionService {
       ModuleNodeRepository moduleNodeRepository,
       DBTableNodeRepository dbTableNodeRepository,
       BusinessTermNodeRepository businessTermNodeRepository,
+      MigrationActionNodeRepository migrationActionNodeRepository,
       Neo4jClient neo4jClient,
       LinkingService linkingService,
       RiskService riskService,
@@ -99,6 +104,7 @@ public class ExtractionService {
     this.moduleNodeRepository = moduleNodeRepository;
     this.dbTableNodeRepository = dbTableNodeRepository;
     this.businessTermNodeRepository = businessTermNodeRepository;
+    this.migrationActionNodeRepository = migrationActionNodeRepository;
     this.neo4jClient = neo4jClient;
     this.linkingService = linkingService;
     this.riskService = riskService;
@@ -181,6 +187,7 @@ public class ExtractionService {
     List<ModuleNode> moduleNodes = mapper.mapToModuleNodes(accumulator, resolvedSourceRoot);
     List<DBTableNode> dbTableNodes = mapper.mapToDBTableNodes(accumulator);
     List<BusinessTermNode> businessTermNodes = mapper.mapToBusinessTermNodes(accumulator);
+    List<MigrationActionNode> migrationActionNodes = mapper.mapToMigrationActionNodes(accumulator);
 
     // Persist all node types
     // ClassNode uses SDN saveAll() — correct @Id/@Version semantics for class graph wiring
@@ -197,6 +204,10 @@ public class ExtractionService {
     // Persist business term nodes using curated-guard MERGE to protect human-curated definitions
     // (LEX-02/LEX-04 compliance: curated=true terms are never overwritten by re-extraction)
     persistBusinessTermNodes(businessTermNodes);
+
+    // Persist migration action nodes using batched UNWIND MERGE
+    // Must persist BEFORE linkAllRelationships() so HAS_MIGRATION_ACTION MATCH can find them
+    persistMigrationActionNodesBatched(migrationActionNodes);
 
     // Run linking pass — creates cross-class relationships via idempotent Cypher MERGE
     LinkingService.LinkingResult linkingResult = linkingService.linkAllRelationships(accumulator);
@@ -256,6 +267,7 @@ public class ExtractionService {
     JpaPatternVisitor jpaPatternVisitor = new JpaPatternVisitor();
     LexiconVisitor lexiconVisitor = new LexiconVisitor();
     ComplexityVisitor complexityVisitor = new ComplexityVisitor();
+    MigrationPatternVisitor migrationPatternVisitor = new MigrationPatternVisitor();
 
     int total = sourceFiles.size();
     int processed = 0;
@@ -268,6 +280,7 @@ public class ExtractionService {
         jpaPatternVisitor.visit(sourceFile, accumulator);
         lexiconVisitor.visit(sourceFile, accumulator);
         complexityVisitor.visit(sourceFile, accumulator);
+        migrationPatternVisitor.visit(sourceFile, accumulator);
       } catch (Exception e) {
         String error = "Error visiting " + sourceFile.getSourcePath() + ": " + e.getMessage();
         errors.add(error);
@@ -355,6 +368,7 @@ public class ExtractionService {
     JpaPatternVisitor jpaPatternVisitor = new JpaPatternVisitor();
     LexiconVisitor lexiconVisitor = new LexiconVisitor();
     ComplexityVisitor complexityVisitor = new ComplexityVisitor();
+    MigrationPatternVisitor migrationPatternVisitor = new MigrationPatternVisitor();
 
     for (SourceFile sf : batch) {
       try {
@@ -365,6 +379,7 @@ public class ExtractionService {
         jpaPatternVisitor.visit(sf, acc);
         lexiconVisitor.visit(sf, acc);
         complexityVisitor.visit(sf, acc);
+        migrationPatternVisitor.visit(sf, acc);
       } catch (Exception e) {
         errors.add("Error visiting " + sf.getSourcePath() + ": " + e.getMessage());
         log.warn("Error visiting {}: {}", sf.getSourcePath(), e.getMessage(), e);
@@ -535,6 +550,38 @@ public class ExtractionService {
           .bind(rows.subList(i, Math.min(i + BATCH_SIZE, rows.size()))).to("rows").run();
     }
     log.info("Persisted {} business term nodes via batched UNWIND MERGE", businessTermNodes.size());
+  }
+
+  /**
+   * Persists migration action nodes using batched UNWIND MERGE Cypher.
+   * The Neo4j label {@code MigrationAction} matches {@code @Node("MigrationAction")} on
+   * {@link com.esmp.extraction.model.MigrationActionNode}. Business key: {@code actionId}.
+   */
+  private void persistMigrationActionNodesBatched(List<MigrationActionNode> nodes) {
+    if (nodes.isEmpty()) return;
+    String cypher = "UNWIND $rows AS row "
+        + "MERGE (ma:MigrationAction {actionId: row.actionId}) "
+        + "ON CREATE SET ma.classFqn = row.classFqn, ma.actionType = row.actionType, "
+        + "  ma.source = row.source, ma.target = row.target, "
+        + "  ma.automatable = row.automatable, ma.context = row.context "
+        + "ON MATCH SET ma.classFqn = row.classFqn, ma.actionType = row.actionType, "
+        + "  ma.source = row.source, ma.target = row.target, "
+        + "  ma.automatable = row.automatable, ma.context = row.context";
+    List<Map<String, Object>> rows = nodes.stream()
+        .map(n -> Map.<String, Object>of(
+            "actionId", n.getActionId() != null ? n.getActionId() : "",
+            "classFqn", n.getClassFqn() != null ? n.getClassFqn() : "",
+            "actionType", n.getActionType() != null ? n.getActionType() : "",
+            "source", n.getSource() != null ? n.getSource() : "",
+            "target", n.getTarget() != null ? n.getTarget() : "",
+            "automatable", n.getAutomatable() != null ? n.getAutomatable() : "",
+            "context", n.getContext() != null ? n.getContext() : ""))
+        .toList();
+    for (int i = 0; i < rows.size(); i += BATCH_SIZE) {
+      neo4jClient.query(cypher)
+          .bind(rows.subList(i, Math.min(i + BATCH_SIZE, rows.size()))).to("rows").run();
+    }
+    log.info("Persisted {} migration action nodes via batched UNWIND MERGE", nodes.size());
   }
 
   private List<Path> scanJavaFiles(Path root) {

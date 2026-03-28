@@ -17,7 +17,7 @@ import org.springframework.context.annotation.Configuration;
 public class McpToolRegistration {
 
   /**
-   * Creates a {@link ToolCallbackProvider} that exposes all 6 MCP tool methods from
+   * Creates a {@link ToolCallbackProvider} that exposes all 9 MCP tool methods from
    * {@link MigrationToolService}.
    *
    * @param toolService the migration tool service with @Tool-annotated methods

@@ -10,12 +10,12 @@
 - [The Solution: Knowledge-Driven Migration](#the-solution-knowledge-driven-migration)
 - [Core Concept 1: AST Extraction — Turning Code Into Knowledge](#core-concept-1-ast-extraction--turning-code-into-knowledge)
   - [Why OpenRewrite?](#why-openrewrite)
-  - [The 7 Visitors](#the-7-visitors)
+  - [The 8 Visitors](#the-8-visitors)
   - [What Gets Extracted](#what-gets-extracted)
   - [Benefits for Migration](#benefits-for-migration)
 - [Core Concept 2: The Code Knowledge Graph](#core-concept-2-the-code-knowledge-graph)
-  - [8 Node Types](#8-node-types)
-  - [9 Edge Types](#9-edge-types)
+  - [9 Node Types](#9-node-types)
+  - [10 Edge Types](#10-edge-types)
   - [Why a Graph Database?](#why-a-graph-database)
   - [Graph Queries That Power Migration](#graph-queries-that-power-migration)
 - [Core Concept 3: Multi-Dimensional Risk Scoring](#core-concept-3-multi-dimensional-risk-scoring)
@@ -39,7 +39,7 @@
   - [Dynamic Risk Evolution](#dynamic-risk-evolution)
 - [Core Concept 8: MCP Server — AI Assistant Integration](#core-concept-8-mcp-server--ai-assistant-integration)
   - [What Is MCP?](#what-is-mcp)
-  - [The 6 Tools](#the-6-tools)
+  - [The 9 Tools](#the-9-tools)
   - [How AI Assistants Use ESMP](#how-ai-assistants-use-esmp)
   - [The Migration Loop](#the-migration-loop)
 - [Core Concept 9: Docker Deployment & Enterprise Scale](#core-concept-9-docker-deployment--enterprise-scale)
@@ -47,6 +47,11 @@
   - [Source Access Strategies](#source-access-strategies)
   - [Parallel Extraction](#parallel-extraction)
   - [SSE Progress Streaming](#sse-progress-streaming)
+- [Core Concept 10: Migration Engine — Automated OpenRewrite Recipes](#core-concept-10-migration-engine--automated-openrewrite-recipes)
+  - [The 3-Stage Pipeline](#the-3-stage-pipeline)
+  - [Automation Classification](#automation-classification)
+  - [Per-Class Migration Scores](#per-class-migration-scores)
+  - [Safety Model](#safety-model)
 - [How Everything Connects](#how-everything-connects)
 - [Without ESMP vs With ESMP](#without-esmp-vs-with-esmp)
 - [Practical Guide: Migrating an Enterprise Vaadin 7 Project to Vaadin 24/25](#practical-guide-migrating-an-enterprise-vaadin-7-project-to-vaadin-2425)
@@ -113,9 +118,9 @@ Why this matters:
 
 Type resolution is critical for Vaadin detection. When the VaadinPatternVisitor sees `extends CustomComponent`, it needs to know this is `com.vaadin.ui.CustomComponent` (Vaadin 7) not some other `CustomComponent` in the codebase.
 
-### The 7 Visitors
+### The 8 Visitors
 
-When ESMP parses a `.java` file, it runs 7 specialized visitors over the AST. Each visitor extracts a different dimension of understanding:
+When ESMP parses a `.java` file, it runs 8 specialized visitors over the AST. Each visitor extracts a different dimension of understanding:
 
 ```
   YourJavaFile.java
@@ -152,10 +157,16 @@ When ESMP parses a `.java` file, it runs 7 specialized visitors over the AST. Ea
        │      Why:  Risk signal — high complexity = harder to migrate safely,
        │            DB writes = extra risk if migration changes behavior
        │
-       └── 7. LexiconVisitor
-              What: Business terms extracted from naming conventions
-              Why:  Domain intelligence — know which code handles invoices,
-                    payments, authentication (high-impact areas)
+       ├── 7. LexiconVisitor
+       │      What: Business terms extracted from naming conventions
+       │      Why:  Domain intelligence — know which code handles invoices,
+       │            payments, authentication (high-impact areas)
+       │
+       └── 8. MigrationPatternVisitor
+              What: Vaadin 7 type usages with automation classification
+              Why:  Migration automation — catalogs every Vaadin 7 type,
+                    maps to Vaadin 24 equivalents, classifies as YES/PARTIAL/NO
+                    for OpenRewrite recipe generation (30-entry TYPE_MAP)
 ```
 
 **Important design principle:** Each visitor is **stateless per file** and writes to an `ExtractionAccumulator` (an in-memory buffer). This means:
@@ -165,9 +176,9 @@ When ESMP parses a `.java` file, it runs 7 specialized visitors over the AST. Ea
 
 ### What Gets Extracted
 
-After running all 7 visitors across your codebase, ESMP has:
+After running all 8 visitors across your codebase, ESMP has:
 
-**8 Node Types in Neo4j:**
+**9 Node Types in Neo4j:**
 
 | Node | What It Represents | Example |
 |------|--------------------|---------|
@@ -179,8 +190,9 @@ After running all 7 visitors across your codebase, ESMP has:
 | `Module` | A module (3rd package segment) | `billing` |
 | `DBTable` | A database table (from `@Table`) | `invoices` |
 | `BusinessTerm` | A domain concept from naming | `Invoice`, `Payment` |
+| `MigrationAction` | A Vaadin 7 type migration action | `Table` -> `Grid` (YES automation) |
 
-**9 Edge Types:**
+**10 Edge Types:**
 
 | Edge | What It Means | Example |
 |------|---------------|---------|
@@ -193,6 +205,7 @@ After running all 7 visitors across your codebase, ESMP has:
 | `MAPS_TO_TABLE` | ORM table mapping | `User` → `users` |
 | `USES_TERM` | Class uses business term | `InvoiceService` → `Invoice` |
 | `DEFINES_RULE` | Class defines business rule | `PriceCalculator` → `Price` |
+| `HAS_MIGRATION_ACTION` | Class has a migration action | `OrderView` → `Table->Grid` |
 
 ### Benefits for Migration
 
@@ -245,7 +258,7 @@ Without this, a developer might casually refactor `InvoiceCalculator` during mig
 
 **6. The graph enables incremental validation**
 
-After you migrate each class, ESMP re-indexes it and runs 41 validation queries:
+After you migrate each class, ESMP re-indexes it and runs 44 validation queries:
 - Are all DEPENDS_ON edges still valid? (no broken references)
 - Do all CALLS edges resolve? (no missing methods)
 - Are stereotypes consistent? (Repository classes still have @Repository)
@@ -256,7 +269,7 @@ This catches issues **immediately** — not days later during integration testin
 
 ## Core Concept 2: The Code Knowledge Graph
 
-### 8 Node Types
+### 9 Node Types
 
 Every entity extracted from your codebase becomes a node in Neo4j. Together they form a complete structural model of your application.
 
@@ -284,11 +297,14 @@ Every entity extracted from your codebase becomes a node in Neo4j. Together they
        ├── DBTable ────── "Database tables from @Table/@Entity"
        │                  invoices, users, orders...
        │
-       └── BusinessTerm ─ "Domain vocabulary from naming"
-                          Invoice, Payment, Order, Account...
+       ├── BusinessTerm ─ "Domain vocabulary from naming"
+       │                  Invoice, Payment, Order, Account...
+       │
+       └── MigrationAction "Vaadin 7 → 24 type migration action"
+                          sourceType, targetType, automation (YES/PARTIAL/NO)
 ```
 
-### 9 Edge Types
+### 10 Edge Types
 
 Edges are where the real value lives. They encode **relationships** that are invisible when reading files in isolation.
 
@@ -315,6 +331,11 @@ Edges are where the real value lives. They encode **relationships** that are inv
   USES_TERM      A class uses a business term
   DEFINES_RULE   A class defines a business rule
                  (Validator/Calculator/Policy/Strategy patterns)
+
+  MIGRATION EDGES (from MigrationPatternVisitor)
+  ──────────────────────────────────────
+  HAS_MIGRATION_ACTION  A class has a Vaadin 7 type migration action
+                        (OrderView HAS_MIGRATION_ACTION Table→Grid)
 ```
 
 ### Why a Graph Database?
@@ -690,7 +711,7 @@ This is why migration order matters: migrating dependencies first **reduces the 
 
 ESMP implements an MCP server using Spring AI's MCP Server WebMVC module with SSE (Server-Sent Events) transport at `http://localhost:8080/mcp/sse`.
 
-### The 6 Tools
+### The 9 Tools
 
 | Tool | Purpose | When to Use |
 |------|---------|-------------|
@@ -699,7 +720,10 @@ ESMP implements an MCP server using Spring AI's MCP Server WebMVC module with SS
 | `getDependencyCone` | Graph-based dependency traversal | Understanding what a class depends on |
 | `getRiskAnalysis` | Risk heatmap or class detail | Planning which classes to migrate and in what order |
 | `browseDomainTerms` | Business vocabulary search | Understanding business impact before migrating |
-| `validateSystemHealth` | 41 integrity checks | Pre-migration health check, post-migration validation |
+| `validateSystemHealth` | 44 integrity checks | Pre-migration health check, post-migration validation |
+| `getMigrationPlan` | Per-class migration plan | Seeing which Vaadin 7 types are automatable vs manual |
+| `applyMigrationRecipes` | Preview OpenRewrite diffs | Auto-migrating YES-classified type changes (preview mode, safe) |
+| `getModuleMigrationSummary` | Module-level migration stats | Planning how much of a module can be auto-migrated |
 
 ### How AI Assistants Use ESMP
 
@@ -743,16 +767,18 @@ The MCP server enables a tight feedback loop:
   │
   ├─── 2. CONTEXT: getMigrationContext(classFqn) → full knowledge
   │
-  ├─── 3. MIGRATE: AI writes Vaadin 24 code with full context
+  ├─── 3. AUTO-MIGRATE: applyMigrationRecipes(classFqn) → OpenRewrite handles YES actions
   │
-  ├─── 4. REINDEX: POST /api/indexing/incremental → graph updated
+  ├─── 4. AI-MIGRATE: AI writes Vaadin 24 code for remaining PARTIAL/NO patterns
   │
-  ├─── 5. VALIDATE: validateSystemHealth() → 41 checks pass?
+  ├─── 5. REINDEX: POST /api/indexing/incremental → graph updated
+  │
+  ├─── 6. VALIDATE: validateSystemHealth() → 44 checks pass?
   │         │
   │         ├── YES → next class
   │         └── NO  → fix issues, re-validate
   │
-  └─── 6. REPEAT for next class / module
+  └─── 7. REPEAT for next class / module
 ```
 
 Each iteration:
@@ -898,9 +924,95 @@ Progress phases: `SCANNING` → `PARSING` → `VISITING` → `PERSISTING` → `L
 
 ---
 
+## Core Concept 10: Migration Engine — Automated OpenRewrite Recipes
+
+ESMP doesn't just analyze your codebase — it can automatically migrate the straightforward type changes using OpenRewrite recipes, leaving only the complex patterns for AI-assisted or manual migration.
+
+### The 3-Stage Pipeline
+
+```
+  Stage 1: CATALOG (MigrationPatternVisitor)
+  ───────────────────────────────────────────
+  The 8th visitor scans every .java file for Vaadin 7 type references
+  using a 30-entry TYPE_MAP. Each usage becomes a MigrationAction node.
+
+  com.vaadin.ui.Table            → Grid              (YES — direct rename)
+  com.vaadin.ui.TextField        → TextField (Flow)  (YES — package move)
+  com.vaadin.ui.DateField        → DatePicker        (YES — direct rename)
+  com.vaadin.ui.CustomComponent  → Composite         (PARTIAL — API differs)
+  com.vaadin.ui.Window           → Dialog             (NO — different paradigm)
+  com.vaadin.navigator.View      → @Route             (NO — pattern change)
+
+  Also handles:
+  - PARTIAL_MAP: types that need manual API adjustment after rename
+  - COMPLEX_TYPES: types with no direct equivalent
+  - JAVAX_PACKAGE_MAP: javax.* → jakarta.* package migrations
+
+
+  Stage 2: CLASSIFY (per-class scores)
+  ─────────────────────────────────────
+  For each class with Vaadin 7 usage:
+
+  migrationActionCount    = total type usages found
+  automatableActionCount  = count where automation = YES
+  automationScore         = automatableActionCount / migrationActionCount
+  needsAiMigration        = true if any action is PARTIAL or NO
+
+  These properties are stored on the ClassNode for scheduling and planning.
+
+
+  Stage 3: EXECUTE (MigrationRecipeService)
+  ──────────────────────────────────────────
+  For each YES action, generates an OpenRewrite ChangeType recipe.
+  For javax.* packages, generates ChangePackage recipes.
+
+  Two execution modes:
+  ┌──────────────────────────────────────────────────────┐
+  │  preview()        Returns unified diff. No files     │
+  │                   changed. Safe for exploration.     │
+  │                                                      │
+  │  applyAndWrite()  Writes transformed source to disk. │
+  │                   Use after reviewing the preview.   │
+  └──────────────────────────────────────────────────────┘
+```
+
+### Automation Classification
+
+| Classification | Meaning | OpenRewrite Action | Example |
+|---------------|---------|-------------------|---------|
+| **YES** | Direct type/package rename | `ChangeType` recipe auto-applied | `Table` → `Grid` |
+| **PARTIAL** | Type exists but API differs | Rename applied, manual API fix needed | `CustomComponent` → `Composite` |
+| **NO** | No direct equivalent | Flagged for AI/manual migration | `Window` → `Dialog` |
+
+### Per-Class Migration Scores
+
+Every class gets four new properties after extraction:
+
+```
+  OrderFormView
+  ├── migrationActionCount: 5      (5 Vaadin 7 types used)
+  ├── automatableActionCount: 3    (3 can be auto-migrated)
+  ├── automationScore: 0.60        (60% automatable)
+  └── needsAiMigration: true       (2 actions need AI help)
+```
+
+These scores integrate with the scheduling algorithm — classes with high `automationScore` are cheaper to migrate and can be prioritized in earlier waves.
+
+### Safety Model
+
+The MCP tool `applyMigrationRecipes` calls `preview()` (returns diffs) rather than `applyAndWrite()` (modifies files). This means:
+
+- **AI assistants** can safely explore migration plans without modifying source code
+- **Developers** use the REST API's `/api/migration/apply/{fqn}` endpoint for explicit file writes
+- **Module-level apply** (`/api/migration/apply-module`) requires explicit REST call — never triggered by MCP
+
+This layered safety model ensures that automated tooling explores and suggests, while humans explicitly approve file modifications.
+
+---
+
 ## How Everything Connects
 
-Here's how all 9 core concepts flow together in a complete migration:
+Here's how all 10 core concepts flow together in a complete migration:
 
 ```
   ┌─────────────────────────────────────────────────────────────┐
@@ -909,12 +1021,12 @@ Here's how all 9 core concepts flow together in a complete migration:
   └────────────────────────┬────────────────────────────────────┘
                            │
                     1. AST EXTRACTION
-                    (7 visitors, parallel)
+                    (8 visitors, parallel)
                            │
                            ▼
   ┌─────────────────────────────────────────────────────────────┐
   │                  CODE KNOWLEDGE GRAPH                        │
-  │              (Neo4j: 8 node types, 9 edge types)            │
+  │              (Neo4j: 9 node types, 10 edge types)           │
   └──────┬──────────┬──────────┬───────────┬────────────────────┘
          │          │          │           │
     2. GRAPH   3. RISK    4. LEXICON  5. VECTORS
@@ -931,24 +1043,31 @@ Here's how all 9 core concepts flow together in a complete migration:
                      → wave assignment)
                            │
                     8. MCP SERVER
-                    (6 tools for AI assistants)
+                    (9 tools for AI assistants)
                            │
                            ▼
   ┌─────────────────────────────────────────────────────────────┐
-  │                  AI-ASSISTED MIGRATION                       │
+  │              AUTO + AI-ASSISTED MIGRATION                    │
   │                                                              │
   │   For each wave, for each module, for each class:           │
-  │   1. getMigrationContext → full knowledge                    │
-  │   2. AI writes Vaadin 24 code                               │
-  │   3. Incremental reindex → graph updated                    │
-  │   4. validateSystemHealth → 41 checks                       │
-  │   5. Risk scores decrease → next wave gets safer            │
+  │   1. getMigrationPlan → see what's automatable               │
+  │   2. applyMigrationRecipes → auto-migrate YES actions        │
+  │   3. getMigrationContext → full knowledge for remaining       │
+  │   4. AI writes Vaadin 24 code for PARTIAL/NO patterns        │
+  │   5. Incremental reindex → graph updated                    │
+  │   6. validateSystemHealth → 44 checks                       │
+  │   7. Risk scores decrease → next wave gets safer            │
   └─────────────────────────────────────────────────────────────┘
                            │
                     9. DOCKER DEPLOYMENT
                     (one-command setup,
                      enterprise-scale parallel extraction,
                      SSE progress monitoring)
+                           │
+                   10. MIGRATION ENGINE
+                    (OpenRewrite recipes,
+                     30-entry type map,
+                     preview + apply modes)
 ```
 
 ---
@@ -963,7 +1082,8 @@ Here's how all 9 core concepts flow together in a complete migration:
 | **Migration order** | Gut feeling, team debate | Data-driven wave schedule based on risk, dependencies, complexity, change frequency |
 | **AI context for migration** | Paste one file, hope AI guesses the rest | 25 most relevant code chunks with graph proximity, risk scores, business terms |
 | **Business impact** | Read Javadoc (if it exists) | Automatic business term extraction with criticality scoring |
-| **Progress tracking** | Spreadsheet, manual counting | 41 automated validation queries after every change |
+| **Type migrations** | Manual find-and-replace for each Vaadin 7 type | OpenRewrite auto-migrates YES-classified types; preview diffs before applying |
+| **Progress tracking** | Spreadsheet, manual counting | 44 automated validation queries after every change |
 | **Risk visibility** | "It seems complex" | Quantified: CC=15, fan-in=20, financial=0.8, security=0.6 |
 | **Team alignment** | Meetings to agree on approach | Dashboard showing risk heatmap, dependency graph, schedule |
 | **Deployment** | Install Java, Gradle, Neo4j, Qdrant, MySQL manually | `docker compose -f docker-compose.full.yml up -d` |
@@ -1143,28 +1263,56 @@ curl "http://localhost:8080/api/risk/heatmap?module=utils&sortBy=enhanced&limit=
 
 Start with the lowest-risk class. Low risk = simplest, fewest dependencies, safest to learn the pattern.
 
-#### Step 3.2: For Each Class — Get Migration Context via MCP
+#### Step 3.2: For Each Class — Auto-Migrate Then AI-Migrate via MCP
 
 Open Claude Code in your **target project** (the Vaadin 24/25 project where migrated code will live).
 
 Make sure ESMP is running and `.mcp.json` is configured (Claude Code auto-discovers it).
 
+**First, auto-migrate what OpenRewrite can handle:**
+
 ```
 You: "I'm migrating com.acme.utils.DateFormatter from Vaadin 7 to Vaadin 24.
-      Get the full migration context from ESMP."
+      First show me what can be auto-migrated."
 
-Claude: [calls getMigrationContext("com.acme.utils.DateFormatter")]
+Claude: [calls getMigrationPlan("com.acme.utils.DateFormatter")]
 
-Claude: "Here's what I found about DateFormatter:
-         - Risk: 0.12 (low — safe to migrate)
-         - Vaadin 7 patterns: uses com.vaadin.data.util.converter.Converter
-         - Dependencies: DateUtils (1 hop), OrderView (calls this class)
-         - Business terms: Date (Low criticality)
-         - No DB writes, no financial/security involvement
+Claude: "DateFormatter has 2 migration actions:
+         - com.vaadin.data.util.converter.Converter → Converter (Flow) — YES (automatable)
+         - com.vaadin.ui.Label → Span — YES (automatable)
+         automationScore: 1.0 — fully automatable!
 
-         In Vaadin 24, the Converter interface moved to
-         com.vaadin.flow.data.converter.Converter<MODEL, PRESENTATION>.
-         Here's the migrated code: ..."
+         Let me preview the auto-migration..."
+
+Claude: [calls applyMigrationRecipes("com.acme.utils.DateFormatter", "/path/to/src")]
+
+Claude: "Here's the OpenRewrite diff — both imports updated automatically.
+         Shall I apply this?"
+```
+
+**Then, for classes with PARTIAL/NO actions, get full AI context:**
+
+```
+You: "Now migrate com.acme.ui.OrderFormView — it has complex patterns."
+
+Claude: [calls getMigrationPlan("com.acme.ui.OrderFormView")]
+
+Claude: "OrderFormView has 5 migration actions:
+         - Table → Grid (YES), TextField → TextField (YES), DateField → DatePicker (YES)
+         - CustomComponent → Composite (PARTIAL — API differs)
+         - Navigator.View → @Route (NO — pattern change)
+         automationScore: 0.60 — 3 of 5 are automatable.
+
+         Let me auto-migrate the 3 YES actions first, then get full
+         context for the remaining patterns..."
+
+Claude: [calls applyMigrationRecipes("com.acme.ui.OrderFormView", "/path/to/src")]
+Claude: [calls getMigrationContext("com.acme.ui.OrderFormView")]
+
+Claude: "Auto-migration applied 3 import changes. For the remaining patterns:
+         - CustomComponent → Composite: change extends clause, wrap content in getContent()
+         - Navigator.View → @Route: add @Route annotation, remove implements View
+         Here's the complete migrated code: ..."
 ```
 
 #### Step 3.3: Review and Apply the Migration
@@ -1207,7 +1355,7 @@ Or via MCP:
 ```
 You: "Validate the knowledge graph health after my changes"
 Claude: [calls validateSystemHealth()]
-Claude: "41/41 checks passing. No broken references."
+Claude: "44/44 checks passing. No broken references."
 ```
 
 **If validation fails:** The response tells you exactly what broke (e.g., "DANGLING_EDGE: OrderView still references old DateFormatter method signature"). Fix the issue before proceeding.

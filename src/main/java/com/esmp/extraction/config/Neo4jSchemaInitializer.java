@@ -81,6 +81,22 @@ public class Neo4jSchemaInitializer implements ApplicationRunner {
         "CREATE INDEX java_class_enhanced_risk_score IF NOT EXISTS"
             + " FOR (n:JavaClass) ON (n.enhancedRiskScore)");
 
+    // Phase 16: migration action uniqueness constraint and indexes
+    createConstraint(
+        "migration_action_id",
+        "CREATE CONSTRAINT migration_action_id IF NOT EXISTS"
+            + " FOR (ma:MigrationAction) REQUIRE ma.actionId IS UNIQUE");
+
+    createConstraint(
+        "migration_action_class_fqn",
+        "CREATE INDEX migration_action_class_fqn IF NOT EXISTS"
+            + " FOR (ma:MigrationAction) ON (ma.classFqn)");
+
+    createConstraint(
+        "java_class_automation_score",
+        "CREATE INDEX java_class_automation_score IF NOT EXISTS"
+            + " FOR (n:JavaClass) ON (n.automationScore)");
+
     log.info("Neo4j uniqueness constraints for AST node types are in place.");
   }
 

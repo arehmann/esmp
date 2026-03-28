@@ -101,6 +101,15 @@
 - [x] **SLO-03**: Incremental re-index of 5 changed files completes in under 30 seconds
 - [x] **SLO-04**: Full re-index of 100-class module completes in under 5 minutes
 
+### Migration Engine
+
+- [x] **MIG-01**: MigrationPatternVisitor catalogs every Vaadin 7 type usage per class with source-target mapping and automatable/partial/no classification
+- [x] **MIG-02**: ClassNode stores migrationActionCount, automatableActionCount, automationScore, and needsAiMigration properties
+- [x] **MIG-03**: MigrationRecipeService generates composite OpenRewrite recipes from automatable actions and produces preview diffs
+- [x] **MIG-04**: MigrationRecipeService applies recipes and writes modified source with correct imports and formatting
+- [x] **MIG-05**: REST API exposes migration plan, preview, apply, and batch-apply-module endpoints
+- [x] **MIG-06**: MCP tools (getMigrationPlan, applyMigrationRecipes, getModuleMigrationSummary) callable from Claude Code
+
 ## v2 Requirements
 
 ### AI Orchestration
@@ -192,9 +201,16 @@
 | SCHED-01 | Phase 13 | Risk-Prioritized Scheduling | Pending |
 | SCHED-02 | Phase 13 | Risk-Prioritized Scheduling | Pending |
 
+| MIG-01 | Phase 16 | OpenRewrite Recipe-Based Migration Engine | Pending |
+| MIG-02 | Phase 16 | OpenRewrite Recipe-Based Migration Engine | Pending |
+| MIG-03 | Phase 16 | OpenRewrite Recipe-Based Migration Engine | Pending |
+| MIG-04 | Phase 16 | OpenRewrite Recipe-Based Migration Engine | Pending |
+| MIG-05 | Phase 16 | OpenRewrite Recipe-Based Migration Engine | Pending |
+| MIG-06 | Phase 16 | OpenRewrite Recipe-Based Migration Engine | Pending |
+
 **Coverage:**
-- v1 requirements: 48 total (was 37 — added 11 for new phases, split risk, SLOs)
-- Mapped to phases: 48
+- v1 requirements: 54 total (was 48 — added 6 for Phase 16 migration engine)
+- Mapped to phases: 54
 - Unmapped: 0
 
 ---
