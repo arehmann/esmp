@@ -39,7 +39,7 @@
   - [Dynamic Risk Evolution](#dynamic-risk-evolution)
 - [Core Concept 8: MCP Server — AI Assistant Integration](#core-concept-8-mcp-server--ai-assistant-integration)
   - [What Is MCP?](#what-is-mcp)
-  - [The 9 Tools](#the-9-tools)
+  - [The 10 Tools](#the-10-tools)
   - [How AI Assistants Use ESMP](#how-ai-assistants-use-esmp)
   - [The Migration Loop](#the-migration-loop)
 - [Core Concept 9: Docker Deployment & Enterprise Scale](#core-concept-9-docker-deployment--enterprise-scale)
@@ -52,6 +52,12 @@
   - [Automation Classification](#automation-classification)
   - [Per-Class Migration Scores](#per-class-migration-scores)
   - [Safety Model](#safety-model)
+- [Core Concept 11: Recipe Book & Transitive Detection](#core-concept-11-recipe-book--transitive-detection)
+  - [External Recipe Book](#external-recipe-book)
+  - [Transitive Detection](#transitive-detection)
+  - [Enrichment Feedback Loop](#enrichment-feedback-loop)
+  - [Coverage Metrics](#coverage-metrics)
+  - [Recipe Book Management API](#recipe-book-management-api)
 - [How Everything Connects](#how-everything-connects)
 - [Without ESMP vs With ESMP](#without-esmp-vs-with-esmp)
 - [Practical Guide: Migrating an Enterprise Vaadin 7 Project to Vaadin 24/25](#practical-guide-migrating-an-enterprise-vaadin-7-project-to-vaadin-2425)
@@ -166,7 +172,7 @@ When ESMP parses a `.java` file, it runs 8 specialized visitors over the AST. Ea
               What: Vaadin 7 type usages with automation classification
               Why:  Migration automation — catalogs every Vaadin 7 type,
                     maps to Vaadin 24 equivalents, classifies as YES/PARTIAL/NO
-                    for OpenRewrite recipe generation (30-entry TYPE_MAP)
+                    for OpenRewrite recipe generation (94-rule recipe book)
 ```
 
 **Important design principle:** Each visitor is **stateless per file** and writes to an `ExtractionAccumulator` (an in-memory buffer). This means:
@@ -258,7 +264,7 @@ Without this, a developer might casually refactor `InvoiceCalculator` during mig
 
 **6. The graph enables incremental validation**
 
-After you migrate each class, ESMP re-indexes it and runs 44 validation queries:
+After you migrate each class, ESMP re-indexes it and runs 47 validation queries:
 - Are all DEPENDS_ON edges still valid? (no broken references)
 - Do all CALLS edges resolve? (no missing methods)
 - Are stereotypes consistent? (Repository classes still have @Repository)
@@ -711,7 +717,7 @@ This is why migration order matters: migrating dependencies first **reduces the 
 
 ESMP implements an MCP server using Spring AI's MCP Server WebMVC module with SSE (Server-Sent Events) transport at `http://localhost:8080/mcp/sse`.
 
-### The 9 Tools
+### The 10 Tools
 
 | Tool | Purpose | When to Use |
 |------|---------|-------------|
@@ -720,10 +726,11 @@ ESMP implements an MCP server using Spring AI's MCP Server WebMVC module with SS
 | `getDependencyCone` | Graph-based dependency traversal | Understanding what a class depends on |
 | `getRiskAnalysis` | Risk heatmap or class detail | Planning which classes to migrate and in what order |
 | `browseDomainTerms` | Business vocabulary search | Understanding business impact before migrating |
-| `validateSystemHealth` | 44 integrity checks | Pre-migration health check, post-migration validation |
+| `validateSystemHealth` | 47 integrity checks | Pre-migration health check, post-migration validation |
 | `getMigrationPlan` | Per-class migration plan | Seeing which Vaadin 7 types are automatable vs manual |
 | `applyMigrationRecipes` | Preview OpenRewrite diffs | Auto-migrating YES-classified type changes (preview mode, safe) |
 | `getModuleMigrationSummary` | Module-level migration stats | Planning how much of a module can be auto-migrated |
+| `getRecipeBookGaps` | Unmapped type gaps by usage | Identifying which Vaadin 7 types still need mapping rules |
 
 ### How AI Assistants Use ESMP
 
@@ -773,7 +780,7 @@ The MCP server enables a tight feedback loop:
   │
   ├─── 5. REINDEX: POST /api/indexing/incremental → graph updated
   │
-  ├─── 6. VALIDATE: validateSystemHealth() → 44 checks pass?
+  ├─── 6. VALIDATE: validateSystemHealth() → 47 checks pass?
   │         │
   │         ├── YES → next class
   │         └── NO  → fix issues, re-validate
@@ -934,7 +941,9 @@ ESMP doesn't just analyze your codebase — it can automatically migrate the str
   Stage 1: CATALOG (MigrationPatternVisitor)
   ───────────────────────────────────────────
   The 8th visitor scans every .java file for Vaadin 7 type references
-  using a 30-entry TYPE_MAP. Each usage becomes a MigrationAction node.
+  using a 94-rule external JSON recipe book (loaded from
+  data/migration/vaadin-recipe-book.json). Each usage becomes a
+  MigrationAction node. Custom overlay rules can extend the base set.
 
   com.vaadin.ui.Table            → Grid              (YES — direct rename)
   com.vaadin.ui.TextField        → TextField (Flow)  (YES — package move)
@@ -944,9 +953,9 @@ ESMP doesn't just analyze your codebase — it can automatically migrate the str
   com.vaadin.navigator.View      → @Route             (NO — pattern change)
 
   Also handles:
-  - PARTIAL_MAP: types that need manual API adjustment after rename
-  - COMPLEX_TYPES: types with no direct equivalent
-  - JAVAX_PACKAGE_MAP: javax.* → jakarta.* package migrations
+  - PARTIAL rules: types that need manual API adjustment after rename
+  - COMPLEX rules: types with no direct equivalent
+  - JAVAX_PACKAGE rules: javax.* → jakarta.* package migrations
 
 
   Stage 2: CLASSIFY (per-class scores)
@@ -1010,9 +1019,110 @@ This layered safety model ensures that automated tooling explores and suggests, 
 
 ---
 
+## Core Concept 11: Recipe Book & Transitive Detection
+
+Phase 17 replaced the hardcoded static type maps with an external, curated recipe book and added transitive detection that finds classes inheriting from Vaadin 7 types through the graph.
+
+### External Recipe Book
+
+The recipe book is an external JSON file (`data/migration/vaadin-recipe-book.json`) containing 94 base rules. Each rule specifies:
+
+```
+{
+  "id": "vaadin7-table-to-grid",
+  "oldType": "com.vaadin.ui.Table",
+  "newType": "com.vaadin.flow.component.grid.Grid",
+  "automation": "YES",
+  "category": "COMPONENT",
+  "status": "MAPPED",
+  "source": "BASE",
+  "migrationSteps": ["Replace Table with Grid", "Convert ColumnGenerator to Renderer"]
+}
+```
+
+**RecipeBookRegistry** loads rules at startup and serves as the in-memory lookup for MigrationPatternVisitor. A custom overlay file can be configured to extend or override base rules — custom rules take precedence when IDs collide.
+
+### Transitive Detection
+
+Many classes inherit from Vaadin 7 types without directly importing them. Transitive detection uses `EXTENDS*1..10` Cypher graph traversal to find these classes:
+
+```
+  Known Vaadin 7 Types (e.g., com.vaadin.ui.CustomComponent)
+         │
+         │ EXTENDS*1..10 traversal
+         ▼
+  ┌──────────────────────────────────┐
+  │  MyBaseComponent extends         │
+  │    CustomComponent               │  ← detected (depth 1)
+  ├──────────────────────────────────┤
+  │  SpecialWidget extends           │
+  │    MyBaseComponent               │  ← detected (depth 2, transitive)
+  └──────────────────────────────────┘
+```
+
+Each transitive class gets a **complexity profile** based on configurable weights (override-weight, own-calls-weight, binding-weight, component-weight):
+
+| Profile | Score | Meaning |
+|---------|-------|---------|
+| **Pure wrapper** | Below threshold | Simple delegation, fully automatable |
+| **AI-assisted** | At or above threshold | Moderate logic, needs AI help |
+| **Complex** | Well above threshold | Significant custom behavior, manual migration |
+
+### Enrichment Feedback Loop
+
+After extraction completes, the recipe book is enriched automatically:
+
+```
+  Extraction runs
+       │
+       ▼
+  MigrationPatternVisitor catalogs Vaadin 7 usages
+       │
+       ▼
+  Recipe book usageCount updated for matched rules
+       │
+       ▼
+  Unmapped types auto-added as NEEDS_MAPPING / DISCOVERED
+       │
+       ▼
+  Gaps visible at /api/migration/recipe-book/gaps
+       │
+       ▼
+  User or AI resolves gaps → adds custom rules
+       │
+       ▼
+  Re-extract → gaps shrink, coverage improves
+```
+
+This creates a continuous improvement loop: each extraction surfaces new gaps, which are resolved and fed back into the recipe book.
+
+### Coverage Metrics
+
+`ModuleMigrationSummary` now includes coverage metrics:
+
+- **coverageByType**: percentage of distinct Vaadin 7 types that have MAPPED rules
+- **coverageByUsage**: percentage of actual type usages that are covered by MAPPED rules (weighted by frequency)
+- **topGaps**: most-used types that still lack mapping, sorted by usage count
+
+### Recipe Book Management API
+
+Five endpoints at `/api/migration/recipe-book` manage the recipe book:
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/migration/recipe-book` | List all rules (filterable by category, status, automatable) |
+| `GET` | `/api/migration/recipe-book/gaps` | NEEDS_MAPPING rules sorted by usage count |
+| `PUT` | `/api/migration/recipe-book/rules/{id}` | Add or update a custom rule |
+| `DELETE` | `/api/migration/recipe-book/rules/{id}` | Delete custom/discovered rule (base rules return 403) |
+| `POST` | `/api/migration/recipe-book/reload` | Re-read recipe book from file |
+
+The MCP tool `getRecipeBookGaps` (10th tool) exposes gap data to AI assistants, enabling them to identify unmapped types and suggest resolutions.
+
+---
+
 ## How Everything Connects
 
-Here's how all 10 core concepts flow together in a complete migration:
+Here's how all 11 core concepts flow together in a complete migration:
 
 ```
   ┌─────────────────────────────────────────────────────────────┐
@@ -1043,7 +1153,7 @@ Here's how all 10 core concepts flow together in a complete migration:
                      → wave assignment)
                            │
                     8. MCP SERVER
-                    (9 tools for AI assistants)
+                    (10 tools for AI assistants)
                            │
                            ▼
   ┌─────────────────────────────────────────────────────────────┐
@@ -1055,7 +1165,7 @@ Here's how all 10 core concepts flow together in a complete migration:
   │   3. getMigrationContext → full knowledge for remaining       │
   │   4. AI writes Vaadin 24 code for PARTIAL/NO patterns        │
   │   5. Incremental reindex → graph updated                    │
-  │   6. validateSystemHealth → 44 checks                       │
+  │   6. validateSystemHealth → 47 checks                       │
   │   7. Risk scores decrease → next wave gets safer            │
   └─────────────────────────────────────────────────────────────┘
                            │
@@ -1066,8 +1176,14 @@ Here's how all 10 core concepts flow together in a complete migration:
                            │
                    10. MIGRATION ENGINE
                     (OpenRewrite recipes,
-                     30-entry type map,
+                     94-rule recipe book,
                      preview + apply modes)
+                           │
+                   11. RECIPE BOOK &
+                    TRANSITIVE DETECTION
+                    (external JSON rules,
+                     EXTENDS traversal,
+                     enrichment feedback loop)
 ```
 
 ---
@@ -1082,8 +1198,8 @@ Here's how all 10 core concepts flow together in a complete migration:
 | **Migration order** | Gut feeling, team debate | Data-driven wave schedule based on risk, dependencies, complexity, change frequency |
 | **AI context for migration** | Paste one file, hope AI guesses the rest | 25 most relevant code chunks with graph proximity, risk scores, business terms |
 | **Business impact** | Read Javadoc (if it exists) | Automatic business term extraction with criticality scoring |
-| **Type migrations** | Manual find-and-replace for each Vaadin 7 type | OpenRewrite auto-migrates YES-classified types; preview diffs before applying |
-| **Progress tracking** | Spreadsheet, manual counting | 44 automated validation queries after every change |
+| **Type migrations** | Manual find-and-replace for each Vaadin 7 type | 94-rule recipe book with OpenRewrite auto-migration; transitive detection finds inherited Vaadin 7 types; enrichment loop surfaces gaps automatically |
+| **Progress tracking** | Spreadsheet, manual counting | 47 automated validation queries after every change |
 | **Risk visibility** | "It seems complex" | Quantified: CC=15, fan-in=20, financial=0.8, security=0.6 |
 | **Team alignment** | Meetings to agree on approach | Dashboard showing risk heatmap, dependency graph, schedule |
 | **Deployment** | Install Java, Gradle, Neo4j, Qdrant, MySQL manually | `docker compose -f docker-compose.full.yml up -d` |
@@ -1355,7 +1471,7 @@ Or via MCP:
 ```
 You: "Validate the knowledge graph health after my changes"
 Claude: [calls validateSystemHealth()]
-Claude: "44/44 checks passing. No broken references."
+Claude: "47/47 checks passing. No broken references."
 ```
 
 **If validation fails:** The response tells you exactly what broke (e.g., "DANGLING_EDGE: OrderView still references old DateFormatter method signature"). Fix the issue before proceeding.
