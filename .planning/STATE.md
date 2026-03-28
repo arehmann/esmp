@@ -3,11 +3,27 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
+stopped_at: Completed 17-migration-recipe-book-transitive-detection 17-01-PLAN.md
+last_updated: "2026-03-28T17:55:08.296Z"
+last_activity: 2026-03-04 — Roadmap created, project initialized
+progress:
+  total_phases: 17
+  completed_phases: 16
+  total_plans: 44
+  completed_plans: 42
+  percent: 95
+---
+
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: planning
 stopped_at: Phase 17 context gathered
 last_updated: "2026-03-28T16:40:35.509Z"
 last_activity: 2026-03-04 — Roadmap created, project initialized
 progress:
-  total_phases: 17
+  [██████████] 95%
   completed_phases: 16
   total_plans: 41
   completed_plans: 41
@@ -380,6 +396,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 16-openrewrite-recipe-based-migration-engine P01 | 24 | 2 tasks | 16 files |
 | Phase 16-openrewrite-recipe-based-migration-engine P02 | 35min | 2 tasks | 11 files |
 | Phase 16-openrewrite-recipe-based-migration-engine P03 | 10min | 2 tasks | 7 files |
+| Phase 17-migration-recipe-book-transitive-detection P01 | 21min | 2 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -490,6 +507,9 @@ Recent decisions affecting current work:
 - [Phase 16-openrewrite-recipe-based-migration-engine]: slf4j-nop exclusion from rewrite-test: rewrite-test ships NOP logger conflicting with Spring Boot logback; exclude org.slf4j:slf4j-nop from openrewrite-testing in build.gradle.kts
 - [Phase 16]: applyMigrationRecipes MCP tool calls preview() not applyAndWrite() — Claude handles all filesystem writes via its own tools; ESMP never writes to target codebase through MCP
 - [Phase 16]: getPlan returns 200 with empty plan (0 actions) for unknown classes rather than 404 — generatePlan always returns non-null record
+- [Phase 17-migration-recipe-book-transitive-detection]: RecipeBookRegistry snapshot-at-construction for MigrationPatternVisitor thread safety — registry reloads don't affect in-flight visitors
+- [Phase 17-migration-recipe-book-transitive-detection]: Seed JSON omits isBase field — set by registry at load time; overlay/discovered rules get isBase=false
+- [Phase 17-migration-recipe-book-transitive-detection]: JAVAX_JAKARTA rules use prefix matching (startsWith) for package-level coverage without enumerating all sub-packages
 
 ### Roadmap Evolution
 
@@ -509,6 +529,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-28T16:40:35.502Z
-Stopped at: Phase 17 context gathered
-Resume file: .planning/phases/17-migration-recipe-book-transitive-detection/17-CONTEXT.md
+Last session: 2026-03-28T17:55:08.289Z
+Stopped at: Completed 17-migration-recipe-book-transitive-detection 17-01-PLAN.md
+Resume file: None
