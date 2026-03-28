@@ -29,6 +29,7 @@ import com.esmp.extraction.visitor.JpaPatternVisitor;
 import com.esmp.extraction.visitor.LexiconVisitor;
 import com.esmp.extraction.visitor.VaadinPatternVisitor;
 import com.esmp.graph.application.RiskService;
+import com.esmp.migration.application.MigrationRecipeService;
 import com.esmp.indexing.api.IncrementalIndexRequest;
 import com.esmp.mcp.application.McpCacheEvictionService;
 import com.esmp.indexing.api.IncrementalIndexResponse;
@@ -109,6 +110,7 @@ public class IncrementalIndexingService {
   private final VectorConfig vectorConfig;
   private final ExtractionConfig extractionConfig;
   private final McpCacheEvictionService mcpCacheEvictionService;
+  private final MigrationRecipeService migrationRecipeService;
 
   public IncrementalIndexingService(
       JavaSourceParser javaSourceParser,
@@ -128,7 +130,8 @@ public class IncrementalIndexingService {
       QdrantClient qdrantClient,
       VectorConfig vectorConfig,
       ExtractionConfig extractionConfig,
-      McpCacheEvictionService mcpCacheEvictionService) {
+      McpCacheEvictionService mcpCacheEvictionService,
+      MigrationRecipeService migrationRecipeService) {
     this.javaSourceParser = javaSourceParser;
     this.mapper = mapper;
     this.classNodeRepository = classNodeRepository;
@@ -147,6 +150,7 @@ public class IncrementalIndexingService {
     this.vectorConfig = vectorConfig;
     this.extractionConfig = extractionConfig;
     this.mcpCacheEvictionService = mcpCacheEvictionService;
+    this.migrationRecipeService = migrationRecipeService;
   }
 
   // -------------------------------------------------------------------------
@@ -339,6 +343,16 @@ public class IncrementalIndexingService {
     } catch (Exception e) {
       String msg = "Risk computation step failed: " + e.getMessage();
       log.error(msg, e);
+      errors.add(msg);
+    }
+
+    // Step 6.5: Migration post-processing (transitive detection + enrichment)
+    try {
+      migrationRecipeService.migrationPostProcessing();
+      log.info("Migration post-processing complete.");
+    } catch (Exception e) {
+      String msg = "Migration post-processing step failed: " + e.getMessage();
+      log.warn(msg, e);
       errors.add(msg);
     }
 

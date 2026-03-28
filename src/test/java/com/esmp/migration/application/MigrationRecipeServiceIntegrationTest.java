@@ -6,9 +6,12 @@ import com.esmp.migration.api.BatchMigrationResult;
 import com.esmp.migration.api.MigrationPlan;
 import com.esmp.migration.api.MigrationResult;
 import com.esmp.migration.api.ModuleMigrationSummary;
+import com.esmp.migration.api.RecipeRule;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,6 +75,9 @@ class MigrationRecipeServiceIntegrationTest {
 
   @Autowired
   private MigrationRecipeService migrationRecipeService;
+
+  @Autowired
+  private RecipeBookRegistry recipeBookRegistry;
 
   @Autowired
   private com.esmp.extraction.application.ExtractionService extractionService;
@@ -282,6 +288,100 @@ class MigrationRecipeServiceIntegrationTest {
     assertThat(summary.averageAutomationScore())
         .as("Average automation score should be between 0 and 1")
         .isBetween(0.0, 1.0);
+  }
+
+  // ---------------------------------------------------------------------------
+  // RB-03-01: enrichRecipeBook updates usageCount for known Vaadin 7 types
+  // ---------------------------------------------------------------------------
+
+  @Test
+  void enrichRecipeBook_updatesUsageCount() {
+    // Create 3 MigrationAction nodes with source = com.vaadin.ui.TextField (known recipe book entry)
+    String source = "com.vaadin.ui.TextField";
+    for (int i = 1; i <= 3; i++) {
+      String actionId = "ENRICH-TF-TEST-" + i;
+      neo4jClient.query(
+          "MERGE (ma:MigrationAction {actionId: $actionId}) SET ma.source = $source, ma.isInherited = false")
+          .bind(actionId).to("actionId")
+          .bind(source).to("source")
+          .run();
+    }
+
+    migrationRecipeService.enrichRecipeBook();
+
+    Optional<RecipeRule> rule = recipeBookRegistry.findBySource(source);
+    assertThat(rule)
+        .as("Recipe book should contain a rule for " + source)
+        .isPresent();
+    assertThat(rule.get().usageCount())
+        .as("usageCount for TextField rule should be >= 3 after enrichment")
+        .isGreaterThanOrEqualTo(3);
+  }
+
+  // ---------------------------------------------------------------------------
+  // RB-03-02: enrichRecipeBook auto-discovers NEEDS_MAPPING types
+  // ---------------------------------------------------------------------------
+
+  @Test
+  void enrichRecipeBook_autoDiscoversNeedsMapping() {
+    // Create a MigrationAction with an unknown Vaadin 7 type and "Unknown Vaadin 7 type" context
+    String unknownSource = "com.vaadin.ui.SomeUnknownWidget" + System.nanoTime();
+    String actionId = "DISC-UNKNOWN-" + System.nanoTime();
+    neo4jClient.query(
+        """
+        MERGE (ma:MigrationAction {actionId: $actionId})
+        SET ma.source = $source, ma.automatable = 'NO',
+            ma.actionType = 'COMPLEX_REWRITE',
+            ma.context = 'Unknown Vaadin 7 type: ' + $source,
+            ma.isInherited = false
+        """)
+        .bind(actionId).to("actionId")
+        .bind(unknownSource).to("source")
+        .run();
+
+    migrationRecipeService.enrichRecipeBook();
+
+    Optional<RecipeRule> discovered = recipeBookRegistry.findBySource(unknownSource);
+    assertThat(discovered)
+        .as("Recipe book should now contain a DISCOVERED/NEEDS_MAPPING entry for " + unknownSource)
+        .isPresent();
+    assertThat(discovered.get().status())
+        .as("Discovered rule status should be NEEDS_MAPPING")
+        .isEqualTo("NEEDS_MAPPING");
+    assertThat(discovered.get().category())
+        .as("Discovered rule category should be DISCOVERED")
+        .isEqualTo("DISCOVERED");
+  }
+
+  // ---------------------------------------------------------------------------
+  // RB-03-03: enrichRecipeBook write-back survives file I/O (reload persists counts)
+  // ---------------------------------------------------------------------------
+
+  @Test
+  void enrichRecipeBook_writeBackPersistsOnReload() {
+    // Create 2 MigrationAction nodes with a known source
+    String source = "com.vaadin.ui.Button";
+    for (int i = 1; i <= 2; i++) {
+      String actionId = "ENRICH-BTN-PERSIST-" + i;
+      neo4jClient.query(
+          "MERGE (ma:MigrationAction {actionId: $actionId}) SET ma.source = $source, ma.isInherited = false")
+          .bind(actionId).to("actionId")
+          .bind(source).to("source")
+          .run();
+    }
+
+    migrationRecipeService.enrichRecipeBook();
+
+    // Reload from disk and verify usageCount survived
+    recipeBookRegistry.reload();
+
+    Optional<RecipeRule> rule = recipeBookRegistry.findBySource(source);
+    assertThat(rule)
+        .as("Recipe book should contain rule for " + source + " after reload")
+        .isPresent();
+    assertThat(rule.get().usageCount())
+        .as("usageCount should be >= 2 after write-back and reload")
+        .isGreaterThanOrEqualTo(2);
   }
 
   // ---------------------------------------------------------------------------

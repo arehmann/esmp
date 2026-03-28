@@ -28,6 +28,7 @@ import com.esmp.extraction.visitor.JpaPatternVisitor;
 import com.esmp.extraction.visitor.LexiconVisitor;
 import com.esmp.extraction.visitor.MigrationPatternVisitor;
 import com.esmp.extraction.visitor.VaadinPatternVisitor;
+import com.esmp.migration.application.MigrationRecipeService;
 import com.esmp.migration.application.RecipeBookRegistry;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -80,6 +81,7 @@ public class ExtractionService {
   private final TaskExecutor extractionExecutor;
   private final ExtractionProgressService progressService;
   private final RecipeBookRegistry recipeBookRegistry;
+  private final MigrationRecipeService migrationRecipeService;
 
   public ExtractionService(
       JavaSourceParser javaSourceParser,
@@ -98,7 +100,8 @@ public class ExtractionService {
       ExtractionConfig extractionConfig,
       @Qualifier("extractionExecutor") TaskExecutor extractionExecutor,
       ExtractionProgressService progressService,
-      RecipeBookRegistry recipeBookRegistry) {
+      RecipeBookRegistry recipeBookRegistry,
+      MigrationRecipeService migrationRecipeService) {
     this.javaSourceParser = javaSourceParser;
     this.mapper = mapper;
     this.classNodeRepository = classNodeRepository;
@@ -116,6 +119,7 @@ public class ExtractionService {
     this.extractionExecutor = extractionExecutor;
     this.progressService = progressService;
     this.recipeBookRegistry = recipeBookRegistry;
+    this.migrationRecipeService = migrationRecipeService;
   }
 
   /**
@@ -220,6 +224,10 @@ public class ExtractionService {
     // Compute fan-in/out and composite structural risk scores from DEPENDS_ON edges.
     // MUST run after linking — DEPENDS_ON edges must exist for fan-in/out to be accurate.
     riskService.computeAndPersistRiskScores();
+
+    // Run migration post-processing: transitive detection, score recompute, enrichment
+    // MUST run after linkAllRelationships() (EXTENDS edges exist) AND computeRiskScores()
+    migrationRecipeService.migrationPostProcessing();
 
     // Generate Vaadin audit report
     VaadinAuditReport auditReport = vaadinAuditService.generateReport(accumulator);
