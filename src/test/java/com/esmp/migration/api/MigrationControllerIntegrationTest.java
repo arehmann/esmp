@@ -1,12 +1,22 @@
 package com.esmp.migration.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.esmp.extraction.application.ExtractionService;
+import com.esmp.migration.api.MigrationActionEntry;
+import com.esmp.migration.api.MigrationPlan;
+import com.esmp.migration.api.ModuleMigrationSummary;
+import com.esmp.migration.application.MigrationRecipeService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -81,6 +91,12 @@ class MigrationControllerIntegrationTest {
 
   @Autowired
   private ExtractionService extractionService;
+
+  @Autowired
+  private MigrationRecipeService migrationRecipeService;
+
+  @Autowired
+  private ObjectMapper objectMapper;
 
   private static final String SIMPLE_VIEW_FQN = "com.example.migration.SimpleVaadinView";
   private static final String MODULE = "migration";
@@ -204,5 +220,156 @@ class MigrationControllerIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.classFqn").value(SIMPLE_VIEW_FQN))
         .andExpect(jsonPath("$.hasChanges").isBoolean());
+  }
+
+  // ---------------------------------------------------------------------------
+  // RB-06-01: getMigrationPlan returns migrationSteps for direct actions
+  // ---------------------------------------------------------------------------
+
+  @Test
+  @DisplayName("RB-06-01: getMigrationPlan returns migrationSteps and isInherited=false for direct Vaadin 7 actions")
+  void getMigrationPlan_returnsMigrationStepsAndIsInherited() throws Exception {
+    // The plan response now contains enriched MigrationActionEntry with migrationSteps
+    var result = mockMvc.perform(get("/api/migration/plan/" + SIMPLE_VIEW_FQN))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.classFqn").value(SIMPLE_VIEW_FQN))
+        .andExpect(jsonPath("$.totalActions").isNumber())
+        // Each action should have the isInherited field
+        .andExpect(jsonPath("$.automatableActions").isArray())
+        .andExpect(jsonPath("$.manualActions").isArray())
+        .andReturn();
+
+    String body = result.getResponse().getContentAsString();
+    MigrationPlan plan = objectMapper.readValue(body, MigrationPlan.class);
+
+    // All direct actions should have isInherited=false and migrationSteps non-null
+    List<MigrationActionEntry> allActions = new java.util.ArrayList<>();
+    allActions.addAll(plan.automatableActions());
+    allActions.addAll(plan.manualActions());
+
+    assertThat(allActions).isNotEmpty()
+        .as("SimpleVaadinView should have at least one migration action");
+
+    allActions.forEach(action -> {
+      assertThat(action.isInherited())
+          .as("Direct actions from extraction should have isInherited=false")
+          .isFalse();
+      assertThat(action.migrationSteps())
+          .as("migrationSteps should never be null (may be empty)")
+          .isNotNull();
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // RB-06-02: getMigrationPlan returns transitive fields for inherited actions
+  // ---------------------------------------------------------------------------
+
+  @Test
+  @DisplayName("RB-06-02: getMigrationPlan returns isInherited=true and vaadinAncestor for inherited actions")
+  void getMigrationPlan_returnsTransitiveFieldsForInheritedActions() throws Exception {
+    // Synthesize a transitive MigrationAction via Cypher to simulate inheritance detection
+    String inheritedActionFqn = "com.example.migration.TransitiveTestView";
+    String ancestorFqn = "com.vaadin.ui.VerticalLayout";
+
+    // Create a class node and an inherited MigrationAction
+    neo4jClient.query(
+        """
+        MERGE (c:JavaClass {fullyQualifiedName: $classFqn})
+        SET c.packageName = 'com.example.migration', c.simpleName = 'TransitiveTestView'
+        """)
+        .bind(inheritedActionFqn).to("classFqn")
+        .run();
+
+    neo4jClient.query(
+        """
+        MERGE (ma:MigrationAction {actionId: $actionId})
+        SET ma.classFqn = $classFqn, ma.actionType = 'COMPLEX_REWRITE',
+            ma.source = $source, ma.target = 'com.vaadin.flow.component.orderedlayout.VerticalLayout',
+            ma.automatable = 'PARTIAL', ma.context = 'Inherited from VerticalLayout (pure wrapper)',
+            ma.isInherited = true, ma.pureWrapper = true, ma.transitiveComplexity = 0.0,
+            ma.vaadinAncestor = $source, ma.overrideCount = 0, ma.ownVaadinCalls = 0
+        WITH ma
+        MATCH (c:JavaClass {fullyQualifiedName: $classFqn})
+        MERGE (c)-[:HAS_MIGRATION_ACTION]->(ma)
+        """)
+        .bind(inheritedActionFqn + "#INHERITED#" + ancestorFqn).to("actionId")
+        .bind(inheritedActionFqn).to("classFqn")
+        .bind(ancestorFqn).to("source")
+        .run();
+
+    try {
+      var result = mockMvc.perform(get("/api/migration/plan/" + inheritedActionFqn))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.classFqn").value(inheritedActionFqn))
+          .andExpect(jsonPath("$.totalActions").value(1))
+          .andReturn();
+
+      String body = result.getResponse().getContentAsString();
+      MigrationPlan plan = objectMapper.readValue(body, MigrationPlan.class);
+
+      // The inherited action should be in manualActions (automatable=PARTIAL)
+      List<MigrationActionEntry> allActions = new java.util.ArrayList<>();
+      allActions.addAll(plan.automatableActions());
+      allActions.addAll(plan.manualActions());
+
+      assertThat(allActions).hasSize(1);
+      MigrationActionEntry inherited = allActions.get(0);
+
+      assertThat(inherited.isInherited())
+          .as("Synthesized inherited action should have isInherited=true")
+          .isTrue();
+      assertThat(inherited.vaadinAncestor())
+          .as("vaadinAncestor should be set for inherited actions")
+          .isEqualTo(ancestorFqn);
+      assertThat(inherited.pureWrapper())
+          .as("pureWrapper should be true for this synthesized action")
+          .isTrue();
+      assertThat(inherited.transitiveComplexity())
+          .as("transitiveComplexity should be 0.0 for pure wrapper")
+          .isEqualTo(0.0);
+    } finally {
+      // Cleanup the synthesized data
+      neo4jClient.query(
+          "MATCH (c:JavaClass {fullyQualifiedName: $fqn})-[:HAS_MIGRATION_ACTION]->(ma) "
+              + "DETACH DELETE c, ma")
+          .bind(inheritedActionFqn).to("fqn")
+          .run();
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // RB-06-03: getModuleSummary returns coverage fields
+  // ---------------------------------------------------------------------------
+
+  @Test
+  @DisplayName("RB-06-03: getModuleSummary returns transitiveClassCount, coverageByType, coverageByUsage, topGaps")
+  void getModuleSummary_returnsCoverageFields() throws Exception {
+    var result = mockMvc.perform(get("/api/migration/summary").param("module", MODULE))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.module").value(MODULE))
+        .andExpect(jsonPath("$.transitiveClassCount").isNumber())
+        .andExpect(jsonPath("$.coverageByType").isNumber())
+        .andExpect(jsonPath("$.coverageByUsage").isNumber())
+        .andExpect(jsonPath("$.topGaps").isArray())
+        .andReturn();
+
+    String body = result.getResponse().getContentAsString();
+    ModuleMigrationSummary summary = objectMapper.readValue(body, ModuleMigrationSummary.class);
+
+    assertThat(summary.coverageByType())
+        .as("coverageByType should be between 0.0 and 1.0")
+        .isBetween(0.0, 1.0);
+
+    assertThat(summary.coverageByUsage())
+        .as("coverageByUsage should be between 0.0 and 1.0")
+        .isBetween(0.0, 1.0);
+
+    assertThat(summary.topGaps())
+        .as("topGaps should not be null (may be empty if no NEEDS_MAPPING rules)")
+        .isNotNull();
+
+    assertThat(summary.transitiveClassCount())
+        .as("transitiveClassCount should be >= 0")
+        .isGreaterThanOrEqualTo(0);
   }
 }
