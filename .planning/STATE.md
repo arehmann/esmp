@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: "Checkpoint reached: 15-03 Task 2 human-verify — SSE progress streaming built, awaiting Docker stack verification"
-last_updated: "2026-03-20T07:25:13.750Z"
+stopped_at: Completed 15-docker-deployment-enterprise-scale 15-03-PLAN.md
+last_updated: "2026-03-28T10:43:39.106Z"
 last_activity: 2026-03-04 — Roadmap created, project initialized
 progress:
   total_phases: 15
@@ -346,6 +346,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 14-mcp-server-for-ai-powered-migration-context P02 | 80min | 1 tasks | 7 files |
 | Phase 15-docker-deployment-enterprise-scale P01 | 5min | 2 tasks | 11 files |
 | Phase 15-docker-deployment-enterprise-scale P02 | 55min | 2 tasks | 6 files |
+| Phase 15-docker-deployment-enterprise-scale P03 | 25min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -447,6 +448,8 @@ Recent decisions affecting current work:
 - [Phase 15-docker-deployment-enterprise-scale]: AnnotationNode UNWIND MERGE key is fullyQualifiedName (not fqn) — verified from @Id field on AnnotationNode.java; ModuleNode UNWIND MERGE sets sourceRoot not basePackage
 - [Phase 15-docker-deployment-enterprise-scale]: ExtractionProgressService uses ConcurrentHashMap for thread-safe emitter registry; emitter cleanup on completion/timeout/error
 - [Phase 15-docker-deployment-enterprise-scale]: extract() overload accepts nullable jobId — null means no progress streaming (backward compat); sendProgress() is a no-op when jobId is null
+- [Phase Phase 15-docker-deployment-enterprise-scale]: SSE race condition for small codebases accepted as not a concern for enterprise-scale deployment target (40K+ file extractions take minutes)
+- [Phase Phase 15-docker-deployment-enterprise-scale]: 60-minute SseEmitter timeout chosen to cover largest realistic enterprise extraction runs
 
 ### Roadmap Evolution
 
@@ -464,6 +467,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T07:25:06.399Z
-Stopped at: Checkpoint reached: 15-03 Task 2 human-verify — SSE progress streaming built, awaiting Docker stack verification
+Last session: 2026-03-28T10:43:39.100Z
+Stopped at: Completed 15-docker-deployment-enterprise-scale 15-03-PLAN.md
 Resume file: None
