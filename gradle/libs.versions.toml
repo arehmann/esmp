@@ -29,6 +29,7 @@ testcontainers-neo4j          = { module = "org.testcontainers:neo4j", version.r
 testcontainers-mysql          = { module = "org.testcontainers:mysql", version.ref = "testcontainers" }
 openrewrite-java              = { module = "org.openrewrite:rewrite-java", version.ref = "openrewrite" }
 openrewrite-java-jdk21        = { module = "org.openrewrite:rewrite-java-21", version.ref = "openrewrite" }
+openrewrite-testing           = { module = "org.openrewrite:rewrite-test", version.ref = "openrewrite" }
 vaadin-server                 = { module = "com.vaadin:vaadin-server", version.ref = "vaadin-server" }
 vaadin-spring-boot-starter    = { module = "com.vaadin:vaadin-spring-boot-starter" }
 vaadin-bom                    = { module = "com.vaadin:vaadin-bom", version.ref = "vaadin" }
