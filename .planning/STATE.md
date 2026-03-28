@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 17-migration-recipe-book-transitive-detection 17-02-PLAN.md
-last_updated: "2026-03-28T18:31:08.099Z"
+stopped_at: Completed 17-migration-recipe-book-transitive-detection 17-03-PLAN.md
+last_updated: "2026-03-28T18:41:45.641Z"
 last_activity: 2026-03-04 — Roadmap created, project initialized
 progress:
   total_phases: 17
-  completed_phases: 16
+  completed_phases: 17
   total_plans: 44
-  completed_plans: 43
+  completed_plans: 44
   percent: 95
 ---
 
@@ -398,6 +398,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 16-openrewrite-recipe-based-migration-engine P03 | 10min | 2 tasks | 7 files |
 | Phase 17-migration-recipe-book-transitive-detection P01 | 21min | 2 tasks | 15 files |
 | Phase 17-migration-recipe-book-transitive-detection P02 | 32min | 2 tasks | 5 files |
+| Phase 17-migration-recipe-book-transitive-detection P03 | 8min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -512,6 +513,9 @@ Recent decisions affecting current work:
 - [Phase 17-migration-recipe-book-transitive-detection]: Seed JSON omits isBase field — set by registry at load time; overlay/discovered rules get isBase=false
 - [Phase 17-migration-recipe-book-transitive-detection]: JAVAX_JAKARTA rules use prefix matching (startsWith) for package-level coverage without enumerating all sub-packages
 - [Phase 17]: migrationPostProcessing() is NOT @Transactional — pure orchestrator using Neo4jClient, IOException in enrichRecipeBook logged as WARNING only
+- [Phase 17]: MigrationActionEntry.inheritedFrom and vaadinAncestor both map from ma.vaadinAncestor in Cypher — semantic distinction for API consumers only
+- [Phase 17]: coverageByType and coverageByUsage computed via 2 separate Cypher queries after primary aggregation to avoid cartesian product
+- [Phase 17]: RecipeBookController.deleteRule returns 403 for isBase=true rules — base rule protection is server-enforced via registry flag
 
 ### Roadmap Evolution
 
@@ -531,6 +535,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-28T18:31:08.093Z
-Stopped at: Completed 17-migration-recipe-book-transitive-detection 17-02-PLAN.md
+Last session: 2026-03-28T18:41:45.635Z
+Stopped at: Completed 17-migration-recipe-book-transitive-detection 17-03-PLAN.md
 Resume file: None

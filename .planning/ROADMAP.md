@@ -28,7 +28,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 14: MCP Server for AI-Powered Migration Context** - MCP protocol layer exposing all ESMP knowledge services as Claude Code tools via SSE transport (completed 2026-03-19)
 - [x] **Phase 15: Docker Deployment & Enterprise Scale** - Deployable Docker image with runtime source access and enterprise-scale extraction performance (completed 2026-03-28)
 - [x] **Phase 16: OpenRewrite Recipe-Based Migration Engine** - Automated Vaadin 7 → Vaadin 24 mechanical transforms via OpenRewrite recipes, integrated with knowledge graph (completed 2026-03-28)
-- [ ] **Phase 17: Migration Recipe Book & Transitive Detection** - Externalized JSON recipe book, transitive Vaadin 7 detection via EXTENDS traversal, extraction-driven enrichment feedback loop
+- [x] **Phase 17: Migration Recipe Book & Transitive Detection** - Externalized JSON recipe book, transitive Vaadin 7 detection via EXTENDS traversal, extraction-driven enrichment feedback loop (completed 2026-03-28)
 
 ## Phase Details
 
@@ -324,7 +324,7 @@ Plans:
   4. After each extraction, recipe book usageCount per rule is updated and unmapped com.vaadin.* types are auto-added as NEEDS_MAPPING/DISCOVERED entries
   5. REST API exposes 5 recipe book management endpoints (list, gaps, upsert, delete, reload) and MCP tools surface enriched migration data
   6. getMigrationPlan returns migrationSteps[], pureWrapper, vaadinAncestor, transitiveComplexity for each action; getModuleMigrationSummary returns coverageByType, coverageByUsage, topGaps
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [ ] 17-01-PLAN.md — RecipeBookRegistry, RecipeRule record, seed JSON (80+ rules), MigrationConfig extension, MigrationActionNode transitive fields, MigrationPatternVisitor refactor to use registry
@@ -354,4 +354,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 14. MCP Server | 2/2 | Complete | 2026-03-19 |
 | 15. Docker Deployment & Enterprise Scale | 3/3 | Complete    | 2026-03-28 |
 | 16. OpenRewrite Recipe-Based Migration Engine | 3/3 | Complete    | 2026-03-28 |
-| 17. Migration Recipe Book & Transitive Detection | 2/3 | In Progress|  |
+| 17. Migration Recipe Book & Transitive Detection | 3/3 | Complete   | 2026-03-28 |
