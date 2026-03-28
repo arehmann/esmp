@@ -6,11 +6,13 @@ import com.esmp.migration.api.MigrationActionEntry;
 import com.esmp.migration.api.MigrationPlan;
 import com.esmp.migration.api.MigrationResult;
 import com.esmp.migration.api.ModuleMigrationSummary;
+import com.esmp.source.application.SourceAccessService;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -23,6 +25,8 @@ import org.openrewrite.config.CompositeRecipe;
 import org.openrewrite.internal.InMemoryLargeSourceSet;
 import org.openrewrite.java.ChangePackage;
 import org.openrewrite.java.ChangeType;
+import org.openrewrite.java.JavaParser;
+import org.openrewrite.java.internal.JavaTypeCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.neo4j.core.Neo4jClient;
@@ -53,10 +57,15 @@ public class MigrationRecipeService {
 
   private final Neo4jClient neo4jClient;
   private final JavaSourceParser javaSourceParser;
+  private final SourceAccessService sourceAccessService;
 
-  public MigrationRecipeService(Neo4jClient neo4jClient, JavaSourceParser javaSourceParser) {
+  public MigrationRecipeService(
+      Neo4jClient neo4jClient,
+      JavaSourceParser javaSourceParser,
+      SourceAccessService sourceAccessService) {
     this.neo4jClient = neo4jClient;
     this.javaSourceParser = javaSourceParser;
+    this.sourceAccessService = sourceAccessService;
   }
 
   // ---------------------------------------------------------------------------
@@ -122,7 +131,7 @@ public class MigrationRecipeService {
       return MigrationResult.noChanges(classFqn);
     }
 
-    Path sourcePath = Path.of(sourceFilePath);
+    Path sourcePath = resolveSourcePath(sourceFilePath);
     if (!Files.exists(sourcePath)) {
       log.warn("Source file '{}' does not exist on disk for class '{}'", sourceFilePath, classFqn);
       return MigrationResult.noChanges(classFqn);
@@ -130,7 +139,7 @@ public class MigrationRecipeService {
 
     Path projectRoot = sourcePath.getParent();
 
-    List<SourceFile> lsts = javaSourceParser.parse(List.of(sourcePath), projectRoot, null);
+    List<SourceFile> lsts = parseWithJvmClasspath(List.of(sourcePath), projectRoot);
     if (lsts.isEmpty()) {
       log.warn("Parser produced no LSTs for source file '{}'", sourceFilePath);
       return MigrationResult.noChanges(classFqn);
@@ -391,6 +400,69 @@ public class MigrationRecipeService {
         .all()
         .forEach(results::add);
     return results;
+  }
+
+  /**
+   * Parses Java source files using the current JVM classpath for type resolution.
+   *
+   * <p>Type resolution is required for {@link ChangeType} to match and transform Vaadin 7 type
+   * usages. The JVM classpath typically includes the necessary Vaadin 7 JARs when running inside
+   * the Spring Boot application context (where Vaadin 7 is a test or compile-time dependency).
+   *
+   * @param paths the source files to parse
+   * @param projectRoot the project root for relative path computation in the LST
+   * @return list of parsed SourceFiles; empty if parsing fails
+   */
+  private List<SourceFile> parseWithJvmClasspath(List<Path> paths, Path projectRoot) {
+    InMemoryExecutionContext ctx =
+        new InMemoryExecutionContext(t -> log.warn("Parse error (file will be skipped): {}", t.getMessage()));
+
+    try {
+      List<Path> jvmClasspathJars =
+          Arrays.stream(System.getProperty("java.class.path").split(File.pathSeparator))
+              .map(Path::of)
+              .filter(p -> p.toFile().isFile() && p.toString().endsWith(".jar"))
+              .collect(Collectors.toList());
+
+      JavaParser.Builder<? extends JavaParser, ?> builder =
+          JavaParser.fromJavaVersion()
+              .typeCache(new JavaTypeCache())
+              .logCompilationWarningsAndErrors(false);
+
+      if (!jvmClasspathJars.isEmpty()) {
+        builder = builder.classpath(jvmClasspathJars);
+      }
+
+      List<SourceFile> result = builder.build().parse(paths, projectRoot, ctx).toList();
+      log.debug("Parsed {}/{} source files for recipe execution", result.size(), paths.size());
+      return result;
+    } catch (Exception e) {
+      log.warn("Unexpected error during parsing for recipe execution: {}", e.getMessage());
+      return List.of();
+    }
+  }
+
+  /**
+   * Resolves a source file path to an absolute {@link Path}.
+   *
+   * <p>If the stored path is already absolute and exists, it is returned as-is. If it is relative,
+   * it is resolved against the configured source root from {@link SourceAccessService}. This
+   * handles the case where extraction stored relative LST source paths (relative to the project
+   * root used during parsing).
+   *
+   * @param storedPath the path string from the Neo4j ClassNode (may be relative)
+   * @return absolute Path for the source file
+   */
+  private Path resolveSourcePath(String storedPath) {
+    Path p = Path.of(storedPath);
+    if (p.isAbsolute()) {
+      return p;
+    }
+    String configuredRoot = sourceAccessService.getResolvedSourceRoot();
+    if (configuredRoot != null && !configuredRoot.isBlank()) {
+      return Path.of(configuredRoot, storedPath);
+    }
+    return p;
   }
 
   /**
