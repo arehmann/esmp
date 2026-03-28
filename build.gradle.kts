@@ -45,6 +45,7 @@ dependencies {
     implementation(libs.spring.ai.starter.mcp.server.webmvc)
     implementation(libs.spring.boot.starter.cache)
     implementation(libs.caffeine)
+    implementation(libs.jgit)
 
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.vaadin.server)

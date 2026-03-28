@@ -29,12 +29,17 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.openrewrite.SourceFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,6 +57,8 @@ public class ExtractionService {
 
   private static final Logger log = LoggerFactory.getLogger(ExtractionService.class);
 
+  private static final int BATCH_SIZE = 2000;
+
   private final JavaSourceParser javaSourceParser;
   private final AccumulatorToModelMapper mapper;
   private final ClassNodeRepository classNodeRepository;
@@ -65,6 +72,8 @@ public class ExtractionService {
   private final RiskService riskService;
   private final VaadinAuditService vaadinAuditService;
   private final ExtractionConfig extractionConfig;
+  private final TaskExecutor extractionExecutor;
+  private final ExtractionProgressService progressService;
 
   public ExtractionService(
       JavaSourceParser javaSourceParser,
@@ -79,7 +88,9 @@ public class ExtractionService {
       LinkingService linkingService,
       RiskService riskService,
       VaadinAuditService vaadinAuditService,
-      ExtractionConfig extractionConfig) {
+      ExtractionConfig extractionConfig,
+      @Qualifier("extractionExecutor") TaskExecutor extractionExecutor,
+      ExtractionProgressService progressService) {
     this.javaSourceParser = javaSourceParser;
     this.mapper = mapper;
     this.classNodeRepository = classNodeRepository;
@@ -93,10 +104,12 @@ public class ExtractionService {
     this.riskService = riskService;
     this.vaadinAuditService = vaadinAuditService;
     this.extractionConfig = extractionConfig;
+    this.extractionExecutor = extractionExecutor;
+    this.progressService = progressService;
   }
 
   /**
-   * Runs the full extraction pipeline.
+   * Runs the full extraction pipeline (synchronous, no progress streaming).
    *
    * @param sourceRoot absolute path to the Java source directory; if null or blank, falls back to
    *     {@code ExtractionConfig.sourceRoot}
@@ -106,6 +119,22 @@ public class ExtractionService {
    */
   @Transactional("neo4jTransactionManager")
   public ExtractionResult extract(String sourceRoot, String classpathFile) {
+    return extract(sourceRoot, classpathFile, null);
+  }
+
+  /**
+   * Runs the full extraction pipeline with optional SSE progress streaming.
+   *
+   * @param sourceRoot    absolute path to the Java source directory; if null or blank, falls back to
+   *                      {@code ExtractionConfig.sourceRoot}
+   * @param classpathFile path to the classpath text file; if null or blank, falls back to {@code
+   *                      ExtractionConfig.classpathFile}
+   * @param jobId         optional job identifier for progress streaming via
+   *                      {@link ExtractionProgressService}; may be {@code null} to disable streaming
+   * @return extraction result with counts and Vaadin audit report
+   */
+  @Transactional("neo4jTransactionManager")
+  public ExtractionResult extract(String sourceRoot, String classpathFile, String jobId) {
     long startMs = System.currentTimeMillis();
 
     // Resolve source root
@@ -123,42 +152,27 @@ public class ExtractionService {
     // Scan for .java files
     List<Path> javaPaths = scanJavaFiles(sourceRootPath);
     log.info("Scanning {} for Java sources: found {} files", sourceRootPath, javaPaths.size());
+    sendProgress(jobId, "SCANNING", 0, javaPaths.size());
 
     // Parse all Java source files into OpenRewrite LSTs
     List<SourceFile> sourceFiles =
         javaSourceParser.parse(javaPaths, sourceRootPath, resolvedClasspathFile);
+    sendProgress(jobId, "PARSING", sourceFiles.size(), sourceFiles.size());
 
-    // Run visitors to collect AST data into accumulator
-    ExtractionAccumulator accumulator = new ExtractionAccumulator();
-    List<String> errors = new ArrayList<>();
-    int errorCount = 0;
+    // Run visitors to collect AST data into accumulator — parallel path for large codebases
+    List<String> errors = Collections.synchronizedList(new ArrayList<>());
 
-    ClassMetadataVisitor classMetadataVisitor = new ClassMetadataVisitor();
-    CallGraphVisitor callGraphVisitor = new CallGraphVisitor();
-    VaadinPatternVisitor vaadinPatternVisitor = new VaadinPatternVisitor();
-    DependencyVisitor dependencyVisitor = new DependencyVisitor();
-    JpaPatternVisitor jpaPatternVisitor = new JpaPatternVisitor();
-    // LexiconVisitor runs after jpaPatternVisitor so table mappings are available in accumulator
-    LexiconVisitor lexiconVisitor = new LexiconVisitor();
-    // ComplexityVisitor runs last to compute CC and detect DB writes for Phase 6 risk metrics
-    ComplexityVisitor complexityVisitor = new ComplexityVisitor();
-
-    for (SourceFile sourceFile : sourceFiles) {
-      try {
-        classMetadataVisitor.visit(sourceFile, accumulator);
-        callGraphVisitor.visit(sourceFile, accumulator);
-        vaadinPatternVisitor.visit(sourceFile, accumulator);
-        dependencyVisitor.visit(sourceFile, accumulator);
-        jpaPatternVisitor.visit(sourceFile, accumulator);
-        lexiconVisitor.visit(sourceFile, accumulator);
-        complexityVisitor.visit(sourceFile, accumulator);
-      } catch (Exception e) {
-        errorCount++;
-        String error = "Error visiting " + sourceFile.getSourcePath() + ": " + e.getMessage();
-        errors.add(error);
-        log.warn(error, e);
-      }
+    ExtractionAccumulator accumulator;
+    if (sourceFiles.size() > extractionConfig.getParallelThreshold()) {
+      log.info("Parallel extraction: {} files in partitions of {}",
+          sourceFiles.size(), extractionConfig.getPartitionSize());
+      accumulator = visitInParallel(sourceFiles, errors, jobId);
+    } else {
+      log.info("Sequential extraction: {} files (below parallel threshold {})",
+          sourceFiles.size(), extractionConfig.getParallelThreshold());
+      accumulator = visitSequentially(sourceFiles, errors, jobId);
     }
+    int errorCount = errors.size();
 
     // Map accumulator data to entity objects
     List<ClassNode> classNodes = mapper.mapToClassNodes(accumulator);
@@ -168,21 +182,17 @@ public class ExtractionService {
     List<DBTableNode> dbTableNodes = mapper.mapToDBTableNodes(accumulator);
     List<BusinessTermNode> businessTermNodes = mapper.mapToBusinessTermNodes(accumulator);
 
-    // Persist all node types — SDN saveAll() performs MERGE via @Id business keys
+    // Persist all node types
+    // ClassNode uses SDN saveAll() — correct @Id/@Version semantics for class graph wiring
     classNodeRepository.saveAll(classNodes);
     log.info("Persisted {} class nodes to Neo4j", classNodes.size());
+    sendProgress(jobId, "PERSISTING", classNodes.size(), classNodes.size());
 
-    annotationNodeRepository.saveAll(annotationNodes);
-    log.info("Persisted {} annotation nodes to Neo4j", annotationNodes.size());
-
-    packageNodeRepository.saveAll(packageNodes);
-    log.info("Persisted {} package nodes to Neo4j", packageNodes.size());
-
-    moduleNodeRepository.saveAll(moduleNodes);
-    log.info("Persisted {} module nodes to Neo4j", moduleNodes.size());
-
-    dbTableNodeRepository.saveAll(dbTableNodes);
-    log.info("Persisted {} DB table nodes to Neo4j", dbTableNodes.size());
+    // Annotation/Package/Module/DBTable use batched UNWIND MERGE for enterprise-scale performance
+    persistAnnotationNodesBatched(annotationNodes);
+    persistPackageNodesBatched(packageNodes);
+    persistModuleNodesBatched(moduleNodes);
+    persistDBTableNodesBatched(dbTableNodes);
 
     // Persist business term nodes using curated-guard MERGE to protect human-curated definitions
     // (LEX-02/LEX-04 compliance: curated=true terms are never overwritten by re-extraction)
@@ -190,6 +200,7 @@ public class ExtractionService {
 
     // Run linking pass — creates cross-class relationships via idempotent Cypher MERGE
     LinkingService.LinkingResult linkingResult = linkingService.linkAllRelationships(accumulator);
+    sendProgress(jobId, "LINKING", classNodes.size(), classNodes.size());
 
     // Compute fan-in/out and composite structural risk scores from DEPENDS_ON edges.
     // MUST run after linking — DEPENDS_ON edges must exist for fan-in/out to be accurate.
@@ -220,50 +231,310 @@ public class ExtractionService {
         durationMs);
   }
 
+  // =========================================================================
+  // Visitor execution — sequential and parallel paths
+  // =========================================================================
+
   /**
-   * Persists business term nodes using a curated-guard MERGE Cypher query.
+   * Visits all source files sequentially in a single accumulator (original behaviour).
+   * Used when {@code sourceFiles.size() <= extractionConfig.getParallelThreshold()}.
+   */
+  private ExtractionAccumulator visitSequentially(List<SourceFile> sourceFiles, List<String> errors) {
+    return visitSequentially(sourceFiles, errors, null);
+  }
+
+  /**
+   * Visits all source files sequentially with optional progress streaming.
+   * Used when {@code sourceFiles.size() <= extractionConfig.getParallelThreshold()}.
+   */
+  private ExtractionAccumulator visitSequentially(List<SourceFile> sourceFiles, List<String> errors, String jobId) {
+    ExtractionAccumulator accumulator = new ExtractionAccumulator();
+    ClassMetadataVisitor classMetadataVisitor = new ClassMetadataVisitor();
+    CallGraphVisitor callGraphVisitor = new CallGraphVisitor();
+    VaadinPatternVisitor vaadinPatternVisitor = new VaadinPatternVisitor();
+    DependencyVisitor dependencyVisitor = new DependencyVisitor();
+    JpaPatternVisitor jpaPatternVisitor = new JpaPatternVisitor();
+    LexiconVisitor lexiconVisitor = new LexiconVisitor();
+    ComplexityVisitor complexityVisitor = new ComplexityVisitor();
+
+    int total = sourceFiles.size();
+    int processed = 0;
+    for (SourceFile sourceFile : sourceFiles) {
+      try {
+        classMetadataVisitor.visit(sourceFile, accumulator);
+        callGraphVisitor.visit(sourceFile, accumulator);
+        vaadinPatternVisitor.visit(sourceFile, accumulator);
+        dependencyVisitor.visit(sourceFile, accumulator);
+        jpaPatternVisitor.visit(sourceFile, accumulator);
+        lexiconVisitor.visit(sourceFile, accumulator);
+        complexityVisitor.visit(sourceFile, accumulator);
+      } catch (Exception e) {
+        String error = "Error visiting " + sourceFile.getSourcePath() + ": " + e.getMessage();
+        errors.add(error);
+        log.warn(error, e);
+      }
+      processed++;
+      sendProgress(jobId, "VISITING", processed, total);
+    }
+    return accumulator;
+  }
+
+  /**
+   * Partitions the source file list and visits each partition in a separate task on the
+   * {@code extractionExecutor} thread pool. Each partition gets its own visitor instances and
+   * accumulator, avoiding shared mutable state. After all partitions complete, their accumulators
+   * are reduced into one via {@link ExtractionAccumulator#merge(ExtractionAccumulator)}.
+   */
+  private ExtractionAccumulator visitInParallel(List<SourceFile> sourceFiles, List<String> errors) {
+    return visitInParallel(sourceFiles, errors, null);
+  }
+
+  /**
+   * Partitions the source file list and visits each partition in a separate task on the
+   * {@code extractionExecutor} thread pool. Each partition gets its own visitor instances and
+   * accumulator, avoiding shared mutable state. After all partitions complete, their accumulators
+   * are reduced into one via {@link ExtractionAccumulator#merge(ExtractionAccumulator)}.
+   *
+   * <p>Progress events are sent after each file visit via {@link ExtractionProgressService} when
+   * {@code jobId} is non-null.
+   */
+  private ExtractionAccumulator visitInParallel(List<SourceFile> sourceFiles, List<String> errors, String jobId) {
+    int partSize = extractionConfig.getPartitionSize();
+    List<List<SourceFile>> partitions = new ArrayList<>();
+    for (int i = 0; i < sourceFiles.size(); i += partSize) {
+      partitions.add(sourceFiles.subList(i, Math.min(i + partSize, sourceFiles.size())));
+    }
+    log.info("Visiting {} partitions in parallel", partitions.size());
+
+    int total = sourceFiles.size();
+    AtomicInteger progressCounter = new AtomicInteger(0);
+
+    List<CompletableFuture<ExtractionAccumulator>> futures = partitions.stream()
+        .map(batch -> CompletableFuture.supplyAsync(
+            () -> visitBatch(batch, errors, jobId, progressCounter, total), extractionExecutor))
+        .toList();
+
+    CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+    return futures.stream()
+        .map(CompletableFuture::join)
+        .reduce(new ExtractionAccumulator(), ExtractionAccumulator::merge);
+  }
+
+  /**
+   * Visits a single batch of source files with freshly created visitor instances. Returns the
+   * populated accumulator for this batch.
+   *
+   * <p>Each batch creates its own visitor instances because visitors (e.g. {@link ComplexityVisitor})
+   * have internal state (a Deque counter stack) that must not be shared across concurrent tasks.
+   */
+  private ExtractionAccumulator visitBatch(List<SourceFile> batch, List<String> errors) {
+    return visitBatch(batch, errors, null, null, 0);
+  }
+
+  /**
+   * Visits a single batch of source files with optional progress streaming.
+   *
+   * @param batch           the source files to visit
+   * @param errors          shared error list (synchronised externally)
+   * @param jobId           optional job ID for SSE progress streaming
+   * @param progressCounter shared atomic counter across all parallel batches
+   * @param total           total number of source files for progress denominator
+   */
+  private ExtractionAccumulator visitBatch(
+      List<SourceFile> batch,
+      List<String> errors,
+      String jobId,
+      AtomicInteger progressCounter,
+      int total) {
+    ExtractionAccumulator acc = new ExtractionAccumulator();
+    ClassMetadataVisitor classMetadataVisitor = new ClassMetadataVisitor();
+    CallGraphVisitor callGraphVisitor = new CallGraphVisitor();
+    VaadinPatternVisitor vaadinPatternVisitor = new VaadinPatternVisitor();
+    DependencyVisitor dependencyVisitor = new DependencyVisitor();
+    JpaPatternVisitor jpaPatternVisitor = new JpaPatternVisitor();
+    LexiconVisitor lexiconVisitor = new LexiconVisitor();
+    ComplexityVisitor complexityVisitor = new ComplexityVisitor();
+
+    for (SourceFile sf : batch) {
+      try {
+        classMetadataVisitor.visit(sf, acc);
+        callGraphVisitor.visit(sf, acc);
+        vaadinPatternVisitor.visit(sf, acc);
+        dependencyVisitor.visit(sf, acc);
+        jpaPatternVisitor.visit(sf, acc);
+        lexiconVisitor.visit(sf, acc);
+        complexityVisitor.visit(sf, acc);
+      } catch (Exception e) {
+        errors.add("Error visiting " + sf.getSourcePath() + ": " + e.getMessage());
+        log.warn("Error visiting {}: {}", sf.getSourcePath(), e.getMessage(), e);
+      }
+      if (jobId != null && progressCounter != null) {
+        int processed = progressCounter.incrementAndGet();
+        sendProgress(jobId, "VISITING", processed, total);
+      }
+    }
+    return acc;
+  }
+
+  /**
+   * Sends a progress event via {@link ExtractionProgressService} when {@code jobId} is non-null.
+   * No-op if jobId is null or blank (synchronous / no-streaming path).
+   */
+  private void sendProgress(String jobId, String phase, int filesProcessed, int totalFiles) {
+    if (jobId != null && !jobId.isBlank()) {
+      progressService.send(jobId,
+          new ExtractionProgressService.ProgressEvent(phase, filesProcessed, totalFiles));
+    }
+  }
+
+  // =========================================================================
+  // Batched UNWIND MERGE persistence helpers
+  // =========================================================================
+
+  /**
+   * Persists annotation nodes using batched UNWIND MERGE Cypher.
+   * The Neo4j label {@code JavaAnnotation} matches {@code @Node("JavaAnnotation")} on
+   * {@link com.esmp.extraction.model.AnnotationNode}. Business key: {@code fullyQualifiedName}.
+   */
+  private void persistAnnotationNodesBatched(List<AnnotationNode> nodes) {
+    if (nodes.isEmpty()) return;
+    String cypher = "UNWIND $rows AS row "
+        + "MERGE (a:JavaAnnotation {fullyQualifiedName: row.fqn}) "
+        + "ON CREATE SET a.simpleName = row.simpleName, a.packageName = row.packageName "
+        + "ON MATCH SET a.simpleName = row.simpleName, a.packageName = row.packageName";
+    List<Map<String, Object>> rows = nodes.stream()
+        .map(n -> Map.<String, Object>of(
+            "fqn", n.getFullyQualifiedName() != null ? n.getFullyQualifiedName() : "",
+            "simpleName", n.getSimpleName() != null ? n.getSimpleName() : "",
+            "packageName", n.getPackageName() != null ? n.getPackageName() : ""))
+        .toList();
+    for (int i = 0; i < rows.size(); i += BATCH_SIZE) {
+      neo4jClient.query(cypher)
+          .bind(rows.subList(i, Math.min(i + BATCH_SIZE, rows.size()))).to("rows").run();
+    }
+    log.info("Persisted {} annotation nodes via batched UNWIND MERGE", nodes.size());
+  }
+
+  /**
+   * Persists package nodes using batched UNWIND MERGE Cypher.
+   * The Neo4j label {@code JavaPackage} matches {@code @Node("JavaPackage")} on
+   * {@link com.esmp.extraction.model.PackageNode}. Business key: {@code packageName}.
+   */
+  private void persistPackageNodesBatched(List<PackageNode> nodes) {
+    if (nodes.isEmpty()) return;
+    String cypher = "UNWIND $rows AS row "
+        + "MERGE (p:JavaPackage {packageName: row.packageName}) "
+        + "ON CREATE SET p.simpleName = row.simpleName, p.moduleName = row.moduleName "
+        + "ON MATCH SET p.simpleName = row.simpleName, p.moduleName = row.moduleName";
+    List<Map<String, Object>> rows = nodes.stream()
+        .map(n -> Map.<String, Object>of(
+            "packageName", n.getPackageName() != null ? n.getPackageName() : "",
+            "simpleName", n.getSimpleName() != null ? n.getSimpleName() : "",
+            "moduleName", n.getModuleName() != null ? n.getModuleName() : ""))
+        .toList();
+    for (int i = 0; i < rows.size(); i += BATCH_SIZE) {
+      neo4jClient.query(cypher)
+          .bind(rows.subList(i, Math.min(i + BATCH_SIZE, rows.size()))).to("rows").run();
+    }
+    log.info("Persisted {} package nodes via batched UNWIND MERGE", nodes.size());
+  }
+
+  /**
+   * Persists module nodes using batched UNWIND MERGE Cypher.
+   * The Neo4j label {@code JavaModule} matches {@code @Node("JavaModule")} on
+   * {@link com.esmp.extraction.model.ModuleNode}. Business key: {@code moduleName}.
+   */
+  private void persistModuleNodesBatched(List<ModuleNode> nodes) {
+    if (nodes.isEmpty()) return;
+    String cypher = "UNWIND $rows AS row "
+        + "MERGE (m:JavaModule {moduleName: row.moduleName}) "
+        + "ON CREATE SET m.sourceRoot = row.sourceRoot "
+        + "ON MATCH SET m.sourceRoot = row.sourceRoot";
+    List<Map<String, Object>> rows = nodes.stream()
+        .map(n -> Map.<String, Object>of(
+            "moduleName", n.getModuleName() != null ? n.getModuleName() : "",
+            "sourceRoot", n.getSourceRoot() != null ? n.getSourceRoot() : ""))
+        .toList();
+    for (int i = 0; i < rows.size(); i += BATCH_SIZE) {
+      neo4jClient.query(cypher)
+          .bind(rows.subList(i, Math.min(i + BATCH_SIZE, rows.size()))).to("rows").run();
+    }
+    log.info("Persisted {} module nodes via batched UNWIND MERGE", nodes.size());
+  }
+
+  /**
+   * Persists DB table nodes using batched UNWIND MERGE Cypher.
+   * The Neo4j label {@code DBTable} matches {@code @Node("DBTable")} on
+   * {@link com.esmp.extraction.model.DBTableNode}. Business key: {@code tableName}.
+   */
+  private void persistDBTableNodesBatched(List<DBTableNode> nodes) {
+    if (nodes.isEmpty()) return;
+    String cypher = "UNWIND $rows AS row "
+        + "MERGE (t:DBTable {tableName: row.tableName}) "
+        + "ON CREATE SET t.schemaName = row.schemaName "
+        + "ON MATCH SET t.schemaName = row.schemaName";
+    List<Map<String, Object>> rows = nodes.stream()
+        .map(n -> Map.<String, Object>of(
+            "tableName", n.getTableName() != null ? n.getTableName() : "",
+            "schemaName", n.getSchemaName() != null ? n.getSchemaName() : ""))
+        .toList();
+    for (int i = 0; i < rows.size(); i += BATCH_SIZE) {
+      neo4jClient.query(cypher)
+          .bind(rows.subList(i, Math.min(i + BATCH_SIZE, rows.size()))).to("rows").run();
+    }
+    log.info("Persisted {} DB table nodes via batched UNWIND MERGE", nodes.size());
+  }
+
+  /**
+   * Persists business term nodes using batched UNWIND MERGE Cypher with curated-guard semantics.
    *
    * <p>ON CREATE: sets all properties for new terms.
-   * ON MATCH: preserves displayName, definition, and criticality for curated terms;
-   * always updates usageCount and status.
+   * ON MATCH: preserves displayName, definition, and criticality for curated=true terms;
+   * always updates usageCount and status. Batched in groups of {@link #BATCH_SIZE}.
    *
    * @param businessTermNodes list of BusinessTermNode entities to persist
    */
   private void persistBusinessTermNodes(List<BusinessTermNode> businessTermNodes) {
+    if (businessTermNodes.isEmpty()) return;
     String cypher =
-        "MERGE (t:BusinessTerm {termId: $termId}) "
+        "UNWIND $rows AS row "
+            + "MERGE (t:BusinessTerm {termId: row.termId}) "
             + "ON CREATE SET "
-            + "  t.displayName = $displayName, "
-            + "  t.definition = $definition, "
-            + "  t.criticality = $criticality, "
-            + "  t.migrationSensitivity = $sensitivity, "
+            + "  t.displayName = row.displayName, "
+            + "  t.definition = row.definition, "
+            + "  t.criticality = row.criticality, "
+            + "  t.migrationSensitivity = row.sensitivity, "
             + "  t.curated = false, "
             + "  t.status = 'auto', "
-            + "  t.sourceType = $sourceType, "
-            + "  t.primarySourceFqn = $fqn, "
-            + "  t.usageCount = $usageCount, "
+            + "  t.sourceType = row.sourceType, "
+            + "  t.primarySourceFqn = row.fqn, "
+            + "  t.usageCount = row.usageCount, "
             + "  t.synonyms = [] "
             + "ON MATCH SET "
-            + "  t.displayName = CASE WHEN t.curated THEN t.displayName ELSE $displayName END, "
-            + "  t.definition = CASE WHEN t.curated THEN t.definition ELSE $definition END, "
-            + "  t.criticality = CASE WHEN t.curated THEN t.criticality ELSE $criticality END, "
-            + "  t.usageCount = $usageCount, "
+            + "  t.displayName = CASE WHEN t.curated THEN t.displayName ELSE row.displayName END, "
+            + "  t.definition = CASE WHEN t.curated THEN t.definition ELSE row.definition END, "
+            + "  t.criticality = CASE WHEN t.curated THEN t.criticality ELSE row.criticality END, "
+            + "  t.usageCount = row.usageCount, "
             + "  t.status = CASE WHEN t.curated THEN 'curated' ELSE 'auto' END";
 
-    for (BusinessTermNode node : businessTermNodes) {
+    List<Map<String, Object>> rows = businessTermNodes.stream()
+        .map(node -> Map.<String, Object>of(
+            "termId", node.getTermId(),
+            "displayName", node.getDisplayName() != null ? node.getDisplayName() : node.getTermId(),
+            "definition", node.getDefinition() != null ? node.getDefinition() : "",
+            "criticality", node.getCriticality(),
+            "sensitivity", node.getMigrationSensitivity(),
+            "sourceType", node.getSourceType() != null ? node.getSourceType() : "UNKNOWN",
+            "fqn", node.getPrimarySourceFqn() != null ? node.getPrimarySourceFqn() : "",
+            "usageCount", node.getUsageCount()))
+        .toList();
+
+    for (int i = 0; i < rows.size(); i += BATCH_SIZE) {
       neo4jClient.query(cypher)
-          .bindAll(Map.of(
-              "termId", node.getTermId(),
-              "displayName", node.getDisplayName() != null ? node.getDisplayName() : node.getTermId(),
-              "definition", node.getDefinition() != null ? node.getDefinition() : "",
-              "criticality", node.getCriticality(),
-              "sensitivity", node.getMigrationSensitivity(),
-              "sourceType", node.getSourceType() != null ? node.getSourceType() : "UNKNOWN",
-              "fqn", node.getPrimarySourceFqn() != null ? node.getPrimarySourceFqn() : "",
-              "usageCount", node.getUsageCount()))
-          .run();
+          .bind(rows.subList(i, Math.min(i + BATCH_SIZE, rows.size()))).to("rows").run();
     }
-    log.info("Persisted {} business term nodes to Neo4j", businessTermNodes.size());
+    log.info("Persisted {} business term nodes via batched UNWIND MERGE", businessTermNodes.size());
   }
 
   private List<Path> scanJavaFiles(Path root) {

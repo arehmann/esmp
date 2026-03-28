@@ -25,6 +25,7 @@ ESMP analyzes your legacy Java/Vaadin codebase, builds a knowledge graph of ever
   - [9. Incremental Indexing](#9-incremental-indexing)
   - [10. Migration Scheduling](#10-migration-scheduling)
   - [11. MCP Server](#11-mcp-server)
+  - [12. Docker Deployment & Source Access](#12-docker-deployment--source-access)
 - [REST API Reference](#rest-api-reference)
 - [Vaadin Dashboard Views](#vaadin-dashboard-views)
 - [Configuration Reference](#configuration-reference)
@@ -143,20 +144,49 @@ ESMP is a Spring Boot application backed by three specialized databases:
 | **Relational DB** | MySQL 8.4 | Job state + audit trail |
 | **Monitoring** | Prometheus + Grafana | Metrics + dashboards |
 | **Build** | Gradle 9.3 (Kotlin DSL) | Build + dependency management |
+| **Deployment** | Docker (multi-stage) | Containerized deployment |
+| **Git Access** | JGit 7.1.0 | Runtime GitHub clone for source access |
 | **Testing** | JUnit 5 + Testcontainers | Unit + integration tests |
 
 ---
 
 ## Quick Start
 
-If you just want to get ESMP running as fast as possible:
+### Option A: Full Docker Deployment (Recommended)
+
+Everything in one command — no Java or Gradle required on your machine:
 
 ```bash
 # 1. Clone the repo
 git clone https://github.com/arehmann/esmp.git
 cd esmp
 
-# 2. Start all databases
+# 2. Copy and customize environment variables
+cp .env.example .env
+# Edit .env to set SOURCE_ROOT to your legacy codebase path
+
+# 3. Start everything (ESMP + Neo4j + Qdrant + MySQL + Prometheus + Grafana)
+docker compose -f docker-compose.full.yml up -d
+
+# 4. Wait for all services (~2 minutes for first build)
+docker compose -f docker-compose.full.yml ps   # All should show "healthy"
+
+# 5. Open the dashboard
+# http://localhost:8080
+```
+
+**Source access strategies** (set in `.env`):
+- **Volume mount** (default): Bind-mount your codebase into the container via `SOURCE_ROOT=./path/to/project`
+- **GitHub clone**: Set `ESMP_SOURCE_STRATEGY=GITHUB_URL` with `ESMP_SOURCE_GITHUB_URL` and `ESMP_SOURCE_GITHUB_TOKEN`
+
+### Option B: Local Development (Java 21 Required)
+
+```bash
+# 1. Clone the repo
+git clone https://github.com/arehmann/esmp.git
+cd esmp
+
+# 2. Start databases only
 docker compose up -d
 
 # 3. Wait for all services to be healthy (~30 seconds)
@@ -175,9 +205,11 @@ Then jump to [Using the Dashboard](#using-the-dashboard) to start analyzing your
 
 ## Step-by-Step Setup Guide
 
+> **Using Docker full-stack?** If you chose [Option A: Full Docker Deployment](#option-a-full-docker-deployment-recommended) in Quick Start, skip to [Step 4: Analyze Your Codebase](#step-4-analyze-your-codebase) — Docker handles everything else.
+
 ### Prerequisites
 
-Before you begin, make sure you have:
+For local development (Option B):
 
 | Requirement | Version | How to check |
 |-------------|---------|-------------|
@@ -186,6 +218,8 @@ Before you begin, make sure you have:
 | **Docker Compose** | 2.0+ | `docker compose version` |
 | **Git** | 2.30+ | `git --version` |
 | **Disk Space** | ~5 GB | For Docker images + data |
+
+For Docker-only deployment (Option A), only Docker and Docker Compose are required.
 
 ### Step 1: Clone the Repository
 
@@ -271,16 +305,26 @@ Started EsmpApplication using Java 21 with PID ...
 Now trigger extraction on your Java source code:
 
 ```bash
-# Point ESMP at your legacy codebase
+# Point ESMP at your legacy codebase (returns immediately with a jobId)
 curl -X POST "http://localhost:8080/api/extraction/trigger" \
   -H "Content-Type: application/json" \
   -d '{
     "sourceRoot": "/absolute/path/to/your/java/src/main/java",
     "classpathFile": "/path/to/classpath.txt"
   }'
+# Response: {"jobId": "abc-123", "status": "accepted"}
 ```
 
+> **Note:** If you're using the Docker full-stack deployment, the source root is resolved automatically from your configured source access strategy. You can trigger without a body: `curl -X POST http://localhost:8080/api/extraction/trigger`
+
 > **What is classpathFile?** A text file with one JAR path per line. It helps ESMP detect Vaadin types accurately. If you don't have one, omit it - extraction still works but with reduced Vaadin detection accuracy.
+
+**Monitoring large extractions:**
+
+```bash
+# Stream real-time progress (for codebases with 500+ files)
+curl -N "http://localhost:8080/api/extraction/progress?jobId=abc-123"
+```
 
 **Generating a classpath file from Gradle:**
 
@@ -290,7 +334,7 @@ curl -X POST "http://localhost:8080/api/extraction/trigger" \
   | grep '\\---' | sed 's/.*--- //' | sort -u > classpath.txt
 ```
 
-The extraction response tells you what was found:
+When extraction completes, the result includes:
 
 ```json
 {
@@ -533,14 +577,21 @@ Plan your migration order based on risk and dependencies:
 **How to use it:**
 
 ```bash
-# Trigger extraction
+# Trigger extraction (returns 202 Accepted with jobId immediately)
 curl -X POST "http://localhost:8080/api/extraction/trigger" \
   -H "Content-Type: application/json" \
   -d '{
     "sourceRoot": "/path/to/your/src/main/java",
     "classpathFile": "/path/to/classpath.txt"
   }'
+# Response: {"jobId": "abc-123", "status": "accepted"}
+
+# Monitor progress via SSE (optional — useful for large codebases)
+curl -N "http://localhost:8080/api/extraction/progress?jobId=abc-123"
+# Streams: {"phase":"VISITING","filesProcessed":150,"totalFiles":500}
 ```
+
+**Enterprise-scale support:** For codebases with 500+ files, extraction automatically parallelizes across multiple threads. Files are partitioned into batches (default 200), each processed by its own visitor instances. Results are merged and persisted using batched UNWIND MERGE Cypher for maximum throughput. Configure via `esmp.extraction.parallel-threshold` and `esmp.extraction.partition-size`.
 
 **What gets extracted:**
 
@@ -1136,7 +1187,7 @@ curl "http://localhost:8080/api/scheduling/recommend?sourceRoot=/path/to/project
 **What it does:** Exposes all ESMP knowledge services as [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) tools via SSE transport, so AI assistants like Claude Code can query migration context, search code, explore dependencies, assess risk, browse domain terms, and validate system health — all through a single connection.
 
 ```
-  AI Assistant (Claude Code)
+  AI Assistant (Claude Code, Cursor, etc.)
          │
          │ MCP SSE (Server-Sent Events)
          │ http://localhost:8080/mcp/sse
@@ -1147,12 +1198,12 @@ curl "http://localhost:8080/api/scheduling/recommend?sourceRoot=/path/to/project
   │                             │
   │  6 Tools:                   │
   │  ┌───────────────────────┐  │
-  │  │ getMigrationContext   │──┼──▶ MigrationContextAssembler
-  │  │ searchKnowledge       │──┼──▶ VectorSearchService
-  │  │ getDependencyCone     │──┼──▶ GraphQueryService
-  │  │ getRiskAnalysis       │──┼──▶ RiskService
-  │  │ browseDomainTerms     │──┼──▶ LexiconService
-  │  │ validateSystemHealth  │──┼──▶ ValidationService
+  │  │ getMigrationContext   │──┼──▶ MigrationContextAssembler (5 services in parallel)
+  │  │ searchKnowledge       │──┼──▶ VectorSearchService (semantic code search)
+  │  │ getDependencyCone     │──┼──▶ GraphQueryService (graph traversal)
+  │  │ getRiskAnalysis       │──┼──▶ RiskService (structural + domain risk)
+  │  │ browseDomainTerms     │──┼──▶ LexiconService (business vocabulary)
+  │  │ validateSystemHealth  │──┼──▶ ValidationService (41 integrity checks)
   │  └───────────────────────┘  │
   │                             │
   │  Caffeine Cache (3 caches)  │
@@ -1160,23 +1211,19 @@ curl "http://localhost:8080/api/scheduling/recommend?sourceRoot=/path/to/project
   └─────────────────────────────┘
 ```
 
-**Key tool: `getMigrationContext`** — the primary context tool for migration. Assembles a unified `MigrationContext` by calling 5 services in parallel:
+#### Setup: Connecting Claude Code to ESMP
 
-1. **Dependency cone** from GraphQueryService (all transitively reachable nodes)
-2. **Risk analysis** from RiskService (complexity, fan-in/out, domain criticality)
-3. **Domain terms** via Neo4j USES_TERM traversal (business terms linked to the class)
-4. **Business rules** via Neo4j DEFINES_RULE traversal (rule/policy/validator classes)
-5. **Code chunks** from RagService (vector search + graph proximity + risk re-ranking)
+**Step 1:** Start ESMP (either via Docker or locally):
 
-Features:
-- **Token budgeting**: Truncates code chunks first (then cone nodes) to stay within configurable token limit (default 8000)
-- **Graceful degradation**: If any service fails, returns partial context with warnings and reduced completeness score
-- **Caffeine caching**: Three named caches (dependencyCones 5min, domainTermsByClass 10min, semanticQueries 3min) with automatic eviction when incremental reindexing runs
-- **Observability**: Every tool call is instrumented with `@Timed` metrics and structured logging
+```bash
+# Docker (recommended)
+docker compose -f docker-compose.full.yml up -d
 
-**How to connect Claude Code:**
+# Or locally
+docker compose up -d && ./gradlew bootRun -Dorg.gradle.java.home="/path/to/java21"
+```
 
-The `.mcp.json` file at the project root auto-configures the connection:
+**Step 2:** The `.mcp.json` file at the project root auto-configures the connection:
 
 ```json
 {
@@ -1189,31 +1236,443 @@ The `.mcp.json` file at the project root auto-configures the connection:
 }
 ```
 
-Start the app, and Claude Code will automatically discover all 6 tools. Example usage:
+**Step 3:** Open Claude Code in the ESMP project directory. It automatically discovers the MCP server and all 6 tools. Verify by asking:
 
 ```
-You: "Get migration context for com.example.PaymentService"
-Claude: [calls getMigrationContext] → returns dependency cone, risk scores,
-        business terms, rules, and relevant code chunks
-
-You: "What classes deal with authentication?"
-Claude: [calls searchKnowledge] → returns ranked code chunks matching the query
-
-You: "Is the knowledge graph healthy?"
-Claude: [calls validateSystemHealth] → returns pass/fail for all 41 validation queries
+You: "What tools do you have from ESMP?"
+Claude: I have 6 ESMP tools available:
+        - getMigrationContext
+        - searchKnowledge
+        - getDependencyCone
+        - getRiskAnalysis
+        - browseDomainTerms
+        - validateSystemHealth
 ```
+
+> **For other MCP clients** (Cursor, custom agents): point your MCP client's SSE transport at `http://localhost:8080/mcp/sse`. The server conforms to the standard MCP SSE protocol.
+
+#### Tool Reference
+
+##### 1. `getMigrationContext` — Primary context tool
+
+The most important tool. Assembles comprehensive migration context for a class by calling 5 services in parallel.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `classFqn` | String | Yes | Fully-qualified class name (e.g. `com.acme.billing.InvoiceService`) |
+
+**What it returns:**
+
+```json
+{
+  "classFqn": "com.acme.billing.InvoiceService",
+  "dependencyCone": {
+    "fqn": "com.acme.billing.InvoiceService",
+    "nodes": [
+      {"fqn": "com.acme.billing.InvoiceRepository", "labels": ["JavaClass", "Repository"]},
+      {"fqn": "com.acme.billing.Invoice", "labels": ["JavaClass", "Entity"]},
+      {"fqn": "com.acme.common.BaseService", "labels": ["JavaClass", "Service"]}
+    ]
+  },
+  "riskAnalysis": {
+    "fqn": "com.acme.billing.InvoiceService",
+    "enhancedRiskScore": 0.72,
+    "structuralRiskScore": 0.58,
+    "domainCriticality": 0.9,
+    "securitySensitivity": 0.0,
+    "financialInvolvement": 0.8,
+    "businessRuleDensity": 0.3,
+    "methods": [
+      {"simpleName": "calculateTotal", "cyclomaticComplexity": 12}
+    ]
+  },
+  "domainTerms": [
+    {"termId": "invoice", "displayName": "Invoice", "criticality": "High", "usageCount": 23}
+  ],
+  "businessRules": ["PriceCalculator", "DiscountValidator"],
+  "codeChunks": [
+    {
+      "classFqn": "com.acme.billing.InvoiceRepository",
+      "chunkType": "METHOD",
+      "methodId": "findByCustomerId",
+      "text": "public List<Invoice> findByCustomerId(Long id) { ... }",
+      "scores": {"vectorScore": 0.89, "graphProximityScore": 0.95, "riskScore": 0.3, "finalScore": 0.74}
+    }
+  ],
+  "truncated": false,
+  "truncatedItems": 0,
+  "contextCompleteness": 1.0,
+  "warnings": [],
+  "durationMs": 450
+}
+```
+
+**Key fields:**
+- `contextCompleteness` (0.0–1.0): How many of the 5 services returned data. 1.0 = all services contributed. Below 1.0 means some services failed (check `warnings`).
+- `truncated`: true if code chunks were dropped to fit the token budget (default 8000 tokens).
+- `warnings`: Lists any services that failed with reason. Migration still works with partial context.
+
+##### 2. `searchKnowledge` — Semantic code search
+
+Find relevant code by meaning, not just keywords. Uses vector embeddings (all-MiniLM-L6-v2, 384-dim).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `query` | String | Yes | Natural language query (e.g. `"payment processing logic"`) |
+| `module` | String | No | Filter by module (e.g. `"billing"`) |
+| `stereotype` | String | No | Filter by stereotype (`"Service"`, `"Repository"`, `"Entity"`, etc.) |
+| `topK` | int | No | Max results (default 10) |
+
+**Example response:**
+
+```json
+{
+  "results": [
+    {
+      "classFqn": "com.acme.billing.PaymentProcessor",
+      "chunkType": "METHOD",
+      "methodId": "processPayment",
+      "text": "public PaymentResult processPayment(Order order, PaymentMethod method) { ... }",
+      "score": 0.91,
+      "module": "billing",
+      "stereotype": "Service",
+      "enhancedRiskScore": 0.65
+    }
+  ],
+  "totalResults": 8,
+  "durationMs": 120
+}
+```
+
+##### 3. `getDependencyCone` — Dependency graph exploration
+
+Traverses all 7 relationship types (DEPENDS_ON, EXTENDS, IMPLEMENTS, CALLS, BINDS_TO, QUERIES, MAPS_TO_TABLE) up to 10 hops.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `classFqn` | String | Yes | Fully-qualified class name |
+| `maxDepth` | int | No | Traversal depth (default 10) |
+
+**Example response:**
+
+```json
+{
+  "fqn": "com.acme.billing.InvoiceService",
+  "nodes": [
+    {"fqn": "com.acme.billing.InvoiceRepository", "labels": ["JavaClass", "Repository"]},
+    {"fqn": "com.acme.billing.Invoice", "labels": ["JavaClass", "Entity"]},
+    {"fqn": "invoices", "labels": ["DBTable"]}
+  ]
+}
+```
+
+##### 4. `getRiskAnalysis` — Risk assessment
+
+Two modes: class detail (when `classFqn` provided) or heatmap (when `classFqn` is empty/null).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `classFqn` | String | No | Class FQN for detail mode; empty/null for heatmap |
+| `module` | String | No | Module filter (heatmap mode only) |
+| `sortBy` | String | No | `"structural"` or `"enhanced"` (default) |
+| `limit` | int | No | Max heatmap entries (default 20) |
+
+**Detail mode** returns per-method complexity breakdown, all 6 risk dimensions (structural, domain criticality, security sensitivity, financial involvement, business rule density, enhanced composite).
+
+**Heatmap mode** returns a ranked list of the riskiest classes across the codebase.
+
+##### 5. `browseDomainTerms` — Business vocabulary
+
+Browse the automatically extracted domain lexicon.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `search` | String | No | Case-insensitive text search on term names |
+| `criticality` | String | No | Filter: `"High"`, `"Medium"`, or `"Low"` |
+
+**Example response:**
+
+```json
+[
+  {
+    "termId": "invoice",
+    "displayName": "Invoice",
+    "definition": "A financial document sent to customers for payment",
+    "criticality": "High",
+    "usageCount": 23,
+    "relatedClasses": ["com.acme.billing.InvoiceService", "com.acme.billing.Invoice"]
+  }
+]
+```
+
+##### 6. `validateSystemHealth` — Integrity checks
+
+Runs all 41 validation queries. No parameters.
+
+**Example response:**
+
+```json
+{
+  "generatedAt": "2026-03-28T10:30:00Z",
+  "passCount": 39,
+  "warnCount": 1,
+  "errorCount": 1,
+  "results": [
+    {"name": "ORPHAN_CLASSES", "severity": "WARNING", "status": "WARN", "count": 3},
+    {"name": "VECTOR_INDEX_POPULATED", "severity": "ERROR", "status": "PASS", "count": 1250}
+  ]
+}
+```
+
+#### Practical Usage Workflows
+
+##### Workflow 1: Migrate a class with full AI assistance
+
+```
+You: "I need to migrate com.acme.billing.InvoiceService from Vaadin 7 to Vaadin 24.
+      Get the full migration context first."
+
+Claude: [calls getMigrationContext("com.acme.billing.InvoiceService")]
+        → Receives dependency cone (18 nodes), risk analysis (enhanced: 0.72, financial: 0.8),
+          3 domain terms (Invoice, Payment, Order), 2 business rules, 12 code chunks
+
+Claude: "Here's what I found about InvoiceService:
+         - HIGH financial involvement (0.8) — handle payment logic carefully
+         - 18 transitive dependencies — InvoiceRepository, Invoice entity, ...
+         - Key business rules: PriceCalculator, DiscountValidator
+         - Vaadin 7 patterns detected: uses com.vaadin.ui.Table
+
+         Here's the migrated Vaadin 24 code: ..."
+```
+
+##### Workflow 2: Explore unfamiliar code areas
+
+```
+You: "What classes handle authentication in this codebase?"
+
+Claude: [calls searchKnowledge("authentication login security", null, null, 15)]
+        → Returns 15 ranked code chunks with auth-related classes
+
+Claude: "Found 8 classes related to authentication:
+         1. AuthenticationService (risk: 0.85 — high security sensitivity)
+         2. LoginView (Vaadin 7 view — needs migration)
+         3. SessionManager ..."
+
+You: "What does AuthenticationService depend on?"
+
+Claude: [calls getDependencyCone("com.acme.auth.AuthenticationService", 5)]
+        → Returns dependency tree
+
+Claude: "AuthenticationService depends on:
+         - UserRepository (1 hop)
+         - User entity (2 hops)
+         - users table (3 hops)
+         - SessionManager (1 hop)
+         - PasswordEncoder (1 hop)"
+```
+
+##### Workflow 3: Pre-migration health check
+
+```
+You: "Before I start migrating, is the knowledge graph healthy?"
+
+Claude: [calls validateSystemHealth()]
+        → Returns 41 query results
+
+Claude: "System health: 39 pass, 1 warning, 1 error
+         - WARNING: 3 orphan classes (no relationships) — likely utility classes
+         - ERROR: Vector index not populated — run extraction first
+
+         Recommendation: Run POST /api/extraction/trigger followed by
+         POST /api/vector/index before starting migration."
+```
+
+##### Workflow 4: Understand business impact before migrating
+
+```
+You: "What business terms are HIGH criticality? I want to migrate those last."
+
+Claude: [calls browseDomainTerms(null, "High")]
+        → Returns all high-criticality terms
+
+Claude: "12 high-criticality business terms found:
+         - Invoice (23 usages) — used by InvoiceService, InvoiceCalculator, ...
+         - Payment (18 usages) — PaymentProcessor, PaymentGateway, ...
+         - Account (15 usages) — AccountService, AccountBalance, ...
+
+         These modules have the highest business impact.
+         Recommend migrating them in later waves with extra review."
+```
+
+##### Workflow 5: Risk-driven migration planning
+
+```
+You: "Show me the riskiest classes in the billing module"
+
+Claude: [calls getRiskAnalysis(null, "billing", "enhanced", 10)]
+        → Returns top 10 riskiest billing classes
+
+Claude: "Top 3 riskiest classes in billing:
+         1. InvoiceCalculator (0.78) — CC:15, financial:0.8, 3 business rules
+         2. PaymentProcessor (0.72) — CC:12, security:0.6, DB writes
+         3. BillingScheduler (0.65) — CC:8, 5 dependencies
+
+         Start with low-risk classes first (OrderDTO, BillingConfig) and
+         save these for last."
+
+You: "Now give me the full context for BillingConfig so I can migrate it"
+
+Claude: [calls getMigrationContext("com.acme.billing.BillingConfig")]
+        → Assembles context for the low-risk class
+
+Claude: "BillingConfig has risk 0.12 (safe to migrate):
+         - No Vaadin 7 patterns (pure configuration)
+         - 2 dependents: InvoiceService, PaymentProcessor
+         - No business terms
+
+         Here's the migrated code: ..."
+```
+
+#### Infrastructure Details
+
+- **Token budgeting**: `getMigrationContext` truncates code chunks first (then cone nodes) to stay within configurable token limit (default 8000). Configure via `esmp.mcp.context.max-tokens`.
+- **Graceful degradation**: If any of the 5 parallel services fail, returns partial context with warnings and reduced `contextCompleteness` score. Migration can proceed with partial data.
+- **Caffeine caching**: Three named caches with configurable TTLs:
+  - `dependencyCones` (5 min) — cone traversals are expensive
+  - `domainTermsByClass` (10 min) — terms change infrequently
+  - `semanticQueries` (3 min) — embedding results
+  - All caches auto-evict when incremental reindexing runs
+- **Observability**: Every tool call is instrumented with `@Timed` Micrometer metrics and structured logging. Query Prometheus for `esmp.mcp.request.duration` and `esmp.mcp.tool.invocations`.
+
+---
+
+### 12. Docker Deployment & Source Access
+
+**What it does:** Packages ESMP as a single Docker image with all dependencies, enabling one-command deployment. Includes runtime source access so the container can analyze external codebases via volume mount or GitHub clone.
+
+```
+  Deployment Options
+  ==================
+
+  Option A: Volume Mount (default)           Option B: GitHub Clone
+  ================================           ======================
+
+  Host Machine                               GitHub Repository
+  +-------------------+                      +-------------------+
+  | /path/to/project  |                      | github.com/org/   |
+  |   src/main/java/  |                      |   repo.git        |
+  +--------+----------+                      +--------+----------+
+           |                                          |
+     bind mount (:ro)                          JGit clone (PAT)
+           |                                          |
+           v                                          v
+  +--------------------------------------------------+
+  |              Docker Container (ESMP)              |
+  |                                                    |
+  |  SourceAccessService                              |
+  |  - Resolves source root on startup                |
+  |  - VOLUME_MOUNT: reads /mnt/source               |
+  |  - GITHUB_URL: clones to /data/esmp-source-clone |
+  |                                                    |
+  |  GET /api/source/status                           |
+  |  -> {"strategy":"VOLUME_MOUNT","resolved":true}   |
+  +--------------------------------------------------+
+           |            |           |
+  +--------+--+ +------+----+ +----+------+
+  |   Neo4j   | |  Qdrant   | |   MySQL   |
+  +--------+--+ +------+----+ +----+------+
+  |Prometheus | |  Grafana  |
+  +-----------+ +-----------+
+```
+
+**How to deploy:**
+
+```bash
+# 1. Copy environment template
+cp .env.example .env
+
+# 2. Configure source access (edit .env)
+# For volume mount:
+ESMP_SOURCE_STRATEGY=VOLUME_MOUNT
+SOURCE_ROOT=/path/to/your/codebase
+
+# For GitHub clone:
+ESMP_SOURCE_STRATEGY=GITHUB_URL
+ESMP_SOURCE_GITHUB_URL=https://github.com/org/repo.git
+ESMP_SOURCE_GITHUB_TOKEN=ghp_xxxxx
+ESMP_SOURCE_BRANCH=main
+
+# 3. Start everything
+docker compose -f docker-compose.full.yml up -d
+
+# 4. Check status
+curl http://localhost:8080/api/source/status
+curl http://localhost:8080/actuator/health
+```
+
+**Docker image details:**
+- Multi-stage build: `eclipse-temurin:21-jdk` (build) → `eclipse-temurin:21-jre` (runtime)
+- Vaadin frontend compiled in build stage (`vaadinBuildFrontend`)
+- Layered JAR extraction for optimal Docker layer caching
+- Non-root `esmp` user (UID 1000)
+- HEALTHCHECK via `/actuator/health/liveness` (30s interval, 120s start period)
+- JVM tuned: 75% max RAM, G1GC, OOM heap dump
+
+**Parallel extraction for enterprise scale:**
+
+For codebases with 500+ files (configurable), extraction automatically parallelizes:
+
+```
+  Sequential (< threshold)          Parallel (>= threshold)
+  ==========================       ===========================
+
+  File 1 → visit → accumulator     Partition 1 → visit → acc1 \
+  File 2 → visit → accumulator     Partition 2 → visit → acc2  |→ merge → persist
+  File 3 → visit → accumulator     Partition 3 → visit → acc3 /
+  ...                                (each partition: own visitors, own accumulator)
+```
+
+- Configurable via `esmp.extraction.parallel-threshold` (default 500) and `esmp.extraction.partition-size` (default 200)
+- Per-partition visitor instances — no shared mutable state
+- Annotation/Package/Module/DBTable/BusinessTerm persisted via batched UNWIND MERGE Cypher (2000-row batches)
+- Bounded `ThreadPoolTaskExecutor` (core=4, max=available processors, CallerRunsPolicy backpressure)
+
+**SSE progress streaming:**
+
+For long-running extractions, monitor progress in real time:
+
+```bash
+# Terminal 1: trigger extraction (returns immediately with jobId)
+curl -X POST http://localhost:8080/api/extraction/trigger \
+  -H "Content-Type: application/json" \
+  -d '{"sourceRoot": "/path/to/src"}'
+# → {"jobId": "abc-123", "status": "accepted"}
+
+# Terminal 2: stream progress events
+curl -N "http://localhost:8080/api/extraction/progress?jobId=abc-123"
+# → event: progress
+# → data: {"phase":"SCANNING","filesProcessed":0,"totalFiles":4200}
+# → event: progress
+# → data: {"phase":"VISITING","filesProcessed":500,"totalFiles":4200}
+# → ...
+# → event: done
+# → data: complete
+```
+
+Progress phases: `SCANNING` → `PARSING` → `VISITING` → `PERSISTING` → `LINKING`
 
 ---
 
 ## REST API Reference
 
-Complete list of all 19 endpoints:
+Complete list of all 22 endpoints:
 
 ### Extraction
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/api/extraction/trigger` | Parse Java source code and populate the knowledge graph |
+| `POST` | `/api/extraction/trigger` | Async extraction — returns 202 with `jobId` |
+| `GET` | `/api/extraction/progress?jobId=X` | SSE stream of extraction progress events |
 
 ### Graph Queries
 
@@ -1254,6 +1713,12 @@ Complete list of all 19 endpoints:
 | `GET` | `/api/pilot/validate/{module}` | Module pilot readiness check |
 | `GET` | `/api/scheduling/recommend` | Migration wave schedule |
 
+### Source Access
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/source/status` | Source access strategy and resolution status |
+
 ### MCP (AI Assistant Integration)
 
 | Transport | Endpoint | Description |
@@ -1274,25 +1739,47 @@ Complete list of all 19 endpoints:
 
 ## Configuration Reference
 
-All configuration is in `src/main/resources/application.yml`. Key settings you might want to change:
+All configuration is in `src/main/resources/application.yml`. Every setting supports environment variable overrides via `${ENV_VAR:default}` syntax, making Docker deployment configurable without rebuilding.
 
 ### Database Connections
 
 ```yaml
 spring:
   neo4j:
-    uri: bolt://localhost:7687
+    uri: ${SPRING_NEO4J_URI:bolt://localhost:7687}
     authentication:
-      username: neo4j
-      password: ${NEO4J_PASSWORD:esmp-local-password}
+      username: ${SPRING_NEO4J_AUTHENTICATION_USERNAME:neo4j}
+      password: ${SPRING_NEO4J_AUTHENTICATION_PASSWORD:esmp-local-password}
   datasource:
-    url: jdbc:mysql://localhost:3307/esmp
-    username: esmp
-    password: ${MYSQL_PASSWORD:esmp-local-password}
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3307/esmp}
+    username: ${SPRING_DATASOURCE_USERNAME:esmp}
+    password: ${SPRING_DATASOURCE_PASSWORD:esmp-local-password}
 
 qdrant:
-  host: localhost
-  port: 6334
+  host: ${QDRANT_HOST:localhost}
+  port: ${QDRANT_PORT:6334}
+```
+
+### Source Access (Docker Deployment)
+
+```yaml
+esmp:
+  source:
+    strategy: ${ESMP_SOURCE_STRATEGY:VOLUME_MOUNT}    # VOLUME_MOUNT or GITHUB_URL
+    volume-mount-path: ${ESMP_SOURCE_VOLUME_MOUNT_PATH:/mnt/source}
+    github-url: ${ESMP_SOURCE_GITHUB_URL:}
+    github-token: ${ESMP_SOURCE_GITHUB_TOKEN:}
+    clone-directory: ${ESMP_SOURCE_CLONE_DIRECTORY:/tmp/esmp-source-clone}
+    branch: ${ESMP_SOURCE_BRANCH:main}
+```
+
+### Parallel Extraction (Enterprise Scale)
+
+```yaml
+esmp:
+  extraction:
+    parallel-threshold: ${ESMP_EXTRACTION_PARALLEL_THRESHOLD:500}  # Files above this → parallel
+    partition-size: ${ESMP_EXTRACTION_PARTITION_SIZE:200}           # Files per partition
 ```
 
 ### Risk Scoring Weights
@@ -1384,6 +1871,8 @@ ESMP has comprehensive test coverage with 31 test suites:
 | Module | Unit Tests | Integration Tests |
 |--------|-----------|-------------------|
 | Extraction (visitors) | 7 suites | 3 suites |
+| Extraction (parallel + batched) | - | 2 suites (4 tests) |
+| Extraction (progress SSE) | 1 suite (7 tests) | - |
 | Graph (queries, validation) | - | 3 suites |
 | Risk (structural + domain) | - | 2 suites (24 tests) |
 | Vector (chunking, indexing) | 2 suites (13 tests) | 2 suites (12 tests) |
@@ -1393,6 +1882,7 @@ ESMP has comprehensive test coverage with 31 test suites:
 | Scheduling | 1 suite (3 tests) | 1 suite (6 tests) |
 | Dashboard | - | 1 suite (7 tests) |
 | MCP Server | 2 suites (5 tests) | 2 suites (11 tests) |
+| Source Access | 1 suite (3 tests) | - |
 | Infrastructure | - | 2 suites |
 
 ---
@@ -1470,6 +1960,19 @@ Also clean cached artifacts:
 rm -rf build/ node_modules/ src/main/frontend/generated/
 ```
 
+### Docker full-stack won't start (port 8080 in use)
+
+If `docker compose -f docker-compose.full.yml up` fails with a port conflict on 8080:
+
+```bash
+# Find what's using port 8080
+netstat -ano | grep ":8080"
+# On Windows: taskkill /PID <pid> /F
+# On Linux: kill -9 <pid>
+```
+
+Common culprits: a running Gradle bootRun or a Spring Boot test process.
+
 ### Docker services won't start
 
 **Check Docker is running:**
@@ -1482,9 +1985,9 @@ docker info
 
 ```bash
 # These ports must be free:
-# 7474, 7687 (Neo4j), 6333, 6334 (Qdrant), 3307 (MySQL),
+# 8080 (ESMP), 7474, 7687 (Neo4j), 6333, 6334 (Qdrant), 3307 (MySQL),
 # 9090 (Prometheus), 3000 (Grafana)
-netstat -an | grep -E "7474|7687|6333|6334|3307|9090|3000"
+netstat -an | grep -E "8080|7474|7687|6333|6334|3307|9090|3000"
 ```
 
 **Reset all data and restart:**
@@ -1541,8 +2044,10 @@ Here's a complete workflow from start to finish:
 
 ```
   Step 1: Setup                    Step 2: Analyze
-  docker compose up -d             POST /api/extraction/trigger
-  ./gradlew bootRun                POST /api/vector/index
+  cp .env.example .env             POST /api/extraction/trigger
+  docker compose -f                  (returns jobId, runs async)
+    docker-compose.full.yml        POST /api/vector/index
+    up -d
 
        |                                |
        v                                v

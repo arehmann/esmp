@@ -3,6 +3,37 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
+stopped_at: Completed 15-docker-deployment-enterprise-scale 15-03-PLAN.md
+last_updated: "2026-03-28T10:47:37.216Z"
+last_activity: 2026-03-04 — Roadmap created, project initialized
+progress:
+  total_phases: 15
+  completed_phases: 15
+  total_plans: 38
+  completed_plans: 38
+  percent: 95
+---
+
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: planning
+stopped_at: Phase 15 context gathered
+last_updated: "2026-03-19T18:57:25.203Z"
+last_activity: 2026-03-04 — Roadmap created, project initialized
+progress:
+  [██████████] 95%
+  completed_phases: 14
+  total_plans: 35
+  completed_plans: 35
+---
+
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: planning
 stopped_at: Completed 14-mcp-server-for-ai-powered-migration-context 14-02-PLAN.md
 last_updated: "2026-03-19T09:33:02.677Z"
 last_activity: 2026-03-04 — Roadmap created, project initialized
@@ -313,6 +344,9 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 13-risk-prioritized-scheduling P02 | 10min | 2 tasks | 2 files |
 | Phase 14-mcp-server-for-ai-powered-migration-context P01 | 75min | 2 tasks | 11 files |
 | Phase 14-mcp-server-for-ai-powered-migration-context P02 | 80min | 1 tasks | 7 files |
+| Phase 15-docker-deployment-enterprise-scale P01 | 5min | 2 tasks | 11 files |
+| Phase 15-docker-deployment-enterprise-scale P02 | 55min | 2 tasks | 6 files |
+| Phase 15-docker-deployment-enterprise-scale P03 | 25min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -408,10 +442,19 @@ Recent decisions affecting current work:
 - [Phase 14-mcp-server-for-ai-powered-migration-context]: MigrationContextAssembler delegates to RagService.assemble() not EmbeddingModel directly — preserves weighted re-ranking per CONTEXT.md user decision
 - [Phase 14-mcp-server-for-ai-powered-migration-context]: Cache eviction for domainTermsByClass and semanticQueries uses full clear — query-keyed caches cannot be selectively evicted by class FQN
 - [Phase 14-mcp-server-for-ai-powered-migration-context]: LexiconService.findByFilters parameter order is (criticality, curated, search) — plan had it reversed; SLO tests measure second call steady-state latency to avoid JIT warmup
+- [Phase 15-docker-deployment-enterprise-scale]: JGit 7.1.0.202411261347-r used instead of 7.6.0; VOLUME_MOUNT resolution is best-effort; remote URL mismatch triggers re-clone; curl installed in JRE stage for HEALTHCHECK
+- [Phase 15-docker-deployment-enterprise-scale]: ExtractionAccumulator.merge() runs post-parallel — plain HashMap/ArrayList sufficient; no ConcurrentHashMap needed since merge is single-threaded after CompletableFuture.allOf.join()
+- [Phase 15-docker-deployment-enterprise-scale]: BatchedPersistenceTest uses clear-then-rerun idempotency pattern — ClassNode saveAll() raises OptimisticLockingFailureException on pre-existing @Version nodes; full extract() path requires pre-delete pattern (IncrementalIndexingService) for repeat runs on same graph
+- [Phase 15-docker-deployment-enterprise-scale]: AnnotationNode UNWIND MERGE key is fullyQualifiedName (not fqn) — verified from @Id field on AnnotationNode.java; ModuleNode UNWIND MERGE sets sourceRoot not basePackage
+- [Phase 15-docker-deployment-enterprise-scale]: ExtractionProgressService uses ConcurrentHashMap for thread-safe emitter registry; emitter cleanup on completion/timeout/error
+- [Phase 15-docker-deployment-enterprise-scale]: extract() overload accepts nullable jobId — null means no progress streaming (backward compat); sendProgress() is a no-op when jobId is null
+- [Phase Phase 15-docker-deployment-enterprise-scale]: SSE race condition for small codebases accepted as not a concern for enterprise-scale deployment target (40K+ file extractions take minutes)
+- [Phase Phase 15-docker-deployment-enterprise-scale]: 60-minute SseEmitter timeout chosen to cover largest realistic enterprise extraction runs
 
 ### Roadmap Evolution
 
 - Phase 14 added: MCP server for AI-powered migration context
+- Phase 15 added: Docker Deployment & Enterprise Scale
 
 ### Pending Todos
 
@@ -424,6 +467,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T09:27:13.842Z
-Stopped at: Completed 14-mcp-server-for-ai-powered-migration-context 14-02-PLAN.md
+Last session: 2026-03-28T10:43:39.100Z
+Stopped at: Completed 15-docker-deployment-enterprise-scale 15-03-PLAN.md
 Resume file: None
