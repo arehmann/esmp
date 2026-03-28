@@ -1,16 +1,19 @@
 package com.esmp.migration.application;
 
+import com.esmp.extraction.config.MigrationConfig;
 import com.esmp.extraction.parser.JavaSourceParser;
 import com.esmp.migration.api.BatchMigrationResult;
 import com.esmp.migration.api.MigrationActionEntry;
 import com.esmp.migration.api.MigrationPlan;
 import com.esmp.migration.api.MigrationResult;
 import com.esmp.migration.api.ModuleMigrationSummary;
+import com.esmp.migration.api.RecipeRule;
 import com.esmp.source.application.SourceAccessService;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -58,14 +61,20 @@ public class MigrationRecipeService {
   private final Neo4jClient neo4jClient;
   private final JavaSourceParser javaSourceParser;
   private final SourceAccessService sourceAccessService;
+  private final RecipeBookRegistry recipeBookRegistry;
+  private final MigrationConfig migrationConfig;
 
   public MigrationRecipeService(
       Neo4jClient neo4jClient,
       JavaSourceParser javaSourceParser,
-      SourceAccessService sourceAccessService) {
+      SourceAccessService sourceAccessService,
+      RecipeBookRegistry recipeBookRegistry,
+      MigrationConfig migrationConfig) {
     this.neo4jClient = neo4jClient;
     this.javaSourceParser = javaSourceParser;
     this.sourceAccessService = sourceAccessService;
+    this.recipeBookRegistry = recipeBookRegistry;
+    this.migrationConfig = migrationConfig;
   }
 
   // ---------------------------------------------------------------------------
@@ -298,6 +307,343 @@ public class MigrationRecipeService {
         .one()
         .orElse(
             new ModuleMigrationSummary(module, 0, 0, 0, 0, 0, 0.0, 0, 0));
+  }
+
+  // ---------------------------------------------------------------------------
+  // Migration post-processing pipeline
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Runs the migration post-processing pipeline after extraction and risk scoring:
+   * <ol>
+   *   <li>Transitive detection — finds classes that inherit from Vaadin 7 types and creates
+   *       inherited {@code MigrationAction} nodes with complexity profiling.
+   *   <li>Score recomputation — updates ClassNode migration properties (actionCount, automationScore).
+   *   <li>Recipe book enrichment — updates usage counts and auto-discovers NEEDS_MAPPING types.
+   * </ol>
+   *
+   * <p>This method must be called after {@code LinkingService.linkAllRelationships()} (EXTENDS edges
+   * must exist) and after {@code RiskService.computeAndPersistRiskScores()}.
+   */
+  public void migrationPostProcessing() {
+    log.info("Starting migration post-processing: transitive detection, score recompute, enrichment");
+    long startMs = System.currentTimeMillis();
+    int transitiveCount = detectTransitiveMigrations();
+    recomputeMigrationScores();
+    enrichRecipeBook();
+    log.info("Migration post-processing complete: {} transitive actions created in {}ms",
+        transitiveCount, System.currentTimeMillis() - startMs);
+  }
+
+  /**
+   * Finds all classes that inherit from known Vaadin 7 types (via EXTENDS graph traversal) and
+   * creates inherited {@code MigrationAction} nodes for them with per-class complexity profiling.
+   *
+   * @return the number of inherited MigrationAction nodes created or updated
+   */
+  int detectTransitiveMigrations() {
+    // Step 1: Get known Vaadin 7 source FQNs from recipe book (excluding Flow and NEEDS_MAPPING)
+    List<String> vaadinSourceFqns = recipeBookRegistry.getRules().stream()
+        .filter(r -> !"NEEDS_MAPPING".equals(r.status()))
+        .filter(r -> r.source().startsWith("com.vaadin.")
+            && !r.source().startsWith("com.vaadin.flow."))
+        .map(RecipeRule::source)
+        .distinct()
+        .collect(Collectors.toList());
+
+    if (vaadinSourceFqns.isEmpty()) {
+      log.debug("No Vaadin 7 source FQNs in recipe book — skipping transitive detection");
+      return 0;
+    }
+
+    // Step 2: Find transitive inheritors not already having a direct MigrationAction for the ancestor
+    String transitiveQuery =
+        """
+        MATCH (c:JavaClass)-[:EXTENDS*1..10]->(ancestor:JavaClass)
+        WHERE ancestor.fullyQualifiedName IN $vaadinSourceFqns
+          AND NOT (c)-[:HAS_MIGRATION_ACTION]->(:MigrationAction {source: ancestor.fullyQualifiedName})
+        RETURN c.fullyQualifiedName AS classFqn,
+               ancestor.fullyQualifiedName AS ancestorFqn,
+               labels(c) AS classLabels
+        """;
+
+    List<Map<String, Object>> transitiveRows = new ArrayList<>();
+    neo4jClient.query(transitiveQuery)
+        .bind(vaadinSourceFqns).to("vaadinSourceFqns")
+        .fetchAs(Map.class)
+        .mappedBy((ts, record) -> {
+          Map<String, Object> row = new java.util.HashMap<>();
+          row.put("classFqn", record.get("classFqn").asString(null));
+          row.put("ancestorFqn", record.get("ancestorFqn").asString(null));
+          List<Object> labels = record.get("classLabels").asList(v -> (Object) v.asString(""));
+          row.put("classLabels", labels);
+          return row;
+        })
+        .all()
+        .forEach(transitiveRows::add);
+
+    log.info("Found {} transitive inheritance relationships to process", transitiveRows.size());
+
+    MigrationConfig.TransitiveConfig config = migrationConfig.getTransitive();
+    int createdCount = 0;
+
+    for (Map<String, Object> row : transitiveRows) {
+      String classFqn = (String) row.get("classFqn");
+      String ancestorFqn = (String) row.get("ancestorFqn");
+      @SuppressWarnings("unchecked")
+      List<Object> classLabels = (List<Object>) row.get("classLabels");
+
+      if (classFqn == null || ancestorFqn == null) continue;
+
+      // Step 3: Compute complexity profile via second Cypher query
+      String complexityQuery =
+          """
+          OPTIONAL MATCH (ancestor:JavaClass {fullyQualifiedName: $ancestorFqn})-[:DECLARES_METHOD]->(am:JavaMethod)
+          WITH collect(DISTINCT am.simpleName) AS ancestorMethodNames
+          OPTIONAL MATCH (c:JavaClass {fullyQualifiedName: $classFqn})-[:DECLARES_METHOD]->(cm:JavaMethod)
+          WHERE cm.simpleName IN ancestorMethodNames
+          WITH count(cm) AS overrideCount, ancestorMethodNames
+          OPTIONAL MATCH (c:JavaClass {fullyQualifiedName: $classFqn})-[:CALLS]->(callee:JavaClass)
+          WHERE callee.fullyQualifiedName STARTS WITH 'com.vaadin.'
+            AND NOT callee.fullyQualifiedName STARTS WITH 'com.vaadin.flow.'
+          WITH overrideCount, count(DISTINCT callee) AS ownVaadinCalls
+          RETURN overrideCount, ownVaadinCalls
+          """;
+
+      int overrideCount = 0;
+      int ownVaadinCalls = 0;
+
+      var complexityResult = neo4jClient.query(complexityQuery)
+          .bind(classFqn).to("classFqn")
+          .bind(ancestorFqn).to("ancestorFqn")
+          .fetchAs(Map.class)
+          .mappedBy((ts, record) -> {
+            Map<String, Object> r = new java.util.HashMap<>();
+            r.put("overrideCount", record.get("overrideCount").asInt(0));
+            r.put("ownVaadinCalls", record.get("ownVaadinCalls").asInt(0));
+            return r;
+          })
+          .one();
+
+      if (complexityResult.isPresent()) {
+        overrideCount = (int) complexityResult.get().get("overrideCount");
+        ownVaadinCalls = (int) complexityResult.get().get("ownVaadinCalls");
+      }
+
+      // Step 4: Check labels for VaadinDataBinding and VaadinComponent
+      boolean hasOwnBinding = classLabels != null
+          && classLabels.stream().anyMatch(l -> "VaadinDataBinding".equals(l.toString()));
+      boolean hasOwnComponents = classLabels != null
+          && classLabels.stream().anyMatch(l -> "VaadinComponent".equals(l.toString()));
+
+      // Step 5: Compute transitiveComplexity score
+      double rawScore = (overrideCount * config.getOverrideWeight())
+          + (ownVaadinCalls * config.getOwnCallsWeight())
+          + (hasOwnBinding ? config.getBindingWeight() : 0.0)
+          + (hasOwnComponents ? config.getComponentWeight() : 0.0);
+      double transitiveComplexity = Math.min(1.0, rawScore);
+      boolean pureWrapper = transitiveComplexity == 0.0;
+      String automatable;
+      if (pureWrapper || transitiveComplexity <= config.getAiAssistedThreshold()) {
+        automatable = "PARTIAL";
+      } else {
+        automatable = "NO";
+      }
+
+      // Step 6: Resolve target from recipe book
+      String target = recipeBookRegistry.findBySource(ancestorFqn)
+          .map(RecipeRule::target)
+          .orElse("Manual migration required");
+
+      String context = "Inherited from " + ancestorFqn
+          + (pureWrapper
+              ? " (pure wrapper — mechanical wrapping)"
+              : " (complex — overrides or own Vaadin usage)");
+
+      String actionId = classFqn + "#INHERITED#" + ancestorFqn;
+
+      // Step 7: MERGE inherited MigrationAction node + HAS_MIGRATION_ACTION edge
+      String mergeQuery =
+          """
+          MERGE (ma:MigrationAction {actionId: $actionId})
+          ON CREATE SET ma.classFqn = $classFqn, ma.actionType = 'COMPLEX_REWRITE',
+                        ma.source = $ancestorFqn, ma.target = $target,
+                        ma.automatable = $automatable, ma.context = $context,
+                        ma.isInherited = true, ma.pureWrapper = $pureWrapper,
+                        ma.transitiveComplexity = $transitiveComplexity,
+                        ma.vaadinAncestor = $ancestorFqn,
+                        ma.overrideCount = $overrideCount, ma.ownVaadinCalls = $ownVaadinCalls
+          ON MATCH SET  ma.automatable = $automatable, ma.transitiveComplexity = $transitiveComplexity,
+                        ma.pureWrapper = $pureWrapper, ma.overrideCount = $overrideCount,
+                        ma.ownVaadinCalls = $ownVaadinCalls
+          WITH ma
+          MATCH (c:JavaClass {fullyQualifiedName: $classFqn})
+          MERGE (c)-[:HAS_MIGRATION_ACTION]->(ma)
+          """;
+
+      neo4jClient.query(mergeQuery)
+          .bind(actionId).to("actionId")
+          .bind(classFqn).to("classFqn")
+          .bind(ancestorFqn).to("ancestorFqn")
+          .bind(target).to("target")
+          .bind(automatable).to("automatable")
+          .bind(context).to("context")
+          .bind(pureWrapper).to("pureWrapper")
+          .bind(transitiveComplexity).to("transitiveComplexity")
+          .bind(overrideCount).to("overrideCount")
+          .bind(ownVaadinCalls).to("ownVaadinCalls")
+          .run();
+
+      createdCount++;
+    }
+
+    log.info("Transitive detection complete: {} inherited MigrationAction nodes created/updated",
+        createdCount);
+    return createdCount;
+  }
+
+  /**
+   * Recomputes migration-related aggregate properties on all ClassNode instances that have
+   * at least one linked MigrationAction.
+   */
+  void recomputeMigrationScores() {
+    String query =
+        """
+        MATCH (c:JavaClass)
+        OPTIONAL MATCH (c)-[:HAS_MIGRATION_ACTION]->(ma:MigrationAction)
+        WITH c, count(ma) AS total,
+             sum(CASE WHEN ma.automatable = 'YES' THEN 1 ELSE 0 END) AS yesCount,
+             sum(CASE WHEN ma.automatable = 'PARTIAL' THEN 1 ELSE 0 END) AS partialCount,
+             sum(CASE WHEN ma.automatable = 'NO' THEN 1 ELSE 0 END) AS noCount
+        WHERE total > 0
+        SET c.migrationActionCount = total,
+            c.automatableActionCount = yesCount,
+            c.automationScore = CASE WHEN total > 0 THEN (toFloat(yesCount) + 0.5 * partialCount) / total ELSE 0.0 END,
+            c.needsAiMigration = (noCount > 0)
+        """;
+
+    neo4jClient.query(query).run();
+    log.debug("recomputeMigrationScores complete");
+  }
+
+  /**
+   * Enriches the recipe book by:
+   * <ol>
+   *   <li>Aggregating usage counts from MigrationAction nodes and updating corresponding rules.
+   *   <li>Auto-discovering unmapped Vaadin 7 types and adding them as NEEDS_MAPPING/DISCOVERED entries.
+   * </ol>
+   *
+   * <p>File I/O failures are logged as warnings and not propagated — the recipe book is a cache of
+   * graph data, and stale counts until the next extraction run are acceptable.
+   */
+  void enrichRecipeBook() {
+    // Step 1: Aggregate usage counts by source FQN (non-inherited actions only)
+    String usageQuery =
+        """
+        MATCH (ma:MigrationAction)
+        WHERE NOT ma.isInherited
+        RETURN ma.source AS source, count(ma) AS usageCount
+        """;
+
+    Map<String, Integer> usageCounts = new java.util.HashMap<>();
+    neo4jClient.query(usageQuery)
+        .fetchAs(Map.class)
+        .mappedBy((ts, record) -> {
+          Map<String, Object> r = new java.util.HashMap<>();
+          r.put("source", record.get("source").asString(null));
+          r.put("usageCount", record.get("usageCount").asInt(0));
+          return r;
+        })
+        .all()
+        .forEach(row -> {
+          String source = (String) row.get("source");
+          if (source != null) {
+            usageCounts.put(source, (int) row.get("usageCount"));
+          }
+        });
+
+    // Step 2: Find unmapped Vaadin 7 types (COMPLEX_REWRITE with "Unknown Vaadin 7 type" context)
+    String unmappedQuery =
+        """
+        MATCH (ma:MigrationAction)
+        WHERE ma.source STARTS WITH 'com.vaadin.'
+          AND NOT ma.source STARTS WITH 'com.vaadin.flow.'
+          AND ma.automatable = 'NO'
+          AND ma.actionType = 'COMPLEX_REWRITE'
+          AND ma.context CONTAINS 'Unknown Vaadin 7 type'
+        RETURN DISTINCT ma.source AS source, count(ma) AS usageCount
+        ORDER BY usageCount DESC
+        """;
+
+    Map<String, Integer> unmappedTypes = new java.util.LinkedHashMap<>();
+    neo4jClient.query(unmappedQuery)
+        .fetchAs(Map.class)
+        .mappedBy((ts, record) -> {
+          Map<String, Object> r = new java.util.HashMap<>();
+          r.put("source", record.get("source").asString(null));
+          r.put("usageCount", record.get("usageCount").asInt(0));
+          return r;
+        })
+        .all()
+        .forEach(row -> {
+          String source = (String) row.get("source");
+          if (source != null) {
+            unmappedTypes.put(source, (int) row.get("usageCount"));
+          }
+        });
+
+    // Step 3: Update recipe book in memory
+    List<RecipeRule> currentRules = recipeBookRegistry.getRules();
+    List<RecipeRule> updatedRules = new ArrayList<>(currentRules);
+
+    // Update usage counts for existing rules
+    for (int i = 0; i < updatedRules.size(); i++) {
+      RecipeRule rule = updatedRules.get(i);
+      if (rule.source() != null && usageCounts.containsKey(rule.source())) {
+        int newCount = usageCounts.get(rule.source());
+        updatedRules.set(i, new RecipeRule(
+            rule.id(), rule.category(), rule.source(), rule.target(),
+            rule.actionType(), rule.automatable(), rule.context(),
+            rule.migrationSteps(), rule.status(), newCount,
+            rule.discoveredAt(), rule.isBase()));
+      }
+    }
+
+    // Add DISCOVERED rules for unmapped types not already in the list
+    java.util.Set<String> existingSources = updatedRules.stream()
+        .map(RecipeRule::source)
+        .collect(Collectors.toSet());
+
+    long discoveredRuleCount = updatedRules.stream()
+        .filter(r -> "DISCOVERED".equals(r.category()))
+        .count();
+
+    for (Map.Entry<String, Integer> entry : unmappedTypes.entrySet()) {
+      String unmappedSource = entry.getKey();
+      if (!existingSources.contains(unmappedSource)) {
+        discoveredRuleCount++;
+        String discoveredId = String.format("DISC-%03d", discoveredRuleCount);
+        RecipeRule discoveredRule = new RecipeRule(
+            discoveredId, "DISCOVERED", unmappedSource, null,
+            "COMPLEX_REWRITE", "NO", null,
+            List.of(), "NEEDS_MAPPING", entry.getValue(),
+            LocalDate.now().toString(), false);
+        updatedRules.add(discoveredRule);
+        existingSources.add(unmappedSource);
+        log.info("Auto-discovered unmapped Vaadin 7 type: {} (usageCount={})",
+            unmappedSource, entry.getValue());
+      }
+    }
+
+    // Step 4: Write back via registry (non-fatal on IOException)
+    try {
+      recipeBookRegistry.updateAndWrite(updatedRules);
+      log.info("enrichRecipeBook complete: {} rules written ({} usage count updates, {} discovered)",
+          updatedRules.size(), usageCounts.size(), unmappedTypes.size());
+    } catch (IOException e) {
+      log.warn("enrichRecipeBook: failed to write recipe book to disk (non-fatal): {}",
+          e.getMessage());
+    }
   }
 
   // ---------------------------------------------------------------------------
