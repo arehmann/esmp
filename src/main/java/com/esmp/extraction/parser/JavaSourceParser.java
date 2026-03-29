@@ -88,4 +88,47 @@ public class JavaSourceParser {
       return Collections.emptyList();
     }
   }
+
+  /**
+   * Parses Java source files with compiled class directories as classpath.
+   *
+   * <p>Used by module-aware extraction where each module's classpath is the compiled class
+   * directories of its upstream dependency modules.
+   *
+   * @param javaSourcePaths source files to parse
+   * @param projectRoot base directory for relative path computation
+   * @param compiledClasspathDirs directories containing .class files (not JARs)
+   * @return parsed SourceFile LSTs
+   */
+  public List<SourceFile> parse(
+      List<Path> javaSourcePaths, Path projectRoot, List<Path> compiledClasspathDirs) {
+    if (javaSourcePaths == null || javaSourcePaths.isEmpty()) {
+      return Collections.emptyList();
+    }
+
+    log.info("Parsing {} source files with {} compiled classpath directories",
+        javaSourcePaths.size(), compiledClasspathDirs.size());
+
+    InMemoryExecutionContext ctx = new InMemoryExecutionContext(
+        throwable -> log.warn("Parse error (file will be skipped): {}", throwable.getMessage()));
+
+    try {
+      JavaParser.Builder<? extends JavaParser, ?> builder =
+          JavaParser.fromJavaVersion()
+              .typeCache(new JavaTypeCache())
+              .logCompilationWarningsAndErrors(false);
+
+      if (!compiledClasspathDirs.isEmpty()) {
+        builder = builder.classpath(compiledClasspathDirs);
+      }
+
+      JavaParser javaParser = builder.build();
+      List<SourceFile> result = javaParser.parse(javaSourcePaths, projectRoot, ctx).toList();
+      log.info("Parsed {}/{} source files successfully", result.size(), javaSourcePaths.size());
+      return result;
+    } catch (Exception e) {
+      log.warn("Unexpected error during parsing -- returning empty result. Error: {}", e.getMessage());
+      return Collections.emptyList();
+    }
+  }
 }
