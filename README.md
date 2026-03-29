@@ -28,6 +28,7 @@ ESMP analyzes your legacy Java/Vaadin codebase, builds a knowledge graph of ever
   - [12. Docker Deployment & Source Access](#12-docker-deployment--source-access)
   - [13. Migration Engine (OpenRewrite)](#13-migration-engine-openrewrite)
   - [14. Recipe Book & Transitive Detection](#14-recipe-book--transitive-detection)
+  - [15. Module-Aware Batch Parsing](#15-module-aware-batch-parsing)
 - [REST API Reference](#rest-api-reference)
 - [Vaadin Dashboard Views](#vaadin-dashboard-views)
 - [Configuration Reference](#configuration-reference)
@@ -596,10 +597,11 @@ curl -X POST "http://localhost:8080/api/extraction/trigger" \
 
 # Monitor progress via SSE (optional — useful for large codebases)
 curl -N "http://localhost:8080/api/extraction/progress?jobId=abc-123"
-# Streams: {"phase":"VISITING","filesProcessed":150,"totalFiles":500}
+# Streams: {"module":null,"stage":"VISITING","filesProcessed":150,"totalFiles":500,"message":null,"durationMs":null}
+# For multi-module projects, "module" shows the current module name
 ```
 
-**Enterprise-scale support:** For codebases with 500+ files, extraction automatically parallelizes across multiple threads. Files are partitioned into batches (default 200), each processed by its own visitor instances. Results are merged and persisted using batched UNWIND MERGE Cypher for maximum throughput. Configure via `esmp.extraction.parallel-threshold` and `esmp.extraction.partition-size`.
+**Enterprise-scale support:** For codebases with 500+ files, extraction automatically parallelizes across multiple threads. Files are partitioned into batches (default 200), each processed by its own visitor instances. Results are merged and persisted using batched UNWIND MERGE Cypher for maximum throughput. Configure via `esmp.extraction.parallel-threshold` and `esmp.extraction.partition-size`. For multi-module Gradle/Maven projects, extraction automatically detects modules, builds a dependency graph, and processes them in topological wave order — see [Module-Aware Batch Parsing](#15-module-aware-batch-parsing).
 
 **What gets extracted:**
 
@@ -1900,6 +1902,105 @@ curl -X DELETE "http://localhost:8080/api/migration/recipe-book/rules/discovered
 # Reload recipe book from disk
 curl -X POST "http://localhost:8080/api/migration/recipe-book/reload"
 ```
+
+---
+
+### 15. Module-Aware Batch Parsing
+
+**What it does:** Automatically detects multi-module Gradle and Maven projects, builds an inter-module dependency graph, and orchestrates extraction in topological wave order — leaf modules first, dependent modules after, each with the correct classpath.
+
+```
+  Your Multi-Module Project
+         |
+         v
+  +----------------------------------+
+  |   ModuleDetectionService         |
+  |   detect(sourceRoot)             |
+  +----------------------------------+
+         |
+    +----+----+
+    |         |
+    v         v
+  Gradle    Maven
+  settings  pom.xml
+  .gradle   <modules>
+    |         |
+    v         v
+  +----------------------------------+
+  |        ModuleGraph               |
+  |  Kahn's BFS topological sort     |
+  |  Cycle detection fallback        |
+  +----------------------------------+
+         |
+         v
+  Wave 1: [module-a]          (no deps)
+  Wave 2: [module-b, module-d] (depend on a)
+  Wave 3: [module-c]          (depends on b)
+         |
+         v
+  +----------------------------------+
+  |   Per-Module Extraction          |
+  |   - Parse with upstream classes  |
+  |     as classpath                 |
+  |   - Visit (parallel if >500)    |
+  |   - Persist in own @Transaction |
+  +----------------------------------+
+         |
+         v
+  +----------------------------------+
+  |   Cross-Module Linking           |
+  |   (single final pass)            |
+  +----------------------------------+
+```
+
+**Key features:**
+
+- **Auto-detection:** Checks for `settings.gradle` (Gradle) or `pom.xml` with `<modules>` (Maven) at sourceRoot. Falls back to single-shot extraction when neither is found.
+- **Dependency-aware classpath:** Each module is parsed with the compiled class directories of its upstream dependency modules as classpath, enabling correct type resolution across modules.
+- **Wave ordering:** Modules with no inter-module dependencies are parsed first (wave 0). Modules depending on wave-0 modules are parsed next (wave 1), and so on. Circular dependencies are detected and assigned to a final wave.
+- **Per-module transactions:** Each module's nodes are persisted in a separate `@Transactional` boundary, preventing OOM from Neo4j SDN session cache accumulation on large projects.
+- **Failure isolation:** If one module fails to parse, extraction continues with remaining modules. Failures are logged and reported in the response.
+- **SSE progress:** Progress events now include `module` name and `stage` (PARSING, VISITING, PERSISTING, COMPLETE, LINKING, EXTRACTION_COMPLETE).
+
+**Gradle parsing:**
+
+- `settings.gradle`: Extracts module names from `include` statements — handles both `:module-name` and `module-name` syntax
+- `build.gradle`: Extracts inter-module dependencies from `project(':module-name')` references (implementation, otherProjects, etc.)
+
+**Maven parsing:**
+
+- Root `pom.xml`: Extracts module names from `<modules>/<module>` elements
+- Child `pom.xml`: Extracts inter-module dependencies from `<dependency>` elements where `<groupId>` matches the parent's groupId
+
+**How to use it:**
+
+```bash
+# Same API — module detection is automatic
+curl -X POST "http://localhost:8080/api/extraction/trigger" \
+  -H "Content-Type: application/json" \
+  -d '{"sourceRoot": "/path/to/multi-module-project"}'
+
+# Response now includes module breakdown:
+# {
+#   "classCount": 1250,
+#   "buildSystem": "GRADLE",
+#   "moduleSummaries": [
+#     {"moduleName": "core", "classCount": 200, "fileCount": 180, "durationMs": 3200},
+#     {"moduleName": "web", "classCount": 450, "fileCount": 400, "durationMs": 5100}
+#   ],
+#   "skippedModules": ["docs"]
+# }
+
+# SSE progress now shows per-module detail:
+curl -N "http://localhost:8080/api/extraction/progress?jobId=abc-123"
+# {"module":"core","stage":"PARSING","filesProcessed":0,"totalFiles":180}
+# {"module":"core","stage":"COMPLETE","filesProcessed":180,"totalFiles":180,"durationMs":3200}
+# {"module":"web","stage":"PARSING","filesProcessed":0,"totalFiles":400}
+```
+
+**Skipped modules:** Modules are skipped (and reported) if:
+- `src/main/java` directory doesn't exist in the module directory
+- `build/classes/java/main` (Gradle) or `target/classes` (Maven) directory doesn't exist — compiled classes are needed for classpath
 
 ---
 

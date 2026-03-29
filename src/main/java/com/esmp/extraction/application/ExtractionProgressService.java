@@ -98,9 +98,29 @@ public class ExtractionProgressService {
   /**
    * Progress event payload sent to SSE clients during extraction.
    *
-   * @param phase          current extraction phase name (e.g. SCANNING, PARSING, VISITING)
-   * @param filesProcessed number of files processed so far in this phase
-   * @param totalFiles     total number of files in the current phase
+   * <p>For module-aware extraction, {@code module} identifies which module is being processed and
+   * {@code stage} replaces the old {@code phase} field with more granular values
+   * (SCANNING, PARSING, VISITING, PERSISTING, LINKING, RISK_SCORING, MIGRATION, COMPLETE,
+   * EXTRACTION_COMPLETE, FAILED, SKIPPED).
+   *
+   * @param module         module name; null for cross-module stages and single-shot mode
+   * @param stage          current extraction stage name
+   * @param filesProcessed number of files processed so far in this stage
+   * @param totalFiles     total number of files in the current stage
+   * @param message        optional human-readable detail; may be null
+   * @param durationMs     duration in milliseconds; non-null for COMPLETE and EXTRACTION_COMPLETE stages
    */
-  public record ProgressEvent(String phase, int filesProcessed, int totalFiles) {}
+  public record ProgressEvent(
+      String module,
+      String stage,
+      int filesProcessed,
+      int totalFiles,
+      String message,
+      Long durationMs) {
+
+    /** Backward-compatible factory for existing single-shot call sites. */
+    public static ProgressEvent legacy(String phase, int processed, int total) {
+      return new ProgressEvent(null, phase, processed, total, null, null);
+    }
+  }
 }

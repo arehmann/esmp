@@ -86,7 +86,7 @@ class JavaSourceParserTest {
   void parser_handlesNullClasspathFile_gracefully() throws Exception {
     List<Path> sources = collectJavaSources(fixturesDir);
     // Should not throw even when classpath file path is null or empty
-    assertThatCode(() -> parser.parse(sources, projectRoot, null)).doesNotThrowAnyException();
+    assertThatCode(() -> parser.parse(sources, projectRoot, (String) null)).doesNotThrowAnyException();
     assertThatCode(() -> parser.parse(sources, projectRoot, "")).doesNotThrowAnyException();
   }
 

@@ -1,5 +1,6 @@
 package com.esmp.extraction.application;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import com.esmp.extraction.application.ExtractionProgressService.ProgressEvent;
@@ -31,7 +32,7 @@ class ExtractionProgressServiceTest {
 
     // Act & Assert — no exception should be thrown when sending a valid progress event
     assertThatCode(() ->
-        service.send(jobId, new ProgressEvent("VISITING", 5, 100))
+        service.send(jobId, ProgressEvent.legacy("VISITING", 5, 100))
     ).doesNotThrowAnyException();
   }
 
@@ -47,7 +48,7 @@ class ExtractionProgressServiceTest {
 
     // After completion, sending to the same jobId should be a no-op (emitter removed)
     assertThatCode(() ->
-        service.send(jobId, new ProgressEvent("VISITING", 10, 100))
+        service.send(jobId, ProgressEvent.legacy("VISITING", 10, 100))
     ).doesNotThrowAnyException();
   }
 
@@ -55,7 +56,7 @@ class ExtractionProgressServiceTest {
   void testSendToUnregisteredJob() {
     // Sending to a job with no registered emitter should be a graceful no-op
     assertThatCode(() ->
-        service.send("unknown-job-id", new ProgressEvent("SCANNING", 0, 50))
+        service.send("unknown-job-id", ProgressEvent.legacy("SCANNING", 0, 50))
     ).doesNotThrowAnyException();
   }
 
@@ -73,7 +74,7 @@ class ExtractionProgressServiceTest {
 
     // After error, sending again should be a no-op (emitter removed)
     assertThatCode(() ->
-        service.send(jobId, new ProgressEvent("VISITING", 1, 10))
+        service.send(jobId, ProgressEvent.legacy("VISITING", 1, 10))
     ).doesNotThrowAnyException();
   }
 
@@ -94,11 +95,34 @@ class ExtractionProgressServiceTest {
   }
 
   @Test
-  void testProgressEventRecord() {
-    // Verify ProgressEvent record construction and accessors
-    ProgressEvent event = new ProgressEvent("PARSING", 42, 200);
-    assert event.phase().equals("PARSING");
-    assert event.filesProcessed() == 42;
-    assert event.totalFiles() == 200;
+  void testProgressEventRecordLegacy() {
+    // Verify legacy factory creates ProgressEvent with null module/message/durationMs
+    ProgressEvent event = ProgressEvent.legacy("PARSING", 42, 200);
+    assertThat(event.stage()).isEqualTo("PARSING");
+    assertThat(event.filesProcessed()).isEqualTo(42);
+    assertThat(event.totalFiles()).isEqualTo(200);
+    assertThat(event.module()).isNull();
+    assertThat(event.message()).isNull();
+    assertThat(event.durationMs()).isNull();
+  }
+
+  @Test
+  void testProgressEventRecordModuleAware() {
+    // Verify module-aware ProgressEvent carries all fields
+    ProgressEvent event = new ProgressEvent("module-a", "PARSING", 10, 50, "Parsing module-a", null);
+    assertThat(event.module()).isEqualTo("module-a");
+    assertThat(event.stage()).isEqualTo("PARSING");
+    assertThat(event.filesProcessed()).isEqualTo(10);
+    assertThat(event.totalFiles()).isEqualTo(50);
+    assertThat(event.message()).isEqualTo("Parsing module-a");
+    assertThat(event.durationMs()).isNull();
+  }
+
+  @Test
+  void testProgressEventCompleteHasDurationMs() {
+    // COMPLETE events should carry durationMs
+    ProgressEvent event = new ProgressEvent("module-b", "COMPLETE", 30, 30, null, 1234L);
+    assertThat(event.stage()).isEqualTo("COMPLETE");
+    assertThat(event.durationMs()).isEqualTo(1234L);
   }
 }

@@ -1,0 +1,2 @@
+rootProject.name = 'gradle-multi'
+include ":module-a", ":module-b", "module-c"

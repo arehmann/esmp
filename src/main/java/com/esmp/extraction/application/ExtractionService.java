@@ -10,6 +10,7 @@ import com.esmp.extraction.model.ClassNode;
 import com.esmp.extraction.model.DBTableNode;
 import com.esmp.extraction.model.ModuleNode;
 import com.esmp.extraction.model.PackageNode;
+import com.esmp.extraction.parser.ClasspathLoader;
 import com.esmp.extraction.parser.JavaSourceParser;
 import com.esmp.extraction.persistence.AnnotationNodeRepository;
 import com.esmp.extraction.persistence.BusinessTermNodeRepository;
@@ -28,6 +29,9 @@ import com.esmp.extraction.visitor.JpaPatternVisitor;
 import com.esmp.extraction.visitor.LexiconVisitor;
 import com.esmp.extraction.visitor.MigrationPatternVisitor;
 import com.esmp.extraction.visitor.VaadinPatternVisitor;
+import com.esmp.extraction.module.ModuleDescriptor;
+import com.esmp.extraction.module.ModuleDetectionResult;
+import com.esmp.extraction.module.ModuleDetectionService;
 import com.esmp.migration.application.MigrationRecipeService;
 import com.esmp.migration.application.RecipeBookRegistry;
 import java.io.IOException;
@@ -35,6 +39,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -51,6 +56,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Orchestrates the full extraction pipeline: scan → parse → visit → map → persist → audit.
+ *
+ * <p>When the source root contains a recognized build file (settings.gradle or pom.xml with
+ * modules), the pipeline automatically switches to module-aware mode: each module is parsed with
+ * the compiled class directories of its upstream dependencies as the classpath, and each module's
+ * nodes are persisted in a separate transaction before proceeding to the next wave.
+ *
+ * <p>When no build file is detected (BuildSystem.NONE), the existing single-shot behaviour is
+ * used unchanged.
  *
  * <p>The pipeline is idempotent: re-running on unchanged files will MERGE existing Neo4j nodes
  * rather than creating duplicates, because {@link ClassNode}, {@code MethodNode}, and {@code
@@ -82,6 +95,8 @@ public class ExtractionService {
   private final ExtractionProgressService progressService;
   private final RecipeBookRegistry recipeBookRegistry;
   private final MigrationRecipeService migrationRecipeService;
+  private final ModuleDetectionService moduleDetectionService;
+  private final ClasspathLoader classpathLoader;
 
   public ExtractionService(
       JavaSourceParser javaSourceParser,
@@ -101,7 +116,9 @@ public class ExtractionService {
       @Qualifier("extractionExecutor") TaskExecutor extractionExecutor,
       ExtractionProgressService progressService,
       RecipeBookRegistry recipeBookRegistry,
-      MigrationRecipeService migrationRecipeService) {
+      MigrationRecipeService migrationRecipeService,
+      ModuleDetectionService moduleDetectionService,
+      ClasspathLoader classpathLoader) {
     this.javaSourceParser = javaSourceParser;
     this.mapper = mapper;
     this.classNodeRepository = classNodeRepository;
@@ -120,6 +137,8 @@ public class ExtractionService {
     this.progressService = progressService;
     this.recipeBookRegistry = recipeBookRegistry;
     this.migrationRecipeService = migrationRecipeService;
+    this.moduleDetectionService = moduleDetectionService;
+    this.classpathLoader = classpathLoader;
   }
 
   /**
@@ -131,13 +150,16 @@ public class ExtractionService {
    *     ExtractionConfig.classpathFile}
    * @return extraction result with counts and Vaadin audit report
    */
-  @Transactional("neo4jTransactionManager")
   public ExtractionResult extract(String sourceRoot, String classpathFile) {
     return extract(sourceRoot, classpathFile, null);
   }
 
   /**
    * Runs the full extraction pipeline with optional SSE progress streaming.
+   *
+   * <p>Detects the build system at {@code sourceRoot}. If a multi-module project is detected
+   * (Gradle or Maven), delegates to {@link #extractModuleAware}. Otherwise, runs the existing
+   * single-shot path via {@link #extractSingleShot}.
    *
    * @param sourceRoot    absolute path to the Java source directory; if null or blank, falls back to
    *                      {@code ExtractionConfig.sourceRoot}
@@ -147,11 +169,7 @@ public class ExtractionService {
    *                      {@link ExtractionProgressService}; may be {@code null} to disable streaming
    * @return extraction result with counts and Vaadin audit report
    */
-  @Transactional("neo4jTransactionManager")
   public ExtractionResult extract(String sourceRoot, String classpathFile, String jobId) {
-    long startMs = System.currentTimeMillis();
-
-    // Resolve source root
     String resolvedSourceRoot =
         (sourceRoot != null && !sourceRoot.isBlank())
             ? sourceRoot
@@ -162,6 +180,22 @@ public class ExtractionService {
             : extractionConfig.getClasspathFile();
 
     Path sourceRootPath = Path.of(resolvedSourceRoot);
+    ModuleDetectionResult moduleDetection = moduleDetectionService.detect(sourceRootPath);
+
+    if (moduleDetection.isMultiModule()) {
+      return extractModuleAware(sourceRootPath, resolvedClasspathFile, jobId, moduleDetection);
+    }
+
+    return extractSingleShot(sourceRootPath, resolvedClasspathFile, jobId);
+  }
+
+  /**
+   * Single-shot extraction: scans, parses, visits and persists all files in one transaction.
+   * Used when no recognized build file is found (BuildSystem.NONE).
+   */
+  @Transactional("neo4jTransactionManager")
+  ExtractionResult extractSingleShot(Path sourceRootPath, String classpathFile, String jobId) {
+    long startMs = System.currentTimeMillis();
 
     // Scan for .java files
     List<Path> javaPaths = scanJavaFiles(sourceRootPath);
@@ -170,7 +204,7 @@ public class ExtractionService {
 
     // Parse all Java source files into OpenRewrite LSTs
     List<SourceFile> sourceFiles =
-        javaSourceParser.parse(javaPaths, sourceRootPath, resolvedClasspathFile);
+        javaSourceParser.parse(javaPaths, sourceRootPath, classpathFile);
     sendProgress(jobId, "PARSING", sourceFiles.size(), sourceFiles.size());
 
     // Run visitors to collect AST data into accumulator — parallel path for large codebases
@@ -192,7 +226,7 @@ public class ExtractionService {
     List<ClassNode> classNodes = mapper.mapToClassNodes(accumulator);
     List<AnnotationNode> annotationNodes = mapper.mapToAnnotationNodes(accumulator);
     List<PackageNode> packageNodes = mapper.mapToPackageNodes(accumulator);
-    List<ModuleNode> moduleNodes = mapper.mapToModuleNodes(accumulator, resolvedSourceRoot);
+    List<ModuleNode> moduleNodes = mapper.mapToModuleNodes(accumulator, sourceRootPath.toString());
     List<DBTableNode> dbTableNodes = mapper.mapToDBTableNodes(accumulator);
     List<BusinessTermNode> businessTermNodes = mapper.mapToBusinessTermNodes(accumulator);
     List<MigrationActionNode> migrationActionNodes = mapper.mapToMigrationActionNodes(accumulator);
@@ -251,7 +285,194 @@ public class ExtractionService {
         errorCount,
         errors,
         auditReport,
-        durationMs);
+        durationMs,
+        null,
+        null,
+        null);
+  }
+
+  /**
+   * Module-aware extraction orchestrator (NOT @Transactional).
+   *
+   * <p>Processes modules in topological wave order. Each module's nodes are persisted in their own
+   * transaction via {@link #persistModuleNodes}. Cross-module linking, risk scoring, and migration
+   * post-processing run as a single final pass after all modules are persisted.
+   *
+   * <p>Individual module failures are caught, logged, and reported without blocking remaining
+   * modules (per MODEX-04 isolation requirement).
+   */
+  private ExtractionResult extractModuleAware(
+      Path sourceRootPath, String resolvedClasspathFile, String jobId,
+      ModuleDetectionResult detection) {
+
+    long startMs = System.currentTimeMillis();
+    log.info("Module-aware extraction: {} modules in {} waves, build system: {}",
+        detection.totalModules(), detection.waves().size(), detection.buildSystem());
+
+    // Log skipped modules
+    for (var skipped : detection.skippedModules()) {
+      log.warn("Skipped module {}: {}", skipped.name(), skipped.reason());
+      sendModuleProgress(jobId, skipped.name(), "SKIPPED", 0, 0, skipped.reason(), null);
+    }
+
+    // Track aggregate counts
+    ExtractionAccumulator mergedAccumulator = new ExtractionAccumulator();
+    List<String> allErrors = Collections.synchronizedList(new ArrayList<>());
+    List<ModuleExtractionSummary> moduleSummaries = new ArrayList<>();
+
+    // Build a map of module name -> ModuleDescriptor for classpath resolution
+    Map<String, ModuleDescriptor> allModules = new HashMap<>();
+    for (var wave : detection.waves()) {
+      for (var mod : wave) {
+        allModules.put(mod.name(), mod);
+      }
+    }
+
+    // Process waves sequentially; modules within a wave can be parallelized in the future
+    for (int waveIdx = 0; waveIdx < detection.waves().size(); waveIdx++) {
+      List<ModuleDescriptor> wave = detection.waves().get(waveIdx);
+      log.info("Processing wave {} with {} modules: {}", waveIdx,
+          wave.size(), wave.stream().map(ModuleDescriptor::name).toList());
+
+      for (ModuleDescriptor module : wave) {
+        try {
+          long moduleStartMs = System.currentTimeMillis();
+          int fileCount = module.javaFiles().size();
+
+          sendModuleProgress(jobId, module.name(), "PARSING", 0, fileCount, null, null);
+
+          // Build classpath: compiled class dirs of all dependency modules
+          List<Path> compiledClasspath = module.dependsOn().stream()
+              .map(allModules::get)
+              .filter(dep -> dep != null && Files.isDirectory(dep.compiledClassesDir()))
+              .map(ModuleDescriptor::compiledClassesDir)
+              .collect(Collectors.toList());
+
+          // Also add external JAR classpath if provided (for Vaadin JARs etc.)
+          List<Path> fullClasspath = new ArrayList<>(compiledClasspath);
+          if (resolvedClasspathFile != null && !resolvedClasspathFile.isBlank()) {
+            List<Path> externalJars = classpathLoader.load(resolvedClasspathFile);
+            fullClasspath.addAll(externalJars);
+          }
+
+          // Parse this module's files with module-specific classpath
+          List<SourceFile> sourceFiles = javaSourceParser.parse(
+              module.javaFiles(), sourceRootPath, fullClasspath);
+
+          sendModuleProgress(jobId, module.name(), "PARSING", fileCount, fileCount, null, null);
+
+          // Visit (parallel or sequential based on threshold)
+          sendModuleProgress(jobId, module.name(), "VISITING", 0, fileCount, null, null);
+          ExtractionAccumulator moduleAccumulator;
+          if (sourceFiles.size() > extractionConfig.getParallelThreshold()) {
+            moduleAccumulator = visitInParallel(sourceFiles, allErrors, jobId);
+          } else {
+            moduleAccumulator = visitSequentially(sourceFiles, allErrors, jobId);
+          }
+          sendModuleProgress(jobId, module.name(), "VISITING", fileCount, fileCount, null, null);
+
+          // Persist this module's nodes in its own transaction
+          sendModuleProgress(jobId, module.name(), "PERSISTING", 0, fileCount, null, null);
+          persistModuleNodes(moduleAccumulator, sourceRootPath.toString());
+          sendModuleProgress(jobId, module.name(), "PERSISTING", fileCount, fileCount, null, null);
+
+          // Merge into aggregate accumulator for cross-module linking
+          mergedAccumulator = mergedAccumulator.merge(moduleAccumulator);
+
+          long moduleDurationMs = System.currentTimeMillis() - moduleStartMs;
+          sendModuleProgress(jobId, module.name(), "COMPLETE", fileCount, fileCount, null, moduleDurationMs);
+
+          // Track per-module summary
+          moduleSummaries.add(new ModuleExtractionSummary(
+              module.name(), moduleAccumulator.getClasses().size(),
+              sourceFiles.size(), moduleDurationMs));
+
+          log.info("Module {} complete: {} classes, {} files, {}ms",
+              module.name(), moduleAccumulator.getClasses().size(), fileCount, moduleDurationMs);
+
+        } catch (Exception e) {
+          log.error("Module {} failed: {} -- continuing with remaining modules",
+              module.name(), e.getMessage(), e);
+          allErrors.add("Module " + module.name() + " failed: " + e.getMessage());
+          sendModuleProgress(jobId, module.name(), "FAILED", 0, module.javaFiles().size(),
+              "Error: " + e.getMessage(), null);
+        }
+      }
+    }
+
+    // Cross-module linking pass
+    sendModuleProgress(jobId, null, "LINKING", 0, 0, "Cross-module linking pass", null);
+    LinkingService.LinkingResult linkingResult = linkingService.linkAllRelationships(mergedAccumulator);
+
+    // Risk scoring
+    sendModuleProgress(jobId, null, "RISK_SCORING", 0, 0, "Computing risk scores", null);
+    riskService.computeAndPersistRiskScores();
+
+    // Migration post-processing
+    sendModuleProgress(jobId, null, "MIGRATION", 0, 0, "Migration post-processing", null);
+    migrationRecipeService.migrationPostProcessing();
+
+    // Vaadin audit
+    VaadinAuditReport auditReport = vaadinAuditService.generateReport(mergedAccumulator);
+
+    long durationMs = System.currentTimeMillis() - startMs;
+    sendModuleProgress(jobId, null, "EXTRACTION_COMPLETE", detection.totalJavaFiles(), detection.totalJavaFiles(),
+        String.format("%d modules, %d files", detection.totalModules(), detection.totalJavaFiles()), durationMs);
+
+    // Build skipped module name list for result
+    List<String> skippedModuleNames = detection.skippedModules().stream()
+        .map(s -> s.name() + ": " + s.reason())
+        .toList();
+
+    return new ExtractionResult(
+        mergedAccumulator.getClasses().size(),
+        mergedAccumulator.getMethods().size(),
+        mergedAccumulator.getFields().size(),
+        mergedAccumulator.getCallEdges().size(),
+        mergedAccumulator.getVaadinViews().size(),
+        mergedAccumulator.getVaadinComponents().size(),
+        mergedAccumulator.getVaadinDataBindings().size(),
+        0, // annotationCount from mapper — not separately tracked in module-aware path
+        0, // packageCount
+        0, // moduleCount
+        0, // tableCount
+        0, // businessTermCount
+        linkingResult,
+        allErrors.size(),
+        allErrors,
+        auditReport,
+        durationMs,
+        detection.buildSystem().name(),
+        moduleSummaries,
+        skippedModuleNames);
+  }
+
+  /**
+   * Persists all node types for a single module in a dedicated Neo4j transaction.
+   *
+   * <p>Called once per module in the module-aware extraction path. Each invocation commits
+   * independently, preventing SDN session-cache OOM for large multi-module projects.
+   */
+  @Transactional("neo4jTransactionManager")
+  void persistModuleNodes(ExtractionAccumulator accumulator, String sourceRoot) {
+    List<ClassNode> classNodes = mapper.mapToClassNodes(accumulator);
+    List<AnnotationNode> annotationNodes = mapper.mapToAnnotationNodes(accumulator);
+    List<PackageNode> packageNodes = mapper.mapToPackageNodes(accumulator);
+    List<ModuleNode> moduleNodes = mapper.mapToModuleNodes(accumulator, sourceRoot);
+    List<DBTableNode> dbTableNodes = mapper.mapToDBTableNodes(accumulator);
+    List<BusinessTermNode> businessTermNodes = mapper.mapToBusinessTermNodes(accumulator);
+    List<MigrationActionNode> migrationActionNodes = mapper.mapToMigrationActionNodes(accumulator);
+
+    classNodeRepository.saveAll(classNodes);
+    persistAnnotationNodesBatched(annotationNodes);
+    persistPackageNodesBatched(packageNodes);
+    persistModuleNodesBatched(moduleNodes);
+    persistDBTableNodesBatched(dbTableNodes);
+    persistBusinessTermNodes(businessTermNodes);
+    persistMigrationActionNodesBatched(migrationActionNodes);
+
+    log.info("Persisted module nodes: {} classes, {} annotations, {} packages",
+        classNodes.size(), annotationNodes.size(), packageNodes.size());
   }
 
   // =========================================================================
@@ -405,13 +626,25 @@ public class ExtractionService {
   }
 
   /**
-   * Sends a progress event via {@link ExtractionProgressService} when {@code jobId} is non-null.
+   * Sends a legacy (non-module-aware) progress event via {@link ExtractionProgressService}.
    * No-op if jobId is null or blank (synchronous / no-streaming path).
    */
   private void sendProgress(String jobId, String phase, int filesProcessed, int totalFiles) {
     if (jobId != null && !jobId.isBlank()) {
       progressService.send(jobId,
-          new ExtractionProgressService.ProgressEvent(phase, filesProcessed, totalFiles));
+          ExtractionProgressService.ProgressEvent.legacy(phase, filesProcessed, totalFiles));
+    }
+  }
+
+  /**
+   * Sends a module-aware progress event via {@link ExtractionProgressService}.
+   * No-op if jobId is null or blank.
+   */
+  private void sendModuleProgress(String jobId, String module, String stage,
+                                   int filesProcessed, int totalFiles, String message, Long durationMs) {
+    if (jobId != null && !jobId.isBlank()) {
+      progressService.send(jobId,
+          new ExtractionProgressService.ProgressEvent(module, stage, filesProcessed, totalFiles, message, durationMs));
     }
   }
 
@@ -611,6 +844,13 @@ public class ExtractionService {
     }
   }
 
+  /** Per-module extraction summary for reporting in multi-module mode. */
+  public record ModuleExtractionSummary(
+      String moduleName,
+      int classCount,
+      int fileCount,
+      long durationMs) {}
+
   /** Result of a single extraction run. */
   public record ExtractionResult(
       int classCount,
@@ -629,5 +869,8 @@ public class ExtractionService {
       int errorCount,
       List<String> errors,
       VaadinAuditReport auditReport,
-      long durationMs) {}
+      long durationMs,
+      String buildSystem,
+      List<ModuleExtractionSummary> moduleSummaries,
+      List<String> skippedModules) {}
 }
