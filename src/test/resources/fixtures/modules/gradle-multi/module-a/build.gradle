@@ -1,0 +1,3 @@
+dependencies {
+    implementation 'org.example:external-lib:1.0'
+}
