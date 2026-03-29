@@ -3,11 +3,27 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
+stopped_at: Completed 18-module-aware-batch-parsing-for-enterprise-scale 18-01-PLAN.md
+last_updated: "2026-03-29T11:27:03.109Z"
+last_activity: 2026-03-04 — Roadmap created, project initialized
+progress:
+  total_phases: 17
+  completed_phases: 17
+  total_plans: 44
+  completed_plans: 44
+  percent: 100
+---
+
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: planning
 stopped_at: Completed 17-migration-recipe-book-transitive-detection 17-03-PLAN.md
 last_updated: "2026-03-28T18:47:30.723Z"
 last_activity: 2026-03-04 — Roadmap created, project initialized
 progress:
-  total_phases: 17
+  [██████████] 100%
   completed_phases: 17
   total_plans: 44
   completed_plans: 44
@@ -399,6 +415,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 17-migration-recipe-book-transitive-detection P01 | 21min | 2 tasks | 15 files |
 | Phase 17-migration-recipe-book-transitive-detection P02 | 32min | 2 tasks | 5 files |
 | Phase 17-migration-recipe-book-transitive-detection P03 | 8min | 2 tasks | 8 files |
+| Phase 18-module-aware-batch-parsing-for-enterprise-scale P01 | 4min | 1 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -516,6 +533,9 @@ Recent decisions affecting current work:
 - [Phase 17]: MigrationActionEntry.inheritedFrom and vaadinAncestor both map from ma.vaadinAncestor in Cypher — semantic distinction for API consumers only
 - [Phase 17]: coverageByType and coverageByUsage computed via 2 separate Cypher queries after primary aggregation to avoid cartesian product
 - [Phase 17]: RecipeBookController.deleteRule returns 403 for isBase=true rules — base rule protection is server-enforced via registry flag
+- [Phase 18-module-aware-batch-parsing-for-enterprise-scale]: ModuleGraph stores skippedModules separately from waves — skipped modules have no valid source so they cannot be in any wave
+- [Phase 18-module-aware-batch-parsing-for-enterprise-scale]: settings.gradle include parsing uses GRADLE_INCLUDE_PATTERN capturing group after optional colon/dot prefix — handles both ':module-a' and 'module-a' syntax
+- [Phase 18-module-aware-batch-parsing-for-enterprise-scale]: Maven inter-module dep matching accepts ${project.groupId} placeholder in addition to literal parent groupId; external entity resolution disabled for XXE prevention
 
 ### Roadmap Evolution
 
@@ -535,6 +555,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-28T18:41:45.635Z
-Stopped at: Completed 17-migration-recipe-book-transitive-detection 17-03-PLAN.md
+Last session: 2026-03-29T11:27:03.102Z
+Stopped at: Completed 18-module-aware-batch-parsing-for-enterprise-scale 18-01-PLAN.md
 Resume file: None
