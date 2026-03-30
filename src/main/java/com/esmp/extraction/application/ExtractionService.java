@@ -186,6 +186,11 @@ public class ExtractionService {
 
     Path sourceRootPath = Path.of(resolvedSourceRoot);
 
+    // Clean existing extraction graph before full re-extraction.
+    // Without this, ClassNode saveAll() hits OptimisticLockingFailureException because
+    // existing nodes have version > 0 but new transient instances have version = null.
+    cleanGraphBeforeExtraction();
+
     // Load NLS entries once for this extraction run — used by LexiconVisitor for domain terms
     this.nlsMap = nlsXmlParser.parse(sourceRootPath);
     log.info("Loaded {} NLS entries for domain lexicon enrichment", nlsMap.size());
@@ -260,6 +265,10 @@ public class ExtractionService {
     // Persist migration action nodes using batched UNWIND MERGE
     // Must persist BEFORE linkAllRelationships() so HAS_MIGRATION_ACTION MATCH can find them
     persistMigrationActionNodesBatched(migrationActionNodes);
+
+    // Resolve unresolved superClass values from source imports before linking.
+    // Creates stub nodes for external types (Vaadin base classes) so EXTENDS chains connect.
+    resolveSuperClassesFromSource(sourceRootPath);
 
     // Run linking pass — creates cross-class relationships via idempotent Cypher MERGE
     LinkingService.LinkingResult linkingResult = linkingService.linkAllRelationships(accumulator);
@@ -414,6 +423,11 @@ public class ExtractionService {
         }
       }
     }
+
+    // Resolve unresolved superClass values from source imports before linking.
+    // Creates stub nodes for external types (Vaadin base classes) so EXTENDS chains connect.
+    sendModuleProgress(jobId, null, "RESOLVING_SUPERTYPES", 0, 0, "Resolving unresolved superClass values", null);
+    resolveSuperClassesFromSource(sourceRootPath);
 
     // Cross-module linking pass
     sendModuleProgress(jobId, null, "LINKING", 0, 0, "Cross-module linking pass", null);
@@ -662,6 +676,176 @@ public class ExtractionService {
           new ExtractionProgressService.ProgressEvent(module, stage, filesProcessed, totalFiles, message, durationMs));
     }
   }
+
+  // =========================================================================
+  // Pre-extraction graph cleanup
+  // =========================================================================
+
+  /**
+   * Removes all extraction-generated nodes before a full re-extraction.
+   *
+   * <p>Prevents {@code OptimisticLockingFailureException} caused by SDN's {@code saveAll()}
+   * encountering existing ClassNodes with {@code @Version > 0} while new transient instances
+   * have {@code version = null}. Runs in its own transaction so the cleanup commits before
+   * any module persistence begins.
+   *
+   * <p>Business-term nodes with {@code curated = true} are preserved to protect human curation.
+   * All other extraction nodes (JavaClass, JavaMethod, JavaField, JavaAnnotation, JavaPackage,
+   * JavaModule, DBTable, MigrationAction, non-curated BusinessTerm) are DETACH DELETEd.
+   */
+  void cleanGraphBeforeExtraction() {
+    long startMs = System.currentTimeMillis();
+
+    // Delete class nodes and their owned children (methods, fields, relationships)
+    neo4jClient.query(
+        "MATCH (n) WHERE n:JavaClass OR n:JavaMethod OR n:JavaField DETACH DELETE n").run();
+
+    // Delete shared node types (annotations, packages, modules, tables)
+    neo4jClient.query(
+        "MATCH (n) WHERE n:JavaAnnotation OR n:JavaPackage OR n:JavaModule OR n:DBTable DETACH DELETE n").run();
+
+    // Delete migration action nodes (re-created by pipeline)
+    neo4jClient.query("MATCH (n:MigrationAction) DETACH DELETE n").run();
+
+    // Delete only non-curated business terms (curated ones survive via MERGE semantics)
+    neo4jClient.query("MATCH (t:BusinessTerm) WHERE t.curated <> true OR t.curated IS NULL DETACH DELETE t").run();
+
+    long durationMs = System.currentTimeMillis() - startMs;
+    log.info("Cleaned extraction graph before re-extraction in {}ms", durationMs);
+  }
+
+  // =========================================================================
+  // Post-extraction superClass resolution from source imports
+  // =========================================================================
+
+  /**
+   * Resolves unresolved superClass values by scanning Java source files for import statements.
+   *
+   * <p>When OpenRewrite cannot resolve a type (e.g., Vaadin base classes not on classpath),
+   * {@code ClassMetadataVisitor} stores {@code null} as superClass. This method scans each source
+   * file for its {@code import} declarations and {@code extends} clause, matches the simple name
+   * to an imported FQN, and patches the Neo4j node's {@code superClass} property.
+   *
+   * <p>For external library types (e.g., {@code com.vaadin.ui.CustomComponent}), stub JavaClass
+   * nodes are created so that {@code EXTENDS} edges can be linked by
+   * {@link LinkingService#linkInheritanceRelationships()}.
+   *
+   * @param sourceRootPath root directory to scan for .java files
+   * @return count of superClass values resolved
+   */
+  int resolveSuperClassesFromSource(Path sourceRootPath) {
+    long startMs = System.currentTimeMillis();
+    List<Path> javaPaths = scanJavaFiles(sourceRootPath);
+    int resolvedCount = 0;
+
+    // Collect all resolved (simpleName → FQN) mappings and the classes that need patching
+    List<Map<String, String>> patches = new ArrayList<>(); // classFqn → resolvedSuperClass
+    java.util.Set<String> stubFqns = new java.util.HashSet<>(); // external types needing stub nodes
+
+    // Also collect all known FQNs from the graph for lookup
+    java.util.Set<String> knownFqns = new java.util.HashSet<>();
+    neo4jClient.query("MATCH (c:JavaClass) RETURN c.fullyQualifiedName AS fqn")
+        .fetchAs(String.class)
+        .mappedBy((ts, record) -> record.get("fqn").asString(null))
+        .all()
+        .forEach(fqn -> { if (fqn != null) knownFqns.add(fqn); });
+
+    for (Path javaPath : javaPaths) {
+      try {
+        List<String> lines = Files.readAllLines(javaPath);
+        String packageName = null;
+        Map<String, String> imports = new HashMap<>(); // simpleName → FQN
+        String extendsSimpleName = null;
+        String classFqn = null;
+
+        for (String line : lines) {
+          String trimmed = line.trim();
+
+          // Extract package
+          if (trimmed.startsWith("package ") && trimmed.endsWith(";")) {
+            packageName = trimmed.substring(8, trimmed.length() - 1).trim();
+          }
+
+          // Extract imports: import com.vaadin.ui.CustomComponent;
+          if (trimmed.startsWith("import ") && trimmed.endsWith(";")
+              && !trimmed.contains("*") && !trimmed.startsWith("import static ")) {
+            String importFqn = trimmed.substring(7, trimmed.length() - 1).trim();
+            int lastDot = importFqn.lastIndexOf('.');
+            if (lastDot > 0) {
+              imports.put(importFqn.substring(lastDot + 1), importFqn);
+            }
+          }
+
+          // Extract class declaration with extends
+          // Matches: public class Foo extends Bar {
+          java.util.regex.Matcher matcher = EXTENDS_PATTERN.matcher(trimmed);
+          if (matcher.find()) {
+            String simpleName = matcher.group(1);
+            extendsSimpleName = matcher.group(2);
+            if (packageName != null) {
+              classFqn = packageName + "." + simpleName;
+            }
+            break; // Only care about the first class declaration per file
+          }
+        }
+
+        // If we found a class that extends something, check if it needs resolution
+        if (classFqn != null && extendsSimpleName != null) {
+          String resolvedFqn = imports.get(extendsSimpleName);
+          if (resolvedFqn != null) {
+            patches.add(Map.of("classFqn", classFqn, "superClass", resolvedFqn));
+            if (!knownFqns.contains(resolvedFqn)) {
+              stubFqns.add(resolvedFqn);
+            }
+          }
+        }
+      } catch (IOException e) {
+        log.debug("Could not read {} for superClass resolution: {}", javaPath, e.getMessage());
+      }
+    }
+
+    // Create stub nodes for external types (Vaadin base classes etc.)
+    if (!stubFqns.isEmpty()) {
+      String stubCypher = "UNWIND $fqns AS fqn "
+          + "MERGE (c:JavaClass {fullyQualifiedName: fqn}) "
+          + "ON CREATE SET c.simpleName = split(fqn, '.')[-1], "
+          + "  c.packageName = substring(fqn, 0, size(fqn) - size(split(fqn, '.')[-1]) - 1), "
+          + "  c.isInterface = false, c.isAbstract = false, c.isEnum = false, "
+          + "  c.version = 0";
+      List<String> fqnList = new ArrayList<>(stubFqns);
+      neo4jClient.query(stubCypher).bind(fqnList).to("fqns").run();
+      log.info("Created {} stub JavaClass nodes for external types", stubFqns.size());
+    }
+
+    // Patch superClass property on classes that had null/unknown values
+    if (!patches.isEmpty()) {
+      String patchCypher = "UNWIND $rows AS row "
+          + "MATCH (c:JavaClass {fullyQualifiedName: row.classFqn}) "
+          + "WHERE c.superClass IS NULL OR c.superClass = '' OR c.superClass STARTS WITH '<' "
+          + "SET c.superClass = row.superClass "
+          + "RETURN count(c) AS cnt";
+      for (int i = 0; i < patches.size(); i += BATCH_SIZE) {
+        var batch = patches.subList(i, Math.min(i + BATCH_SIZE, patches.size()));
+        Long cnt = neo4jClient.query(patchCypher)
+            .bind(batch).to("rows")
+            .fetchAs(Long.class)
+            .mappedBy((ts, record) -> record.get("cnt").asLong())
+            .one()
+            .orElse(0L);
+        resolvedCount += cnt.intValue();
+      }
+    }
+
+    long durationMs = System.currentTimeMillis() - startMs;
+    log.info("SuperClass resolution: {} patched, {} stubs created in {}ms",
+        resolvedCount, stubFqns.size(), durationMs);
+    return resolvedCount;
+  }
+
+  /** Pattern matching class declarations with extends: {@code class Foo extends Bar}. */
+  private static final java.util.regex.Pattern EXTENDS_PATTERN = java.util.regex.Pattern.compile(
+      "(?:public|protected|private)?\\s*(?:abstract\\s+)?(?:class|interface)\\s+(\\w+)"
+      + "(?:<[^>]*>)?\\s+extends\\s+(\\w+)");
 
   // =========================================================================
   // Batched UNWIND MERGE persistence helpers
