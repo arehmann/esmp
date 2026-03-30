@@ -162,6 +162,35 @@ public class LexiconService {
         .one();
   }
 
+  /**
+   * Returns all business terms linked to the given class via outgoing USES_TERM edges.
+   *
+   * <p>Performs a graph traversal from the JavaClass node identified by {@code classFqn} to all
+   * BusinessTerm nodes it references. {@code relatedClassFqns} is always empty in the result — the
+   * caller only needs the terms themselves, not their reverse linkages.
+   *
+   * @param classFqn the fully-qualified class name (e.g., "com.example.OrderService")
+   * @return list of business terms linked to that class; empty list if the class has no terms or
+   *     does not exist
+   */
+  public List<BusinessTermResponse> findByClassFqn(String classFqn) {
+    if (classFqn == null || classFqn.isBlank()) {
+      return List.of();
+    }
+    String cypher = """
+        MATCH (c:JavaClass {fullyQualifiedName: $fqn})-[:USES_TERM]->(t:BusinessTerm)
+        RETURN t
+        """;
+
+    Collection<BusinessTermResponse> results = neo4jClient.query(cypher)
+        .bindAll(Map.of("fqn", classFqn))
+        .fetchAs(BusinessTermResponse.class)
+        .mappedBy((typeSystem, record) -> mapNodeToResponse(record.get("t").asNode(), List.of()))
+        .all();
+
+    return new ArrayList<>(results);
+  }
+
   // ---------------------------------------------------------------------------
   // Mapping helpers
   // ---------------------------------------------------------------------------

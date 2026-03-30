@@ -14,10 +14,11 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * REST controller for domain lexicon operations.
  *
- * <p>Exposes 3 endpoints:
+ * <p>Exposes 4 endpoints:
  * <ol>
  *   <li>GET /api/lexicon/ — list all business terms with optional filtering
  *   <li>GET /api/lexicon/{termId} — single term detail with related class FQNs (USES_TERM edges)
+ *   <li>GET /api/lexicon/by-class/{fqn} — all terms linked to a class via USES_TERM edges
  *   <li>PUT /api/lexicon/{termId} — update a term's definition, criticality, synonyms;
  *       sets curated=true
  * </ol>
@@ -64,6 +65,18 @@ public class LexiconController {
     return lexiconService.findByTermId(termId)
         .map(ResponseEntity::ok)
         .orElse(ResponseEntity.notFound().build());
+  }
+
+  /**
+   * Returns all business terms linked to the given class via USES_TERM edges.
+   *
+   * @param fqn the fully-qualified class name (e.g., "com.example.OrderService")
+   * @return 200 with list of {@link BusinessTermResponse} (relatedClassFqns is empty); empty list
+   *     if the class has no linked terms or does not exist
+   */
+  @GetMapping("/by-class/{fqn:.+}")
+  public ResponseEntity<List<BusinessTermResponse>> getTermsByClass(@PathVariable String fqn) {
+    return ResponseEntity.ok(lexiconService.findByClassFqn(fqn));
   }
 
   /**
