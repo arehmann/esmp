@@ -12,6 +12,7 @@ import com.esmp.extraction.model.ModuleNode;
 import com.esmp.extraction.model.PackageNode;
 import com.esmp.extraction.parser.ClasspathLoader;
 import com.esmp.extraction.parser.JavaSourceParser;
+import com.esmp.extraction.parser.NlsXmlParser;
 import com.esmp.extraction.persistence.AnnotationNodeRepository;
 import com.esmp.extraction.persistence.BusinessTermNodeRepository;
 import com.esmp.extraction.persistence.ClassNodeRepository;
@@ -96,6 +97,10 @@ public class ExtractionService {
   private final RecipeBookRegistry recipeBookRegistry;
   private final MigrationRecipeService migrationRecipeService;
   private final ModuleDetectionService moduleDetectionService;
+  private final NlsXmlParser nlsXmlParser = new NlsXmlParser();
+
+  /** NLS entries loaded at the start of each extraction run. Thread-safe (immutable after load). */
+  private volatile Map<String, NlsXmlParser.NlsEntry> nlsMap = Collections.emptyMap();
   private final ClasspathLoader classpathLoader;
 
   public ExtractionService(
@@ -180,6 +185,11 @@ public class ExtractionService {
             : extractionConfig.getClasspathFile();
 
     Path sourceRootPath = Path.of(resolvedSourceRoot);
+
+    // Load NLS entries once for this extraction run — used by LexiconVisitor for domain terms
+    this.nlsMap = nlsXmlParser.parse(sourceRootPath);
+    log.info("Loaded {} NLS entries for domain lexicon enrichment", nlsMap.size());
+
     ModuleDetectionResult moduleDetection = moduleDetectionService.detect(sourceRootPath);
 
     if (moduleDetection.isMultiModule()) {
@@ -503,7 +513,7 @@ public class ExtractionService {
     VaadinPatternVisitor vaadinPatternVisitor = new VaadinPatternVisitor();
     DependencyVisitor dependencyVisitor = new DependencyVisitor();
     JpaPatternVisitor jpaPatternVisitor = new JpaPatternVisitor();
-    LexiconVisitor lexiconVisitor = new LexiconVisitor();
+    LexiconVisitor lexiconVisitor = new LexiconVisitor(nlsMap);
     ComplexityVisitor complexityVisitor = new ComplexityVisitor();
     MigrationPatternVisitor migrationPatternVisitor = new MigrationPatternVisitor(recipeBookRegistry);
 
@@ -604,7 +614,7 @@ public class ExtractionService {
     VaadinPatternVisitor vaadinPatternVisitor = new VaadinPatternVisitor();
     DependencyVisitor dependencyVisitor = new DependencyVisitor();
     JpaPatternVisitor jpaPatternVisitor = new JpaPatternVisitor();
-    LexiconVisitor lexiconVisitor = new LexiconVisitor();
+    LexiconVisitor lexiconVisitor = new LexiconVisitor(nlsMap);
     ComplexityVisitor complexityVisitor = new ComplexityVisitor();
     MigrationPatternVisitor migrationPatternVisitor = new MigrationPatternVisitor(recipeBookRegistry);
 

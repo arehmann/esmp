@@ -1,11 +1,15 @@
 package com.esmp.extraction.visitor;
 
+import com.esmp.extraction.parser.NlsXmlParser;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Javadoc;
 import org.openrewrite.java.tree.Statement;
@@ -20,6 +24,9 @@ import org.openrewrite.java.tree.Statement;
  *       suffixes (Service, Repository, Controller, etc.) are stripped.
  *   <li><b>ENUM_CONSTANT</b>: enum constant names are split on underscores, generic constants
  *       (ACTIVE, TRUE, etc.) are filtered by stop-words.
+ *   <li><b>NLS</b>: {@code getNLS("key")} method invocations are detected and resolved against
+ *       pre-loaded NLS XML files. Each NLS key becomes a business term with the English value as
+ *       display name and the German value as definition (primary business language).
  *   <li>Class-level Javadoc is extracted and used to seed the {@code definition} field of
  *       extracted terms from that class.
  * </ul>
@@ -28,6 +35,22 @@ import org.openrewrite.java.tree.Statement;
  * after the visitor pass, using table mappings populated by JpaPatternVisitor.
  */
 public class LexiconVisitor extends JavaIsoVisitor<ExtractionAccumulator> {
+
+  private final Map<String, NlsXmlParser.NlsEntry> nlsMap;
+
+  /** Creates a visitor without NLS support (backward-compatible). */
+  public LexiconVisitor() {
+    this(Collections.emptyMap());
+  }
+
+  /**
+   * Creates a visitor with NLS lookup support.
+   *
+   * @param nlsMap pre-loaded NLS entries keyed by resource key
+   */
+  public LexiconVisitor(Map<String, NlsXmlParser.NlsEntry> nlsMap) {
+    this.nlsMap = nlsMap;
+  }
 
   // Technical class name suffixes that are structural, not domain terms
   private static final Set<String> STOP_SUFFIXES =
@@ -97,6 +120,57 @@ public class LexiconVisitor extends JavaIsoVisitor<ExtractionAccumulator> {
 
     // MUST recurse to process nested/inner classes
     return super.visitClassDeclaration(cd, acc);
+  }
+
+  /**
+   * Detects {@code getNLS("key")} method invocations and resolves them against the NLS map.
+   * Each resolved key produces a business term with the English value as display name and the
+   * German value as definition.
+   */
+  @Override
+  public J.MethodInvocation visitMethodInvocation(
+      J.MethodInvocation method, ExtractionAccumulator acc) {
+    if (!nlsMap.isEmpty()) {
+      String methodName = method.getSimpleName();
+      if ("getNLS".equals(methodName) || "nls".equals(methodName)) {
+        List<Expression> args = method.getArguments();
+        if (!args.isEmpty() && args.get(0) instanceof J.Literal literal) {
+          Object value = literal.getValue();
+          if (value instanceof String nlsKey) {
+            NlsXmlParser.NlsEntry entry = nlsMap.get(nlsKey);
+            if (entry != null) {
+              // Resolve current class FQN from cursor
+              String classFqn = resolveEnclosingClassFqn();
+              if (classFqn != null) {
+                acc.addBusinessTerm(
+                    entry.key(),        // termId = NLS key
+                    entry.englishValue(), // displayName = English value
+                    classFqn,
+                    entry.category(),    // sourceType = NLS_LABEL, NLS_MESSAGE, etc.
+                    entry.germanValue()  // javadocSeed = German value (business definition)
+                );
+              }
+            }
+          }
+        }
+      }
+    }
+    return super.visitMethodInvocation(method, acc);
+  }
+
+  /**
+   * Walks the cursor stack to find the enclosing class declaration and returns its FQN.
+   */
+  private String resolveEnclosingClassFqn() {
+    var cursor = getCursor();
+    while (cursor != null) {
+      Object val = cursor.getValue();
+      if (val instanceof J.ClassDeclaration cd && cd.getType() != null) {
+        return cd.getType().getFullyQualifiedName();
+      }
+      cursor = cursor.getParent();
+    }
+    return null;
   }
 
   // ---------------------------------------------------------------------------

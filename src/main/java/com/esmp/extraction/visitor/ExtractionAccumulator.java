@@ -337,6 +337,35 @@ public class ExtractionAccumulator {
     businessTerms.get(termId).allSourceFqns.add(sourceFqn);
   }
 
+  /**
+   * Adds an NLS-sourced business term with explicit termId and displayName.
+   *
+   * <p>Unlike the word-based overload, this preserves the original key as the termId and uses
+   * the provided displayName verbatim (no lowercasing or capitalization).
+   *
+   * @param termId      the NLS resource key (e.g., "lblBranchOffice")
+   * @param displayName the English translation (e.g., "Branch office")
+   * @param sourceFqn   FQN of the class containing the getNLS() call
+   * @param sourceType  NLS category (e.g., "NLS_LABEL", "NLS_MESSAGE")
+   * @param definition  the German translation (primary business definition)
+   */
+  public void addBusinessTerm(
+      String termId, String displayName, String sourceFqn, String sourceType, String definition) {
+    if (sourceType != null && sourceType.startsWith("NLS_")) {
+      // NLS terms: use key as-is for termId, preserve displayName
+      businessTerms.computeIfAbsent(
+          termId, id -> new BusinessTermData(id, displayName, sourceFqn, sourceType, definition));
+      businessTerms.get(termId).allSourceFqns.add(sourceFqn);
+    } else {
+      // Fallback to word-based extraction for non-NLS terms
+      String normalizedId = termId.toLowerCase().trim();
+      businessTerms.computeIfAbsent(
+          normalizedId,
+          id -> new BusinessTermData(id, capitalize(displayName), sourceFqn, sourceType, definition));
+      businessTerms.get(normalizedId).allSourceFqns.add(sourceFqn);
+    }
+  }
+
   private static String capitalize(String word) {
     if (word == null || word.isEmpty()) return word;
     return Character.toUpperCase(word.charAt(0)) + word.substring(1).toLowerCase();
