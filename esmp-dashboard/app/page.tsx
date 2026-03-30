@@ -7,6 +7,8 @@ import {
   Bot,
   Wrench,
   AlertCircle,
+  Shield,
+  CheckCircle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -33,74 +35,88 @@ export default function OverviewPage() {
         .slice(0, 20)
     : [];
 
+  // Derived counts
+  const totalClasses = summary?.totalClasses ?? 0;
+  const affected = summary?.classesWithActions ?? 0;
+  const clean = totalClasses - affected;
+  const autoCount = summary?.fullyAutomatableClasses ?? 0;
+  const aiCount = (summary?.partiallyAutomatableClasses ?? 0) + (summary?.needsAiOnlyClasses ?? 0);
+  const manualCount = affected - autoCount - aiCount;
+
   return (
     <div className="space-y-6">
       <h2 className="text-lg font-semibold">Overview</h2>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-5 gap-4">
-        <KpiCard
-          title="Total Classes"
-          value={summary?.totalClasses ?? "\u2014"}
-          icon={Layers}
-          loading={summaryLoading}
-        />
-        <KpiCard
-          title="Automatable"
-          value={
-            summary
-              ? summary.totalClasses > 0
-                ? formatPercent(summary.fullyAutomatableClasses / summary.totalClasses)
-                : "0.0%"
-              : "\u2014"
-          }
-          subtitle={summary ? `${summary.fullyAutomatableClasses} classes` : undefined}
-          icon={Zap}
-          color="text-auto-full"
-          loading={summaryLoading}
-        />
-        <KpiCard
-          title="AI-Assisted"
-          value={
-            summary
-              ? summary.totalClasses > 0
-                ? formatPercent(
-                    (summary.partiallyAutomatableClasses + summary.needsAiOnlyClasses) /
-                      summary.totalClasses
-                  )
-                : "0.0%"
-              : "\u2014"
-          }
-          icon={Bot}
-          color="text-auto-ai"
-          loading={summaryLoading}
-        />
-        <KpiCard
-          title="Manual Rewrite"
-          value={
-            summary
-              ? summary.totalClasses > 0
-                ? formatPercent(
-                    (summary.totalClasses -
-                      summary.fullyAutomatableClasses -
-                      summary.partiallyAutomatableClasses -
-                      summary.needsAiOnlyClasses) /
-                      summary.totalClasses
-                  )
-                : "0.0%"
-              : "\u2014"
-          }
-          icon={Wrench}
-          color="text-auto-manual"
-          loading={summaryLoading}
-        />
-        <KpiCard
-          title="Recipe Gaps"
-          value={gaps?.length ?? "\u2014"}
-          icon={AlertCircle}
-          color="text-amber-500"
-          loading={gapsLoading}
-        />
+      {/* Project Scope — row 1 */}
+      <div>
+        <p className="mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          Project Scope
+        </p>
+        <div className="grid grid-cols-3 gap-4">
+          <KpiCard
+            title="Total Classes"
+            value={totalClasses || "\u2014"}
+            icon={Layers}
+            loading={summaryLoading}
+          />
+          <KpiCard
+            title="Vaadin-Affected"
+            value={affected || "\u2014"}
+            subtitle={totalClasses > 0 ? `${formatPercent(affected / totalClasses)} of codebase` : undefined}
+            icon={Shield}
+            color="text-amber-500"
+            loading={summaryLoading}
+          />
+          <KpiCard
+            title="Clean (No Migration)"
+            value={clean || "\u2014"}
+            subtitle={totalClasses > 0 ? `${formatPercent(clean / totalClasses)} of codebase` : undefined}
+            icon={CheckCircle}
+            color="text-green-500"
+            loading={summaryLoading}
+          />
+        </div>
+      </div>
+
+      {/* Migration Workload — row 2 */}
+      <div>
+        <p className="mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          Migration Workload ({affected} classes)
+        </p>
+        <div className="grid grid-cols-4 gap-4">
+          <KpiCard
+            title="Automatable"
+            value={autoCount || "\u2014"}
+            subtitle={affected > 0 ? `${formatPercent(autoCount / affected)} of affected` : undefined}
+            icon={Zap}
+            color="text-auto-full"
+            loading={summaryLoading}
+          />
+          <KpiCard
+            title="AI-Assisted"
+            value={aiCount || "\u2014"}
+            subtitle={affected > 0 ? `${formatPercent(aiCount / affected)} of affected` : undefined}
+            icon={Bot}
+            color="text-auto-ai"
+            loading={summaryLoading}
+          />
+          <KpiCard
+            title="Manual Rewrite"
+            value={manualCount > 0 ? manualCount : "\u2014"}
+            subtitle={affected > 0 && manualCount > 0 ? `${formatPercent(manualCount / affected)} of affected` : undefined}
+            icon={Wrench}
+            color="text-auto-manual"
+            loading={summaryLoading}
+          />
+          <KpiCard
+            title="Recipe Gaps"
+            value={gaps?.length ?? "\u2014"}
+            subtitle="unmapped Vaadin types"
+            icon={AlertCircle}
+            color="text-amber-500"
+            loading={gapsLoading}
+          />
+        </div>
       </div>
 
       {/* Charts row */}
@@ -108,7 +124,7 @@ export default function OverviewPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm">
-              Migration Readiness by Package
+              Classes by Package
             </CardTitle>
           </CardHeader>
           <CardContent>

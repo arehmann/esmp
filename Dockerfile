@@ -12,9 +12,9 @@ COPY gradle/libs.versions.toml gradle/
 # Warm dependency cache layer (failure is non-fatal)
 RUN chmod +x gradlew && ./gradlew dependencies --no-daemon -q || true
 
-# Copy source and build with Vaadin frontend production bundle
+# Copy source and build
 COPY src src
-RUN ./gradlew bootJar vaadinBuildFrontend --no-daemon -x test -x spotlessCheck
+RUN ./gradlew bootJar --no-daemon -x test -x spotlessCheck
 
 # Extract layered JAR for optimal Docker layer caching
 RUN mkdir -p build/dependency && \

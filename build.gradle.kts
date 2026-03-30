@@ -2,7 +2,6 @@ plugins {
     alias(libs.plugins.spring.boot)
     alias(libs.plugins.spring.dependency.mgmt)
     alias(libs.plugins.spotless)
-    alias(libs.plugins.vaadin)
     java
 }
 
@@ -17,12 +16,10 @@ java {
 
 repositories {
     mavenCentral()
-    maven { url = uri("https://maven.vaadin.com/vaadin-addons") }
 }
 
 dependencyManagement {
     imports {
-        mavenBom(libs.vaadin.bom.get().toString())
         mavenBom(libs.spring.ai.bom.get().toString())
     }
 }
@@ -40,7 +37,6 @@ dependencies {
     implementation(libs.grpc.stub)
     implementation(libs.openrewrite.java)
     implementation(libs.openrewrite.java.jdk21)
-    implementation(libs.vaadin.spring.boot.starter)
     implementation(libs.spring.ai.starter.transformers)
     implementation(libs.spring.ai.starter.mcp.server.webmvc)
     implementation(libs.spring.boot.starter.cache)
@@ -48,7 +44,6 @@ dependencies {
     implementation(libs.jgit)
 
     testImplementation(libs.spring.boot.starter.test)
-    testImplementation(libs.vaadin.server)
     testImplementation(libs.openrewrite.testing) {
         exclude(group = "org.slf4j", module = "slf4j-nop")
     }

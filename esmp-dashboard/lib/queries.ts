@@ -1,13 +1,14 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import * as api from "./api";
 
-const MODULE = "adsuite-market";
+// Module filter — derived from package third segment (de.alfa.openMedia.*)
+const MODULE = "openMedia";
 const STALE_30S = 30_000;
 
 export function useHeatmap() {
   return useQuery({
     queryKey: ["heatmap", MODULE],
-    queryFn: () => api.fetchHeatmap(MODULE),
+    queryFn: () => api.fetchHeatmap(undefined, 5000),
     staleTime: STALE_30S,
   });
 }
