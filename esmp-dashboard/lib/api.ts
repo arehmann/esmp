@@ -2,6 +2,7 @@ import type {
   RiskHeatmapEntry, RiskDetailResponse, DependencyConeResponse,
   SearchResponse, BusinessTermResponse, MigrationPlan,
   MigrationResult, ModuleMigrationSummary, RecipeRule,
+  ExtractionTriggerResponse,
 } from "./types";
 
 const BASE = "/esmp-api";
@@ -15,9 +16,11 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 export function fetchHeatmap(
-  module: string, limit = 5000, sortBy: "enhanced" | "structural" = "enhanced"
+  module?: string, limit = 5000, sortBy: "enhanced" | "structural" = "enhanced"
 ): Promise<RiskHeatmapEntry[]> {
-  return fetchJson(`${BASE}/risk/heatmap?module=${encodeURIComponent(module)}&limit=${limit}&sortBy=${sortBy}`);
+  const params = new URLSearchParams({ limit: String(limit), sortBy });
+  if (module) params.set("module", module);
+  return fetchJson(`${BASE}/risk/heatmap?${params}`);
 }
 
 export function fetchRiskDetail(fqn: string): Promise<RiskDetailResponse> {
@@ -54,4 +57,38 @@ export function fetchRecipeBook(): Promise<RecipeRule[]> {
 
 export function fetchRecipeGaps(): Promise<RecipeRule[]> {
   return fetchJson(`${BASE}/migration/recipe-book/gaps`);
+}
+
+// --- Extraction ---
+
+export function triggerExtraction(
+  sourceRoot: string,
+  classpathFile?: string
+): Promise<ExtractionTriggerResponse> {
+  return fetchJson(`${BASE}/extraction/trigger`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sourceRoot, classpathFile: classpathFile || undefined }),
+  });
+}
+
+export function triggerIncrementalIndex(
+  changedFiles: string[],
+  deletedFiles: string[],
+  sourceRoot: string,
+  classpathFile?: string
+) {
+  return fetchJson(`${BASE}/indexing/incremental`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ changedFiles, deletedFiles, sourceRoot, classpathFile }),
+  });
+}
+
+export function getSourceStatus(): Promise<{ sourceRoot: string; resolved: boolean; strategy: string }> {
+  return fetchJson(`${BASE}/source/status`);
+}
+
+export function getValidationReport() {
+  return fetchJson(`${BASE}/graph/validation`);
 }

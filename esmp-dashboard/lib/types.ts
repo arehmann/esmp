@@ -139,6 +139,35 @@ export interface RecipeRule {
   isBase: boolean;
 }
 
+// === Extraction API ===
+
+export interface ExtractionProgressEvent {
+  module: string | null;
+  stage: string;
+  filesProcessed: number;
+  totalFiles: number;
+  message: string | null;
+  durationMs: number | null;
+}
+
+export interface ExtractionTriggerResponse {
+  jobId: string;
+  status: string;
+}
+
+export interface IncrementalIndexResponse {
+  classesExtracted: number;
+  classesDeleted: number;
+  classesSkipped: number;
+  nodesCreated: number;
+  nodesUpdated: number;
+  edgesLinked: number;
+  chunksReEmbedded: number;
+  chunksDeleted: number;
+  durationMs: number;
+  errors: string[];
+}
+
 // === Dashboard aggregates (derived client-side) ===
 export interface PackageGroup {
   packageName: string;

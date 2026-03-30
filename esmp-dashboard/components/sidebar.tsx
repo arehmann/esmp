@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3, Package, AlertTriangle, RefreshCw, BookOpen,
-  ChevronLeft, ChevronRight, Search,
+  ChevronLeft, ChevronRight, Search, Database,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ const NAV_ITEMS = [
   { href: "/risk", label: "Risk Heatmap", icon: AlertTriangle },
   { href: "/migration", label: "Migration", icon: RefreshCw },
   { href: "/recipes", label: "Recipes", icon: BookOpen },
+  { href: "/extraction", label: "Extraction", icon: Database },
 ] as const;
 
 export function Sidebar({ onSearchOpen }: { onSearchOpen: () => void }) {
