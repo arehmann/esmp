@@ -246,9 +246,9 @@ public class ExtractionService {
     List<BusinessTermNode> businessTermNodes = mapper.mapToBusinessTermNodes(accumulator);
     List<MigrationActionNode> migrationActionNodes = mapper.mapToMigrationActionNodes(accumulator);
 
-    // Persist all node types
-    // ClassNode uses SDN saveAll() — correct @Id/@Version semantics for class graph wiring
-    classNodeRepository.saveAll(classNodes);
+    // Persist all node types using batched Cypher MERGE (bypasses SDN saveAll() which suffers
+    // from MethodNode/FieldNode type confusion on large multi-relationship ClassNode hierarchies)
+    persistClassNodesBatched(classNodes);
     log.info("Persisted {} class nodes to Neo4j", classNodes.size());
     sendProgress(jobId, "PERSISTING", classNodes.size(), classNodes.size());
 
@@ -492,7 +492,7 @@ public class ExtractionService {
     List<BusinessTermNode> businessTermNodes = mapper.mapToBusinessTermNodes(accumulator);
     List<MigrationActionNode> migrationActionNodes = mapper.mapToMigrationActionNodes(accumulator);
 
-    classNodeRepository.saveAll(classNodes);
+    persistClassNodesBatched(classNodes);
     persistAnnotationNodesBatched(annotationNodes);
     persistPackageNodesBatched(packageNodes);
     persistModuleNodesBatched(moduleNodes);
@@ -850,6 +850,221 @@ public class ExtractionService {
   // =========================================================================
   // Batched UNWIND MERGE persistence helpers
   // =========================================================================
+
+  /**
+   * Persists ClassNodes with all child relationships using batched Cypher MERGE.
+   *
+   * <p>Replaces {@code classNodeRepository.saveAll()} which suffers from SDN type confusion
+   * ("Target bean of type MethodNode is not of type of the persistent entity FieldNode")
+   * when processing large batches of ClassNodes with both DECLARES_METHOD and DECLARES_FIELD
+   * relationships. Raw Cypher also avoids {@code @Version} conflicts on re-extraction.
+   *
+   * <p>Persistence order: ClassNodes → MethodNodes → FieldNodes → DECLARES_METHOD →
+   * DECLARES_FIELD → CALLS → CONTAINS_COMPONENT.
+   */
+  private void persistClassNodesBatched(List<ClassNode> classNodes) {
+    if (classNodes.isEmpty()) return;
+
+    // Step 1: MERGE ClassNode properties (scalar fields only, no relationships)
+    String classCypher = "UNWIND $rows AS row "
+        + "MERGE (c:JavaClass {fullyQualifiedName: row.fqn}) "
+        + "SET c.simpleName = row.simpleName, c.packageName = row.packageName, "
+        + "  c.annotations = row.annotations, c.modifiers = row.modifiers, "
+        + "  c.imports = row.imports, "
+        + "  c.isInterface = row.isInterface, c.isAbstract = row.isAbstract, c.isEnum = row.isEnum, "
+        + "  c.superClass = row.superClass, c.implementedInterfaces = row.implementedInterfaces, "
+        + "  c.sourceFilePath = row.sourceFilePath, c.contentHash = row.contentHash, "
+        + "  c.complexitySum = row.complexitySum, c.complexityMax = row.complexityMax, "
+        + "  c.hasDbWrites = row.hasDbWrites, c.dbWriteCount = row.dbWriteCount, "
+        + "  c.migrationActionCount = row.migrationActionCount, "
+        + "  c.automatableActionCount = row.automatableActionCount, "
+        + "  c.automationScore = row.automationScore, "
+        + "  c.needsAiMigration = row.needsAiMigration, "
+        + "  c.version = coalesce(c.version, 0) + 1";
+
+    List<Map<String, Object>> classRows = classNodes.stream()
+        .map(c -> {
+          Map<String, Object> row = new HashMap<>();
+          row.put("fqn", c.getFullyQualifiedName());
+          row.put("simpleName", c.getSimpleName() != null ? c.getSimpleName() : "");
+          row.put("packageName", c.getPackageName() != null ? c.getPackageName() : "");
+          row.put("annotations", c.getAnnotations() != null ? c.getAnnotations() : List.of());
+          row.put("modifiers", c.getModifiers() != null ? c.getModifiers() : List.of());
+          row.put("imports", c.getImports() != null ? c.getImports() : List.of());
+          row.put("isInterface", c.isInterface());
+          row.put("isAbstract", c.isAbstract());
+          row.put("isEnum", c.isEnum());
+          row.put("superClass", c.getSuperClass());
+          row.put("implementedInterfaces",
+              c.getImplementedInterfaces() != null ? c.getImplementedInterfaces() : List.of());
+          row.put("sourceFilePath", c.getSourceFilePath());
+          row.put("contentHash", c.getContentHash());
+          row.put("complexitySum", c.getComplexitySum());
+          row.put("complexityMax", c.getComplexityMax());
+          row.put("hasDbWrites", c.isHasDbWrites());
+          row.put("dbWriteCount", c.getDbWriteCount());
+          row.put("migrationActionCount", c.getMigrationActionCount());
+          row.put("automatableActionCount", c.getAutomatableActionCount());
+          row.put("automationScore", c.getAutomationScore());
+          row.put("needsAiMigration", c.isNeedsAiMigration());
+          return row;
+        })
+        .toList();
+    for (int i = 0; i < classRows.size(); i += BATCH_SIZE) {
+      neo4jClient.query(classCypher)
+          .bind(classRows.subList(i, Math.min(i + BATCH_SIZE, classRows.size()))).to("rows").run();
+    }
+
+    // Step 1b: Apply dynamic labels (VaadinView, VaadinComponent, VaadinDataBinding, stereotypes)
+    for (ClassNode c : classNodes) {
+      if (c.getExtraLabels() != null && !c.getExtraLabels().isEmpty()) {
+        for (String label : c.getExtraLabels()) {
+          // Validate label to prevent injection — only allow alphanumeric labels
+          if (label.matches("[A-Za-z][A-Za-z0-9_]*")) {
+            neo4jClient.query("MATCH (c:JavaClass {fullyQualifiedName: $fqn}) SET c:" + label)
+                .bind(c.getFullyQualifiedName()).to("fqn").run();
+          }
+        }
+      }
+    }
+
+    // Step 2: MERGE MethodNodes
+    List<Map<String, Object>> methodRows = new ArrayList<>();
+    for (ClassNode c : classNodes) {
+      if (c.getMethods() != null) {
+        for (var m : c.getMethods()) {
+          Map<String, Object> row = new HashMap<>();
+          row.put("methodId", m.getMethodId());
+          row.put("simpleName", m.getSimpleName() != null ? m.getSimpleName() : "");
+          row.put("returnType", m.getReturnType() != null ? m.getReturnType() : "");
+          row.put("parameterTypes", m.getParameterTypes() != null ? m.getParameterTypes() : List.of());
+          row.put("annotations", m.getAnnotations() != null ? m.getAnnotations() : List.of());
+          row.put("modifiers", m.getModifiers() != null ? m.getModifiers() : List.of());
+          row.put("isConstructor", m.isConstructor());
+          row.put("declaringClass", m.getDeclaringClass() != null ? m.getDeclaringClass() : "");
+          row.put("cyclomaticComplexity", m.getCyclomaticComplexity());
+          row.put("classFqn", c.getFullyQualifiedName());
+          methodRows.add(row);
+        }
+      }
+    }
+    if (!methodRows.isEmpty()) {
+      String methodCypher = "UNWIND $rows AS row "
+          + "MERGE (m:JavaMethod {methodId: row.methodId}) "
+          + "SET m.simpleName = row.simpleName, m.returnType = row.returnType, "
+          + "  m.parameterTypes = row.parameterTypes, m.annotations = row.annotations, "
+          + "  m.modifiers = row.modifiers, m.isConstructor = row.isConstructor, "
+          + "  m.declaringClass = row.declaringClass, "
+          + "  m.cyclomaticComplexity = row.cyclomaticComplexity, "
+          + "  m.version = coalesce(m.version, 0) + 1 "
+          + "WITH m, row "
+          + "MATCH (c:JavaClass {fullyQualifiedName: row.classFqn}) "
+          + "MERGE (c)-[:DECLARES_METHOD]->(m)";
+      for (int i = 0; i < methodRows.size(); i += BATCH_SIZE) {
+        neo4jClient.query(methodCypher)
+            .bind(methodRows.subList(i, Math.min(i + BATCH_SIZE, methodRows.size()))).to("rows").run();
+      }
+    }
+
+    // Step 3: MERGE FieldNodes
+    List<Map<String, Object>> fieldRows = new ArrayList<>();
+    for (ClassNode c : classNodes) {
+      if (c.getFields() != null) {
+        for (var f : c.getFields()) {
+          Map<String, Object> row = new HashMap<>();
+          row.put("fieldId", f.getFieldId());
+          row.put("simpleName", f.getSimpleName() != null ? f.getSimpleName() : "");
+          row.put("fieldType", f.getFieldType() != null ? f.getFieldType() : "");
+          row.put("declaringClass", f.getDeclaringClass() != null ? f.getDeclaringClass() : "");
+          row.put("annotations", f.getAnnotations() != null ? f.getAnnotations() : List.of());
+          row.put("modifiers", f.getModifiers() != null ? f.getModifiers() : List.of());
+          row.put("classFqn", c.getFullyQualifiedName());
+          fieldRows.add(row);
+        }
+      }
+    }
+    if (!fieldRows.isEmpty()) {
+      String fieldCypher = "UNWIND $rows AS row "
+          + "MERGE (f:JavaField {fieldId: row.fieldId}) "
+          + "SET f.simpleName = row.simpleName, f.fieldType = row.fieldType, "
+          + "  f.declaringClass = row.declaringClass, "
+          + "  f.annotations = row.annotations, f.modifiers = row.modifiers, "
+          + "  f.version = coalesce(f.version, 0) + 1 "
+          + "WITH f, row "
+          + "MATCH (c:JavaClass {fullyQualifiedName: row.classFqn}) "
+          + "MERGE (c)-[:DECLARES_FIELD]->(f)";
+      for (int i = 0; i < fieldRows.size(); i += BATCH_SIZE) {
+        neo4jClient.query(fieldCypher)
+            .bind(fieldRows.subList(i, Math.min(i + BATCH_SIZE, fieldRows.size()))).to("rows").run();
+      }
+    }
+
+    // Step 4: CALLS relationships (method → method)
+    List<Map<String, Object>> callRows = new ArrayList<>();
+    for (ClassNode c : classNodes) {
+      if (c.getMethods() != null) {
+        for (var m : c.getMethods()) {
+          if (m.getCallsOut() != null) {
+            for (var call : m.getCallsOut()) {
+              if (call.getTarget() != null && call.getTarget().getMethodId() != null) {
+                Map<String, Object> row = new HashMap<>();
+                row.put("callerId", m.getMethodId());
+                row.put("targetId", call.getTarget().getMethodId());
+                row.put("callerMethodId", call.getCallerMethodId() != null ? call.getCallerMethodId() : "");
+                row.put("callSiteLine", call.getCallSiteLine());
+                callRows.add(row);
+              }
+            }
+          }
+        }
+      }
+    }
+    if (!callRows.isEmpty()) {
+      String callCypher = "UNWIND $rows AS row "
+          + "MATCH (caller:JavaMethod {methodId: row.callerId}) "
+          + "MERGE (target:JavaMethod {methodId: row.targetId}) "
+          + "MERGE (caller)-[r:CALLS]->(target) "
+          + "SET r.callerMethodId = row.callerMethodId, r.callSiteLine = row.callSiteLine";
+      for (int i = 0; i < callRows.size(); i += BATCH_SIZE) {
+        neo4jClient.query(callCypher)
+            .bind(callRows.subList(i, Math.min(i + BATCH_SIZE, callRows.size()))).to("rows").run();
+      }
+    }
+
+    // Step 5: CONTAINS_COMPONENT relationships (class → class)
+    List<Map<String, Object>> compRows = new ArrayList<>();
+    for (ClassNode c : classNodes) {
+      if (c.getComponentChildren() != null) {
+        for (var rel : c.getComponentChildren()) {
+          if (rel.getChild() != null && rel.getChild().getFullyQualifiedName() != null) {
+            Map<String, Object> row = new HashMap<>();
+            row.put("parentFqn", c.getFullyQualifiedName());
+            row.put("childFqn", rel.getChild().getFullyQualifiedName());
+            row.put("parentComponentType",
+                rel.getParentComponentType() != null ? rel.getParentComponentType() : "");
+            row.put("childComponentType",
+                rel.getChildComponentType() != null ? rel.getChildComponentType() : "");
+            compRows.add(row);
+          }
+        }
+      }
+    }
+    if (!compRows.isEmpty()) {
+      String compCypher = "UNWIND $rows AS row "
+          + "MATCH (parent:JavaClass {fullyQualifiedName: row.parentFqn}) "
+          + "MATCH (child:JavaClass {fullyQualifiedName: row.childFqn}) "
+          + "MERGE (parent)-[r:CONTAINS_COMPONENT]->(child) "
+          + "SET r.parentComponentType = row.parentComponentType, "
+          + "  r.childComponentType = row.childComponentType";
+      for (int i = 0; i < compRows.size(); i += BATCH_SIZE) {
+        neo4jClient.query(compCypher)
+            .bind(compRows.subList(i, Math.min(i + BATCH_SIZE, compRows.size()))).to("rows").run();
+      }
+    }
+
+    log.info("Persisted {} class nodes with {} methods, {} fields, {} calls, {} components via batched Cypher MERGE",
+        classNodes.size(), methodRows.size(), fieldRows.size(), callRows.size(), compRows.size());
+  }
 
   /**
    * Persists annotation nodes using batched UNWIND MERGE Cypher.
