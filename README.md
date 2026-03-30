@@ -29,8 +29,10 @@ ESMP analyzes your legacy Java/Vaadin codebase, builds a knowledge graph of ever
   - [13. Migration Engine (OpenRewrite)](#13-migration-engine-openrewrite)
   - [14. Recipe Book & Transitive Detection](#14-recipe-book--transitive-detection)
   - [15. Module-Aware Batch Parsing](#15-module-aware-batch-parsing)
+  - [16. Next.js Dashboard](#16-nextjs-dashboard)
+  - [17. NLS Lexicon Extraction](#17-nls-lexicon-extraction)
 - [REST API Reference](#rest-api-reference)
-- [Vaadin Dashboard Views](#vaadin-dashboard-views)
+- [Next.js Dashboard](#nextjs-dashboard)
 - [Configuration Reference](#configuration-reference)
 - [Running Tests](#running-tests)
 - [Monitoring](#monitoring)
@@ -176,7 +178,8 @@ docker compose -f docker-compose.full.yml up -d
 docker compose -f docker-compose.full.yml ps   # All should show "healthy"
 
 # 5. Open the dashboard
-# http://localhost:8080
+# Backend API: http://localhost:8080
+# Dashboard UI: http://localhost:3001
 ```
 
 **Source access strategies** (set in `.env`):
@@ -196,11 +199,15 @@ docker compose up -d
 # 3. Wait for all services to be healthy (~30 seconds)
 docker compose ps   # All should show "healthy"
 
-# 4. Build and run (requires Java 21)
+# 4. Build and run backend (requires Java 21)
 ./gradlew clean bootRun -Dorg.gradle.java.home="/path/to/java21"
 
-# 5. Open the dashboard
-# http://localhost:8080
+# 5. Run dashboard (separate terminal)
+cd esmp-dashboard && npm install && npm run dev
+
+# 6. Open the dashboard
+# Backend API: http://localhost:8080
+# Dashboard UI: http://localhost:3000
 ```
 
 Then jump to [Using the Dashboard](#using-the-dashboard) to start analyzing your codebase.
@@ -371,64 +378,49 @@ Navigate to **http://localhost:8080** in your browser. You'll see the governance
 
 ## Using the Dashboard
 
-ESMP provides three main views accessible via the sidebar:
+ESMP provides a modern Next.js dashboard (port 3001) as the migration command center, replacing the previous Vaadin UI.
 
 ```
   +--------------------------------------------------+
   |  ESMP                                             |
+  |  adsuite-market                                   |
   +--------+-----------------------------------------+
   |        |                                         |
-  | Side   |         Main Content Area               |
-  | Nav    |                                         |
+  | NAVIG. |         Main Content Area               |
+  | Over.. |                                         |
+  | Packag |  (Changes based on selected view)       |
+  | Risk.. |                                         |
+  | Migrat |                                         |
+  | Recipe |                                         |
+  | Extrac |                                         |
   |        |                                         |
-  | [Dash] |   (Changes based on selected view)      |
-  | [Lex]  |                                         |
-  | [Sched]|                                         |
+  | PACKAG |                                         |
+  | vaadin.|                                         |
+  | persis.|                                         |
   |        |                                         |
+  | Ctrl+K |                                         |
   +--------+-----------------------------------------+
 ```
 
-### Dashboard View (Home Page — `/`)
+### Pages
 
-The default landing page shows a bird's-eye view of your entire codebase:
+| Page | URL | What it shows |
+|------|-----|---------------|
+| Overview | `/` | Project scope KPIs (total/affected/clean), migration workload KPIs (auto/AI/manual/gaps), charts, top risk |
+| Packages | `/packages` | Treemap (size=classes, color=risk), click to filter class table |
+| Risk Heatmap | `/risk` | Full sortable data table with package/stereotype/risk filters |
+| Migration | `/migration` | Automation breakdown, recipe categories (accordion), unmapped types, manual attention |
+| Recipes | `/recipes` | Recipe book with tabs (All/Gaps/Discovered), expandable rows with migration steps |
+| Class Detail | `/class/[fqn]` | Migration actions, diff preview, business terms, dependencies, risk breakdown |
+| Extraction | `/extraction` | Live SSE progress bar, trigger controls, source config status |
 
-```
-  +-----------------------------------------------------------+
-  |                    GOVERNANCE DASHBOARD                     |
-  +-----------------------------------------------------------+
-  |                                                            |
-  |  +------------+ +------------+ +------------+ +----------+ |
-  |  | Total      | | Vaadin 7   | | High Risk  | | Business | |
-  |  | Classes    | | Views      | | Classes    | | Terms    | |
-  |  |    342     | |     28     | |     45     | |   156    | |
-  |  +------------+ +------------+ +------------+ +----------+ |
-  |                                                            |
-  |  RISK HEATMAP                    RISK CLUSTERS             |
-  |  +---------------------+    +------------------------+    |
-  |  | Module | Risk | CC  |    |    (Interactive graph   |    |
-  |  |--------|------|-----|    |     showing clusters    |    |
-  |  | auth   | 0.82 | 34 |    |     of high-risk        |    |
-  |  | billing| 0.71 | 28 |    |     classes connected    |    |
-  |  | ui     | 0.45 | 12 |    |     by dependencies)     |    |
-  |  +---------------------+    +------------------------+    |
-  |                                                            |
-  |  DEPENDENCY GRAPH              BUSINESS CONCEPTS           |
-  |  +---------------------+    +------------------------+    |
-  |  |  (Cytoscape.js       |    |  (Interactive term     |    |
-  |  |   interactive graph  |    |   relationship graph   |    |
-  |  |   - click modules    |    |   showing which terms  |    |
-  |  |   - see connections) |    |   are used where)      |    |
-  |  +---------------------+    +------------------------+    |
-  +-----------------------------------------------------------+
-```
+### Key Features
 
-**What you can do here:**
-
-1. **Metric Cards** - See counts at a glance (classes, views, risk levels, terms)
-2. **Risk Heatmap** - Sortable table showing which modules are riskiest
-3. **Risk Clusters** - Interactive Cytoscape.js graph showing risk clusters
-4. **Dependency Explorer** - Click any module to drill down and see its internal class dependencies
-5. **Business Concept Graph** - Visualize which business terms are connected to which code
+- **Collapsible sidebar** with package tree (class counts from heatmap data)
+- **Cmd+K search** — global search palette for quick class lookup
+- **Dark theme** — professional developer aesthetic
+- **TanStack Query** — 30s cache, shared heatmap query across pages
+- **API proxy** — `/esmp-api/*` proxied to ESMP backend, SSE streaming for extraction progress
 
 ### Lexicon View (`/lexicon`)
 
@@ -758,26 +750,30 @@ Response shows pass/fail for each query with details:
 
 ### 4. Domain Lexicon
 
-**What it does:** Automatically extracts business terms from your code's naming conventions, then lets you curate them to build a shared domain vocabulary.
+**What it does:** Automatically extracts business terms from two sources: code naming conventions and NLS (National Language Support) XML files. NLS extraction produces high-quality, multilingual domain vocabulary with German definitions — far richer than camelCase-derived terms.
 
 ```
-  Source Code Analysis
-  ====================
+  Source 1: Code Analysis                Source 2: NLS XML Files (30,000+ entries)
+  =======================                =========================================
 
-  class InvoiceCalculator {     -->  Terms: "Invoice", "Calculator"
-      enum PaymentStatus {      -->  Terms: "Payment", "Status"
-          PENDING, PAID, ...
-      }
-      /** Computes total */     -->  (Javadoc also scanned)
-  }
+  class InvoiceCalculator {              <NLSResource key="lblBranchOffice">
+      --> Terms: "Invoice"                 <NLSMapping language="English" value="Branch office"/>
+  }                                        <NLSMapping language="Deutsch" value="Geschäftsstelle"/>
+  enum PaymentStatus {                   </NLSResource>
+      --> Terms: "Payment"
+  }                                      getNLS("lblBranchOffice") in Java source
+  /** Computes total */                    --> Links term to the class containing the call
+      --> Javadoc scanned
 
-  Extraction Rules:
-  - CamelCase splitting (InvoiceService -> "Invoice")
-  - Enum types and constants
-  - Class-level Javadoc
-  - 28 stop-suffixes filtered (Service, Controller, Impl, ...)
-  - 12 stop-words filtered (get, set, is, ...)
+  Code Extraction Rules:                 NLS Term Categories (from key prefix):
+  - CamelCase splitting                  - lbl*      → NLS_LABEL (domain vocabulary)
+  - Enum types and constants             - msg*      → NLS_MESSAGE (business rules)
+  - Class-level Javadoc                  - TypeText_ → NLS_TYPE (domain enums)
+  - 28 stop-suffixes filtered            - Function_ → NLS_FUNCTION (business operations)
+                                         - ToolTip_  → NLS_TOOLTIP (field descriptions)
 ```
+
+**NLS integration:** During extraction, `LexiconVisitor` detects `getNLS("key")` method invocations, resolves the key against pre-loaded NLS XML files, and stores the English value as displayName with the German value as definition. This gives the MCP AI agent real business context — "Geschäftsstelle" = "Branch office" — instead of generic camelCase fragments.
 
 **How to use it:**
 
@@ -2004,9 +2000,70 @@ curl -N "http://localhost:8080/api/extraction/progress?jobId=abc-123"
 
 ---
 
+### 16. Next.js Dashboard
+
+**What it does:** A modern dark-themed web dashboard replacing the Vaadin UI. Focused on migration intelligence for a single module — read-only command center with risk heatmaps, migration readiness, recipe browsing, class-level deep-dives, and live extraction monitoring.
+
+**Tech stack:** Next.js 16 (App Router), TypeScript, Tailwind CSS v4, shadcn/ui v4, Recharts, TanStack Query
+
+**Architecture:**
+```
+Browser (port 3001) → Next.js standalone server
+  ├── Server components for SSR (initial page load)
+  ├── Client components + TanStack Query for interactivity
+  └── /esmp-api/* route handler → proxies to ESMP backend (port 8080)
+      Supports both JSON responses and SSE streaming
+```
+
+**Pages:** Overview (project scope + migration workload KPIs), Packages (treemap + class table), Risk Heatmap (sortable/filterable data table), Migration (automation breakdown + recipe categories), Recipes (searchable recipe book), Class Detail (actions, diff preview, business terms, dependencies, risk), Extraction (live progress with SSE)
+
+**Deployment:** `alfamediacom/esmp-dashboard:latest` — configured via `ESMP_API_URL` environment variable pointing to the backend service.
+
+---
+
+### 17. NLS Lexicon Extraction
+
+**What it does:** Parses AdSuite NLS (National Language Support) XML files to extract multilingual business vocabulary. Each `getNLS("key")` call in Java source is resolved against the NLS data, producing business terms with English display names and German definitions.
+
+```
+  NLS XML Files (15 files, 30,000+ entries)
+  ==========================================
+
+  <NLSResource key="lblBranchOffice">
+    <NLSMapping language="English" value="Branch office"/>
+    <NLSMapping language="Deutsch" value="Geschäftsstelle"/>
+    <NLSMapping language="French"  value="Agence commerciale"/>
+  </NLSResource>
+
+  Java Source Code
+  ================
+  AdSuiteControl.getNLS("lblBranchOffice")  →  detected by LexiconVisitor
+    → termId: "lblBranchOffice"
+    → displayName: "Branch office"
+    → definition: "Geschäftsstelle"
+    → sourceType: NLS_LABEL
+    → linked to: ForeignSupplementPanel (the class containing the call)
+```
+
+**NLS categories** (derived from key prefix):
+
+| Prefix | Category | Count | Purpose |
+|--------|----------|-------|---------|
+| `lbl*` | NLS_LABEL | ~11,000 | Domain vocabulary (field names, headers) |
+| `msg*` | NLS_MESSAGE | ~3,500 | Business rules in natural language |
+| `TypeText_*` | NLS_TYPE | ~9,200 | Domain enum/status values |
+| `Function_*` | NLS_FUNCTION | varies | Business operations |
+| `ToolTipText_*` | NLS_TOOLTIP | varies | Detailed field descriptions |
+
+**How it works:** `NlsXmlParser` loads all XML files at extraction start. `LexiconVisitor.visitMethodInvocation()` detects `getNLS()` calls and resolves them against the loaded map. Terms flow through the existing `BusinessTerm` persistence pipeline and are available via the MCP `get_migration_context` tool.
+
+**NLS file location:** `{sourceRoot}/adsuite-runtime/nls-files/*.xml` (auto-detected)
+
+---
+
 ## REST API Reference
 
-Complete list of all 32 endpoints:
+Complete list of all 33 endpoints:
 
 ### Extraction
 
@@ -2032,6 +2089,7 @@ Complete list of all 32 endpoints:
 |--------|----------|-------------|
 | `GET` | `/api/lexicon/` | List business terms (filterable) |
 | `GET` | `/api/lexicon/{termId}` | Term detail with related classes |
+| `GET` | `/api/lexicon/by-class/{fqn}` | Business terms linked to a class via USES_TERM |
 | `PUT` | `/api/lexicon/{termId}` | Curate a business term |
 | `GET` | `/api/risk/heatmap` | Risk heatmap (filterable, sortable) |
 | `GET` | `/api/risk/class/{fqn}` | Per-class risk detail with method CC |
@@ -2088,13 +2146,28 @@ Complete list of all 32 endpoints:
 
 ---
 
-## Vaadin Dashboard Views
+## Next.js Dashboard
 
-| URL | View | What it shows |
-|-----|------|---------------|
-| `http://localhost:8080/` | Dashboard | Metrics, risk heatmap, dependency graphs, business concepts |
-| `http://localhost:8080/lexicon` | Lexicon | Business term curation with usage tracking |
-| `http://localhost:8080/schedule` | Schedule | Migration wave planning with drill-down |
+The dashboard runs as a separate container (`esmp-dashboard`) on port 3001, proxying API calls to the ESMP backend.
+
+```
+Browser (port 3001) → Next.js (SSR + client) → /esmp-api/* proxy → ESMP backend (port 8080)
+```
+
+**Tech stack:** Next.js 16, TypeScript, Tailwind CSS v4, shadcn/ui v4, Recharts, TanStack Query, Lucide React
+
+**Source:** `esmp-dashboard/` directory
+
+| Component | Path |
+|-----------|------|
+| Pages | `esmp-dashboard/app/` (7 routes) |
+| Components | `esmp-dashboard/components/` (15 custom + shadcn/ui) |
+| API client | `esmp-dashboard/lib/api.ts` (10 typed fetch wrappers) |
+| Query hooks | `esmp-dashboard/lib/queries.ts` (10 TanStack Query hooks) |
+| Types | `esmp-dashboard/lib/types.ts` (1:1 match with Java DTOs) |
+| API proxy | `esmp-dashboard/app/esmp-api/[...path]/route.ts` (JSON + SSE streaming) |
+
+**Docker deployment:** Image `alfamediacom/esmp-dashboard:latest`, configured via `ESMP_API_URL` env var.
 
 ---
 
