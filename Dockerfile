@@ -21,11 +21,9 @@ RUN mkdir -p build/dependency && \
     java -Djarmode=layertools -jar build/libs/esmp-*.jar extract --destination build/dependency
 
 # Stage 2 — Runtime
-# Uses JRE-only image for a smaller production image
-FROM eclipse-temurin:21-jre-jammy AS runtime
-
-# Install curl for HEALTHCHECK (eclipse-temurin:21-jre-jammy may not include it)
-RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+# Uses JDK image because OpenRewrite's JavaParser.fromJavaVersion() requires JDK tooling
+# (src.zip / ct.sym) for type resolution. JRE-only images cause the parser to hang.
+FROM eclipse-temurin:21-jdk-jammy AS runtime
 
 # Create a non-root user for security
 RUN useradd -m -u 1000 esmp
@@ -37,6 +35,9 @@ COPY --from=builder /app/build/dependency/dependencies/ ./
 COPY --from=builder /app/build/dependency/spring-boot-loader/ ./
 COPY --from=builder /app/build/dependency/snapshot-dependencies/ ./
 COPY --from=builder /app/build/dependency/application/ ./
+
+# Create data directory for recipe book and other runtime files (owned by esmp user)
+RUN mkdir -p /app/data/migration && chown -R esmp:esmp /app/data
 
 USER esmp
 

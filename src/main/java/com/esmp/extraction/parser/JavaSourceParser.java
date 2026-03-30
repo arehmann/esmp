@@ -1,6 +1,7 @@
 package com.esmp.extraction.parser;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.openrewrite.InMemoryExecutionContext;
@@ -19,6 +20,9 @@ import org.springframework.stereotype.Service;
  * qualified types (including Vaadin 7 types) are resolved in visitor traversal. Without the
  * classpath, types resolve as {@code Unknown} and call graph extraction degrades silently.
  *
+ * <p>Large file lists are automatically split into batches to prevent OpenRewrite from hanging
+ * during cross-file type resolution.
+ *
  * <p>Malformed Java files are handled gracefully: parse errors are logged as warnings rather than
  * thrown as exceptions. The parser returns whatever partial results it produced.
  */
@@ -26,6 +30,12 @@ import org.springframework.stereotype.Service;
 public class JavaSourceParser {
 
   private static final Logger log = LoggerFactory.getLogger(JavaSourceParser.class);
+
+  /**
+   * Maximum number of source files per OpenRewrite parse call. OpenRewrite performs cross-file
+   * type resolution that scales poorly beyond this threshold, causing hangs on large codebases.
+   */
+  private static final int PARSE_BATCH_SIZE = 500;
 
   private final ClasspathLoader classpathLoader;
 
@@ -56,37 +66,13 @@ public class JavaSourceParser {
           "Parsing {} source files without classpath — Vaadin type resolution will be degraded",
           javaSourcePaths.size());
     } else {
-      log.debug(
+      log.info(
           "Parsing {} source files with {} classpath entries",
           javaSourcePaths.size(),
           classpathJars.size());
     }
 
-    // Execution context that logs parse errors as warnings instead of throwing
-    InMemoryExecutionContext ctx =
-        new InMemoryExecutionContext(
-            throwable ->
-                log.warn("Parse error (file will be skipped): {}", throwable.getMessage()));
-
-    try {
-      JavaParser.Builder<? extends JavaParser, ?> builder =
-          JavaParser.fromJavaVersion()
-              .typeCache(new JavaTypeCache())
-              .logCompilationWarningsAndErrors(false);
-
-      if (!classpathJars.isEmpty()) {
-        builder = builder.classpath(classpathJars);
-      }
-
-      JavaParser javaParser = builder.build();
-      List<SourceFile> result = javaParser.parse(javaSourcePaths, projectRoot, ctx).toList();
-      log.info("Parsed {}/{} source files successfully", result.size(), javaSourcePaths.size());
-      return result;
-    } catch (Exception e) {
-      log.warn(
-          "Unexpected error during parsing — returning empty result. Error: {}", e.getMessage());
-      return Collections.emptyList();
-    }
+    return parseBatched(javaSourcePaths, projectRoot, classpathJars);
   }
 
   /**
@@ -107,8 +93,45 @@ public class JavaSourceParser {
     }
 
     log.info("Parsing {} source files with {} compiled classpath directories",
-        javaSourcePaths.size(), compiledClasspathDirs.size());
+        javaSourcePaths.size(), compiledClasspathDirs != null ? compiledClasspathDirs.size() : 0);
 
+    return parseBatched(javaSourcePaths, projectRoot,
+        compiledClasspathDirs != null ? compiledClasspathDirs : List.of());
+  }
+
+  /**
+   * Splits large file lists into batches and parses each with a fresh parser instance.
+   */
+  private List<SourceFile> parseBatched(
+      List<Path> javaSourcePaths, Path projectRoot, List<Path> classpath) {
+    int totalFiles = javaSourcePaths.size();
+
+    if (totalFiles <= PARSE_BATCH_SIZE) {
+      return parseSingleBatch(javaSourcePaths, projectRoot, classpath);
+    }
+
+    log.info("Splitting {} files into batches of {} for parsing", totalFiles, PARSE_BATCH_SIZE);
+    List<SourceFile> allResults = new ArrayList<>();
+    for (int i = 0; i < totalFiles; i += PARSE_BATCH_SIZE) {
+      int end = Math.min(i + PARSE_BATCH_SIZE, totalFiles);
+      List<Path> batch = javaSourcePaths.subList(i, end);
+      log.info("Parsing batch {}-{} of {} files", i + 1, end, totalFiles);
+      long batchStart = System.currentTimeMillis();
+      List<SourceFile> batchResult = parseSingleBatch(batch, projectRoot, classpath);
+      long batchMs = System.currentTimeMillis() - batchStart;
+      log.info("Batch {}-{}: parsed {}/{} files in {}ms",
+          i + 1, end, batchResult.size(), batch.size(), batchMs);
+      allResults.addAll(batchResult);
+    }
+    log.info("Parsed {}/{} source files total (batched)", allResults.size(), totalFiles);
+    return allResults;
+  }
+
+  /**
+   * Parses a single batch of source files with a fresh parser and type cache.
+   */
+  private List<SourceFile> parseSingleBatch(
+      List<Path> javaSourcePaths, Path projectRoot, List<Path> classpath) {
     InMemoryExecutionContext ctx = new InMemoryExecutionContext(
         throwable -> log.warn("Parse error (file will be skipped): {}", throwable.getMessage()));
 
@@ -118,16 +141,15 @@ public class JavaSourceParser {
               .typeCache(new JavaTypeCache())
               .logCompilationWarningsAndErrors(false);
 
-      if (!compiledClasspathDirs.isEmpty()) {
-        builder = builder.classpath(compiledClasspathDirs);
+      if (classpath != null && !classpath.isEmpty()) {
+        builder = builder.classpath(classpath);
       }
 
       JavaParser javaParser = builder.build();
-      List<SourceFile> result = javaParser.parse(javaSourcePaths, projectRoot, ctx).toList();
-      log.info("Parsed {}/{} source files successfully", result.size(), javaSourcePaths.size());
-      return result;
+      return javaParser.parse(javaSourcePaths, projectRoot, ctx).toList();
     } catch (Exception e) {
-      log.warn("Unexpected error during parsing -- returning empty result. Error: {}", e.getMessage());
+      log.warn("Unexpected error during parsing batch — returning empty result. Error: {}",
+          e.getMessage());
       return Collections.emptyList();
     }
   }

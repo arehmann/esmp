@@ -341,23 +341,28 @@ public class ExtractionService {
 
           sendModuleProgress(jobId, module.name(), "PARSING", 0, fileCount, null, null);
 
-          // Build classpath: compiled class dirs of all dependency modules
-          List<Path> compiledClasspath = module.dependsOn().stream()
+          // Build classpath: upstream dependency modules' compiled classes.
+          // Note: the module's own compiled classes are NOT included — OpenRewrite hangs when
+          // scanning large class directories during parser initialization.
+          List<Path> fullClasspath = new ArrayList<>();
+          module.dependsOn().stream()
               .map(allModules::get)
               .filter(dep -> dep != null && Files.isDirectory(dep.compiledClassesDir()))
               .map(ModuleDescriptor::compiledClassesDir)
-              .collect(Collectors.toList());
-
-          // Also add external JAR classpath if provided (for Vaadin JARs etc.)
-          List<Path> fullClasspath = new ArrayList<>(compiledClasspath);
+              .forEach(fullClasspath::add);
           if (resolvedClasspathFile != null && !resolvedClasspathFile.isBlank()) {
             List<Path> externalJars = classpathLoader.load(resolvedClasspathFile);
             fullClasspath.addAll(externalJars);
           }
 
-          // Parse this module's files with module-specific classpath
+          // Parse this module's files with module-specific classpath.
+          // IMPORTANT: use module.sourceDir() as projectRoot (not sourceRootPath) so that
+          // OpenRewrite can correctly infer package structure from relative file paths.
+          // Using the overall project root causes path-based package inference to produce
+          // "adsuite-persistent.src.main.java.com..." instead of "com..." which triggers
+          // infinite type resolution loops.
           List<SourceFile> sourceFiles = javaSourceParser.parse(
-              module.javaFiles(), sourceRootPath, fullClasspath);
+              module.javaFiles(), module.sourceDir(), fullClasspath);
 
           sendModuleProgress(jobId, module.name(), "PARSING", fileCount, fileCount, null, null);
 
