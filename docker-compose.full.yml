@@ -72,6 +72,17 @@ services:
     environment:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
 
+  esmp-dashboard:
+    build: ./esmp-dashboard
+    ports:
+      - "3001:3000"
+    environment:
+      ESMP_API_URL: http://esmp:8080
+    depends_on:
+      esmp:
+        condition: service_healthy
+    restart: unless-stopped
+
   esmp:
     build: .
     ports:
