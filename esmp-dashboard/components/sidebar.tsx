@@ -107,7 +107,7 @@ export function Sidebar({ onSearchOpen }: { onSearchOpen: () => void }) {
       >
         <Search className="h-4 w-4" />
         {!collapsed && (
-          <span>Search <kbd className="ml-1 rounded border border-border px-1 text-[10px]">Ctrl+K</kbd></span>
+          <span>Search <kbd className="ml-1 rounded border border-border px-1 text-[10px]">⌘K</kbd></span>
         )}
       </button>
     </aside>

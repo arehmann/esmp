@@ -49,7 +49,9 @@ export default function OverviewPage() {
           title="Automatable"
           value={
             summary
-              ? formatPercent(summary.fullyAutomatableClasses / summary.totalClasses)
+              ? summary.totalClasses > 0
+                ? formatPercent(summary.fullyAutomatableClasses / summary.totalClasses)
+                : "0.0%"
               : "\u2014"
           }
           subtitle={summary ? `${summary.fullyAutomatableClasses} classes` : undefined}
@@ -61,10 +63,12 @@ export default function OverviewPage() {
           title="AI-Assisted"
           value={
             summary
-              ? formatPercent(
-                  (summary.partiallyAutomatableClasses + summary.needsAiOnlyClasses) /
-                    summary.totalClasses
-                )
+              ? summary.totalClasses > 0
+                ? formatPercent(
+                    (summary.partiallyAutomatableClasses + summary.needsAiOnlyClasses) /
+                      summary.totalClasses
+                  )
+                : "0.0%"
               : "\u2014"
           }
           icon={Bot}
@@ -75,13 +79,15 @@ export default function OverviewPage() {
           title="Manual Rewrite"
           value={
             summary
-              ? formatPercent(
-                  (summary.totalClasses -
-                    summary.fullyAutomatableClasses -
-                    summary.partiallyAutomatableClasses -
-                    summary.needsAiOnlyClasses) /
-                    summary.totalClasses
-                )
+              ? summary.totalClasses > 0
+                ? formatPercent(
+                    (summary.totalClasses -
+                      summary.fullyAutomatableClasses -
+                      summary.partiallyAutomatableClasses -
+                      summary.needsAiOnlyClasses) /
+                      summary.totalClasses
+                  )
+                : "0.0%"
               : "\u2014"
           }
           icon={Wrench}
