@@ -696,19 +696,26 @@ public class ExtractionService {
   void cleanGraphBeforeExtraction() {
     long startMs = System.currentTimeMillis();
 
-    // Delete class nodes and their owned children (methods, fields, relationships)
+    // Delete in batches to avoid Neo4j transaction memory limit (2.7 GiB).
+    // Each CALL subquery commits independently, preventing OOM on large graphs.
+    String batchDelete = "CALL { MATCH (n:%s) WITH n LIMIT 5000 DETACH DELETE n } IN TRANSACTIONS OF 5000 ROWS";
+
+    // Delete methods and fields first (leaf nodes), then classes
+    neo4jClient.query(String.format(batchDelete, "JavaMethod")).run();
+    neo4jClient.query(String.format(batchDelete, "JavaField")).run();
+    neo4jClient.query(String.format(batchDelete, "JavaClass")).run();
+
+    // Delete shared node types
+    neo4jClient.query(String.format(batchDelete, "JavaAnnotation")).run();
+    neo4jClient.query(String.format(batchDelete, "JavaPackage")).run();
+    neo4jClient.query(String.format(batchDelete, "JavaModule")).run();
+    neo4jClient.query(String.format(batchDelete, "DBTable")).run();
+    neo4jClient.query(String.format(batchDelete, "MigrationAction")).run();
+
+    // Delete only non-curated business terms
     neo4jClient.query(
-        "MATCH (n) WHERE n:JavaClass OR n:JavaMethod OR n:JavaField DETACH DELETE n").run();
-
-    // Delete shared node types (annotations, packages, modules, tables)
-    neo4jClient.query(
-        "MATCH (n) WHERE n:JavaAnnotation OR n:JavaPackage OR n:JavaModule OR n:DBTable DETACH DELETE n").run();
-
-    // Delete migration action nodes (re-created by pipeline)
-    neo4jClient.query("MATCH (n:MigrationAction) DETACH DELETE n").run();
-
-    // Delete only non-curated business terms (curated ones survive via MERGE semantics)
-    neo4jClient.query("MATCH (t:BusinessTerm) WHERE t.curated <> true OR t.curated IS NULL DETACH DELETE t").run();
+        "CALL { MATCH (t:BusinessTerm) WHERE t.curated <> true OR t.curated IS NULL "
+        + "WITH t LIMIT 5000 DETACH DELETE t } IN TRANSACTIONS OF 5000 ROWS").run();
 
     long durationMs = System.currentTimeMillis() - startMs;
     log.info("Cleaned extraction graph before re-extraction in {}ms", durationMs);
