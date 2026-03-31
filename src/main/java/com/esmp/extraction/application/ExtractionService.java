@@ -2,6 +2,7 @@ package com.esmp.extraction.application;
 
 import com.esmp.extraction.audit.VaadinAuditReport;
 import com.esmp.extraction.audit.VaadinAuditService;
+import com.esmp.vector.application.VectorIndexingService;
 import com.esmp.extraction.config.ExtractionConfig;
 import com.esmp.graph.application.RiskService;
 import com.esmp.extraction.model.AnnotationNode;
@@ -97,6 +98,7 @@ public class ExtractionService {
   private final RecipeBookRegistry recipeBookRegistry;
   private final MigrationRecipeService migrationRecipeService;
   private final ModuleDetectionService moduleDetectionService;
+  private final VectorIndexingService vectorIndexingService;
   private final NlsXmlParser nlsXmlParser = new NlsXmlParser();
 
   /** NLS entries loaded at the start of each extraction run. Thread-safe (immutable after load). */
@@ -123,7 +125,8 @@ public class ExtractionService {
       RecipeBookRegistry recipeBookRegistry,
       MigrationRecipeService migrationRecipeService,
       ModuleDetectionService moduleDetectionService,
-      ClasspathLoader classpathLoader) {
+      ClasspathLoader classpathLoader,
+      VectorIndexingService vectorIndexingService) {
     this.javaSourceParser = javaSourceParser;
     this.mapper = mapper;
     this.classNodeRepository = classNodeRepository;
@@ -144,6 +147,7 @@ public class ExtractionService {
     this.migrationRecipeService = migrationRecipeService;
     this.moduleDetectionService = moduleDetectionService;
     this.classpathLoader = classpathLoader;
+    this.vectorIndexingService = vectorIndexingService;
   }
 
   /**
@@ -281,6 +285,15 @@ public class ExtractionService {
     // Run migration post-processing: transitive detection, score recompute, enrichment
     // MUST run after linkAllRelationships() (EXTENDS edges exist) AND computeRiskScores()
     migrationRecipeService.migrationPostProcessing();
+
+    // Vector indexing: embed all classes into Qdrant for semantic search / RAG
+    sendProgress(jobId, "VECTOR_INDEXING", 0, 0);
+    try {
+      var indexResult = vectorIndexingService.indexAll(sourceRootPath.toString());
+      log.info("Vector indexing: {} chunks indexed in {}ms", indexResult.chunksIndexed(), indexResult.durationMs());
+    } catch (Exception e) {
+      log.warn("Vector indexing failed (non-fatal): {}", e.getMessage());
+    }
 
     // Generate Vaadin audit report
     VaadinAuditReport auditReport = vaadinAuditService.generateReport(accumulator);
@@ -440,6 +453,15 @@ public class ExtractionService {
     // Migration post-processing
     sendModuleProgress(jobId, null, "MIGRATION", 0, 0, "Migration post-processing", null);
     migrationRecipeService.migrationPostProcessing();
+
+    // Vector indexing: embed all classes into Qdrant for semantic search / RAG
+    sendModuleProgress(jobId, null, "VECTOR_INDEXING", 0, 0, "Building semantic code index", null);
+    try {
+      var indexResult = vectorIndexingService.indexAll(sourceRootPath.toString());
+      log.info("Vector indexing: {} chunks indexed in {}ms", indexResult.chunksIndexed(), indexResult.durationMs());
+    } catch (Exception e) {
+      log.warn("Vector indexing failed (non-fatal): {}", e.getMessage());
+    }
 
     // Vaadin audit
     VaadinAuditReport auditReport = vaadinAuditService.generateReport(mergedAccumulator);

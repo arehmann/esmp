@@ -545,11 +545,55 @@ public class ChunkingService {
     return packageName;
   }
 
+  /**
+   * Resolves a relative source path against the source root, searching module subdirectories.
+   *
+   * <p>The {@code sourceFilePath} stored in Neo4j is relative to the module's
+   * {@code src/main/java/} directory (e.g., {@code de/alfa/openMedia/MyClass.java}).
+   * This method searches for the file under {@code sourceRoot/}*{@code /src/main/java/}
+   * subdirectories (Gradle/Maven multi-module layout).
+   */
   private Path resolveSourcePath(String sourceRoot, String sourcePath) {
     if (sourceRoot == null || sourceRoot.isBlank()) {
       return Path.of(sourcePath);
     }
-    return Path.of(sourceRoot, sourcePath);
+
+    // Direct path: sourceRoot + sourcePath (works for single-module projects)
+    Path direct = Path.of(sourceRoot, sourcePath);
+    if (Files.exists(direct)) return direct;
+
+    // Multi-module: search sourceRoot/*/src/main/java/ + sourcePath
+    if (sourceJavaDirs == null) {
+      sourceJavaDirs = discoverSourceJavaDirs(sourceRoot);
+    }
+    for (Path javaDir : sourceJavaDirs) {
+      Path candidate = javaDir.resolve(sourcePath);
+      if (Files.exists(candidate)) return candidate;
+    }
+
+    return direct; // fallback — will fail exists() check in caller
+  }
+
+  /** Cached list of module src/main/java directories under the source root. */
+  private volatile List<Path> sourceJavaDirs;
+
+  private List<Path> discoverSourceJavaDirs(String sourceRoot) {
+    List<Path> dirs = new ArrayList<>();
+    try {
+      Path root = Path.of(sourceRoot);
+      if (Files.isDirectory(root)) {
+        Files.list(root)
+            .filter(Files::isDirectory)
+            .map(module -> module.resolve("src/main/java"))
+            .filter(Files::isDirectory)
+            .forEach(dirs::add);
+      }
+    } catch (IOException e) {
+      log.warn("Failed to discover source directories under {}: {}", sourceRoot, e.getMessage());
+    }
+    log.info("Discovered {} source directories: {}", dirs.size(),
+        dirs.stream().map(Path::toString).collect(Collectors.joining(", ")));
+    return dirs;
   }
 
   private double toDouble(Object value) {
