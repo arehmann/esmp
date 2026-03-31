@@ -55,6 +55,14 @@ export function useDependencyCone(fqn: string) {
   });
 }
 
+export function useLexicon(sourceType?: string, criticality?: string, search?: string) {
+  return useQuery({
+    queryKey: ["lexicon", sourceType, criticality, search],
+    queryFn: () => api.fetchLexicon({ sourceType, criticality, search }),
+    staleTime: STALE_30S,
+  });
+}
+
 export function useTermsByClass(fqn: string) {
   return useQuery({
     queryKey: ["termsByClass", fqn],

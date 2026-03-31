@@ -232,7 +232,7 @@ public class MigrationToolService {
         .register(meterRegistry)
         .increment();
 
-    List<BusinessTermResponse> result = lexiconService.findByFilters(criticality, null, search);
+    List<BusinessTermResponse> result = lexiconService.findByFilters(criticality, null, search, null);
 
     log.info("MCP_REQUEST tool=browseDomainTerms params='search={} criticality={}' latencyMs={}",
         search, criticality, System.currentTimeMillis() - startMs);

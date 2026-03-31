@@ -281,6 +281,9 @@ public class MigrationRecipeService {
         """
         MATCH (c:JavaClass)
         WHERE split(c.packageName, '.')[2] = $module
+          AND NOT (c.packageName CONTAINS 'castor'
+                OR c.packageName CONTAINS 'persistentObjects'
+                OR c.packageName CONTAINS 'com4j')
         OPTIONAL MATCH (c)-[:HAS_MIGRATION_ACTION]->(ma:MigrationAction)
         WITH c, count(ma) AS actionCount,
              sum(CASE WHEN ma.automatable = 'YES' THEN 1 ELSE 0 END) AS yesCount,
@@ -302,6 +305,9 @@ public class MigrationRecipeService {
         """
         MATCH (c:JavaClass)-[:HAS_MIGRATION_ACTION]->(ma:MigrationAction)
         WHERE split(c.packageName, '.')[2] = $module
+          AND NOT (c.packageName CONTAINS 'castor'
+                OR c.packageName CONTAINS 'persistentObjects'
+                OR c.packageName CONTAINS 'com4j')
           AND NOT ma.isInherited
         WITH DISTINCT ma.source AS src, ma.automatable AS auto
         RETURN count(src) AS totalTypes,
@@ -367,6 +373,9 @@ public class MigrationRecipeService {
         """
         MATCH (c:JavaClass)-[:HAS_MIGRATION_ACTION]->(ma:MigrationAction)
         WHERE split(c.packageName, '.')[2] = $module
+          AND NOT (c.packageName CONTAINS 'castor'
+                OR c.packageName CONTAINS 'persistentObjects'
+                OR c.packageName CONTAINS 'com4j')
           AND NOT ma.isInherited
         RETURN count(ma) AS totalUsages,
                sum(CASE WHEN ma.automatable <> 'NO' THEN 1 ELSE 0 END) AS mappedUsages

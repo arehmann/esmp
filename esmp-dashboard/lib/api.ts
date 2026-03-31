@@ -39,6 +39,18 @@ export function fetchTermsByClass(fqn: string): Promise<BusinessTermResponse[]> 
   return fetchJson(`${BASE}/lexicon/by-class/${fqn}`);
 }
 
+export function fetchLexicon(params?: {
+  sourceType?: string;
+  criticality?: string;
+  search?: string;
+}): Promise<BusinessTermResponse[]> {
+  const p = new URLSearchParams();
+  if (params?.sourceType) p.set("sourceType", params.sourceType);
+  if (params?.criticality) p.set("criticality", params.criticality);
+  if (params?.search) p.set("search", params.search);
+  return fetchJson(`${BASE}/lexicon/?${p}`);
+}
+
 export function fetchMigrationPlan(fqn: string): Promise<MigrationPlan> {
   return fetchJson(`${BASE}/migration/plan/${fqn}`);
 }

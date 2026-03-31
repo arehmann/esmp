@@ -42,14 +42,16 @@ public class LexiconController {
    * @param criticality optional filter by criticality ("High", "Medium", "Low")
    * @param curated     optional filter by curation status (true/false)
    * @param search      optional case-insensitive substring matched against termId or displayName
+   * @param sourceType  optional filter by source type (e.g., "CLASS_NAME", "ENUM", "JAVADOC")
    * @return 200 with list of {@link BusinessTermResponse} (relatedClassFqns is empty for list view)
    */
   @GetMapping("/")
   public ResponseEntity<List<BusinessTermResponse>> listTerms(
       @RequestParam(required = false) String criticality,
       @RequestParam(required = false) Boolean curated,
-      @RequestParam(required = false) String search) {
-    List<BusinessTermResponse> terms = lexiconService.findByFilters(criticality, curated, search);
+      @RequestParam(required = false) String search,
+      @RequestParam(required = false) String sourceType) {
+    List<BusinessTermResponse> terms = lexiconService.findByFilters(criticality, curated, search, sourceType);
     return ResponseEntity.ok(terms);
   }
 

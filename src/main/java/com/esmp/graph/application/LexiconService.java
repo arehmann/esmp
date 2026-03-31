@@ -52,10 +52,11 @@ public class LexiconService {
    * @param criticality optional filter: "High", "Medium", or "Low"
    * @param curated     optional filter: true for curated terms only, false for auto-extracted only
    * @param search      optional case-insensitive substring matched against termId or displayName
+   * @param sourceType  optional filter by source type (e.g., "CLASS_NAME", "ENUM", "JAVADOC")
    * @return list of matching terms as response records
    */
   public List<BusinessTermResponse> findByFilters(
-      String criticality, Boolean curated, String search) {
+      String criticality, Boolean curated, String search, String sourceType) {
     StringBuilder cypher = new StringBuilder("""
         MATCH (t:BusinessTerm)
         WHERE 1=1
@@ -75,6 +76,10 @@ public class LexiconService {
     if (search != null && !search.isBlank()) {
       conditions.add("(toLower(t.termId) CONTAINS toLower($search) OR toLower(t.displayName) CONTAINS toLower($search))");
       params.put("search", search);
+    }
+    if (sourceType != null && !sourceType.isBlank()) {
+      conditions.add("t.sourceType = $sourceType");
+      params.put("sourceType", sourceType);
     }
 
     for (String condition : conditions) {
