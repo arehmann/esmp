@@ -23,6 +23,9 @@ import com.esmp.vector.application.VectorSearchService;
 import io.micrometer.core.annotation.Timed;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -30,10 +33,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.stereotype.Component;
 
 /**
- * MCP tool service exposing 10 migration-assistance tools to AI assistants.
+ * MCP tool service exposing 11 migration-assistance tools to AI assistants.
  *
  * <p>Each method is annotated with {@link Tool} so that the Spring AI MCP server can discover
  * and expose it as a named tool via the SSE transport. All methods are also instrumented with
@@ -51,6 +55,7 @@ import org.springframework.stereotype.Component;
  *   <li>{@link #applyMigrationRecipes} — apply recipes and return diff (no disk write)
  *   <li>{@link #getModuleMigrationSummary} — module-level automation statistics
  *   <li>{@link #getRecipeBookGaps} — NEEDS_MAPPING rules sorted by usageCount
+ *   <li>{@link #getSourceCode} — read Java source from file system via graph path
  * </ol>
  */
 @Component
@@ -66,6 +71,7 @@ public class MigrationToolService {
   private final ValidationService validationService;
   private final MigrationRecipeService migrationRecipeService;
   private final RecipeBookRegistry recipeBookRegistry;
+  private final Neo4jClient neo4jClient;
   private final MeterRegistry meterRegistry;
 
   public MigrationToolService(
@@ -77,6 +83,7 @@ public class MigrationToolService {
       ValidationService validationService,
       MigrationRecipeService migrationRecipeService,
       RecipeBookRegistry recipeBookRegistry,
+      Neo4jClient neo4jClient,
       MeterRegistry meterRegistry) {
     this.assembler = assembler;
     this.graphQueryService = graphQueryService;
@@ -86,6 +93,7 @@ public class MigrationToolService {
     this.validationService = validationService;
     this.migrationRecipeService = migrationRecipeService;
     this.recipeBookRegistry = recipeBookRegistry;
+    this.neo4jClient = neo4jClient;
     this.meterRegistry = meterRegistry;
   }
 
@@ -360,5 +368,50 @@ public class MigrationToolService {
         .filter(r -> "NEEDS_MAPPING".equals(r.status()))
         .sorted(Comparator.comparingInt(RecipeRule::usageCount).reversed())
         .collect(java.util.stream.Collectors.toList());
+  }
+
+  /**
+   * Returns the full Java source code for a class by its fully-qualified name.
+   *
+   * <p>The source file path is resolved from the Neo4j graph ({@code ClassNode.sourceFilePath})
+   * and read from the local file system.
+   *
+   * @param classFqn fully-qualified class name (e.g. com.example.PaymentService)
+   * @return the source code text, or an error message if not found / unreadable
+   */
+  @Tool(description = "Returns the full Java source code for a class by its fully-qualified name. "
+      + "Use this when you need to see the actual implementation before rewriting or migrating a class. "
+      + "The source is read from the file system path stored in the Neo4j graph.")
+  @Timed(value = "esmp.mcp.tool.latency", extraTags = {"tool", "getSourceCode"})
+  public String getSourceCode(String classFqn) {
+    long startMs = System.currentTimeMillis();
+    Counter.builder("esmp.mcp.tool.invocations")
+        .tag("tool", "getSourceCode")
+        .register(meterRegistry)
+        .increment();
+
+    // Query Neo4j for the source file path
+    String sourceFilePath = neo4jClient.query(
+            "MATCH (c:JavaClass {fullyQualifiedName: $fqn}) RETURN c.sourceFilePath AS path")
+        .bind(classFqn).to("fqn")
+        .fetchAs(String.class)
+        .mappedBy((ts, record) -> record.get("path").asString(null))
+        .one()
+        .orElse(null);
+
+    if (sourceFilePath == null || sourceFilePath.isBlank()) {
+      log.warn("MCP_REQUEST tool=getSourceCode fqn={} result=NOT_FOUND", classFqn);
+      return "Source file path not found for class: " + classFqn;
+    }
+
+    try {
+      String source = Files.readString(Path.of(sourceFilePath));
+      log.info("MCP_REQUEST tool=getSourceCode fqn={} bytes={} latencyMs={}",
+          classFqn, source.length(), System.currentTimeMillis() - startMs);
+      return source;
+    } catch (IOException e) {
+      log.warn("MCP_REQUEST tool=getSourceCode fqn={} error={}", classFqn, e.getMessage());
+      return "Could not read source file at " + sourceFilePath + ": " + e.getMessage();
+    }
   }
 }

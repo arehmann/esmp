@@ -1626,6 +1626,2863 @@
       "status": "MAPPED",
       "usageCount": 0,
       "discoveredAt": null
+    },
+    {
+      "id": "COMP-052",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Button$ClickEvent",
+      "target": "com.vaadin.flow.component.ClickEvent",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "Button.ClickEvent is now generic ClickEvent<Button> in Flow",
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.Button.ClickEvent -> com.vaadin.flow.component.ClickEvent",
+        "Update type references: Button.ClickEvent -> ClickEvent<Button>",
+        "Flow ClickEvent provides getSource() returning Button, not getButton()",
+        "If checking isCtrlKey()/isShiftKey(), use getClickCount() or DOM event details instead"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-053",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Button$ClickListener",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "Button.ClickListener replaced by lambda-based addClickListener() in Flow",
+      "migrationSteps": [
+        "Remove Button.ClickListener interface implementations entirely",
+        "Replace button.addClickListener(this) with button.addClickListener(e -> handleClick(e))",
+        "Before: class MyView implements Button.ClickListener { void buttonClick(ClickEvent e) {...} }",
+        "After: button.addClickListener(e -> { /* handler code */ })",
+        "If the listener is shared across multiple buttons, extract to a method: button.addClickListener(this::handleClick)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-054",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Button$*",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "Wildcard import for Button inner classes - resolve to specific types first",
+      "migrationSteps": [
+        "Resolve wildcard import to specific inner class references (ClickEvent, ClickListener)",
+        "Apply COMP-052 for ClickEvent -> ClickEvent<Button>",
+        "Apply COMP-053 for ClickListener -> lambda addClickListener()",
+        "Remove the wildcard import after resolving all references"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-055",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Window$CloseEvent",
+      "target": "com.vaadin.flow.component.dialog.Dialog.DialogCloseActionEvent",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "Window is replaced by Dialog in Flow; CloseEvent becomes DialogCloseActionEvent",
+      "migrationSteps": [
+        "Replace Window with Dialog (see COMP-028)",
+        "Window.CloseEvent -> use Dialog addDialogCloseActionHandler or addDetachListener",
+        "Before: window.addCloseListener(e -> ...) After: dialog.addDialogCloseActionListener(e -> ...)",
+        "Note: DialogCloseActionEvent fires when user tries to close (Esc/overlay click), not after close"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-056",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Window$CloseListener",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "Window.CloseListener replaced by lambda in Dialog",
+      "migrationSteps": [
+        "Remove Window.CloseListener interface implementation",
+        "Replace with dialog.addDialogCloseActionListener(e -> { /* handler */ })",
+        "For detecting actual close (not just attempt), use dialog.addDetachListener(e -> ...)",
+        "If using windowClose(CloseEvent e), inline the handler as a lambda"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-057",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Window$*",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "Wildcard Window inner classes - resolve to CloseEvent, CloseListener, ResizeEvent, ResizeListener",
+      "migrationSteps": [
+        "Resolve to specific types: CloseEvent (COMP-055), CloseListener (COMP-056), ResizeEvent, ResizeListener",
+        "Window.ResizeEvent/ResizeListener - use dialog.getElement().addPropertyChangeListener() for size changes or CSS resize",
+        "Remove wildcard import after resolving all references"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-058",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.TabSheet$Tab",
+      "target": "com.vaadin.flow.component.tabs.Tab",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "TabSheet.Tab inner interface -> standalone Tab component in Flow",
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.TabSheet.Tab -> com.vaadin.flow.component.tabs.Tab",
+        "Flow Tab is a full component, not an inner interface - create with new Tab(\"label\")",
+        "Tab properties: setEnabled(), setLabel() exist in Flow; setClosable() -> tab.add(new Button(closeIcon))",
+        "Caption/icon setting: tab.setLabel(text) and tab.addComponentAsFirst(icon)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-059",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.TabSheet$SelectedTabChangeEvent",
+      "target": "com.vaadin.flow.component.tabs.Tabs.SelectedChangeEvent",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "TabSheet.SelectedTabChangeEvent -> Tabs.SelectedChangeEvent in Flow",
+      "migrationSteps": [
+        "Replace TabSheet.SelectedTabChangeEvent with Tabs.SelectedChangeEvent",
+        "Before: tabSheet.addSelectedTabChangeListener(e -> e.getTabSheet().getSelectedTab())",
+        "After: tabs.addSelectedChangeListener(e -> e.getSelectedTab())",
+        "Flow event directly provides getSelectedTab() returning the Tab component"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-060",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.TabSheet$SelectedTabChangeListener",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "TabSheet.SelectedTabChangeListener -> lambda on Tabs",
+      "migrationSteps": [
+        "Remove SelectedTabChangeListener interface implementation",
+        "Replace with tabs.addSelectedChangeListener(e -> { /* handler */ })",
+        "Access selected tab via e.getSelectedTab() instead of casting"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-061",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.TabSheet$*",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "Wildcard TabSheet inner classes",
+      "migrationSteps": [
+        "Resolve to specific types: Tab (COMP-058), SelectedTabChangeEvent (COMP-059), SelectedTabChangeListener (COMP-060)",
+        "Remove wildcard import after resolving all references"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-062",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.PopupView$Content",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "PopupView.Content interface removed; use Details or ContextMenu in Flow",
+      "migrationSteps": [
+        "PopupView is not directly available in Flow - use Details component for expand/collapse or ContextMenu for popup",
+        "Remove PopupView.Content interface implementation",
+        "Replace Content.getMinimizedValueAsHTML() with a clickable summary component",
+        "Replace Content.getPopupComponent() with the content of Details or ContextMenu",
+        "Alternative: use Dialog for modal popup behavior"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-063",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.MenuBar$MenuItem",
+      "target": "com.vaadin.flow.component.contextmenu.MenuItem",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "MenuBar.MenuItem -> Flow MenuItem is a standalone component",
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.MenuBar.MenuItem -> com.vaadin.flow.component.contextmenu.MenuItem",
+        "Flow MenuBar uses menuBar.addItem(\"text\", e -> handler) returning MenuItem",
+        "Sub-menus: item.getSubMenu().addItem(...) instead of item.addItem(...)",
+        "MenuItem.setCheckable(true) available in Flow for toggle items"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-064",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.MenuBar$Command",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "MenuBar.Command replaced by lambda click handlers in Flow",
+      "migrationSteps": [
+        "Remove MenuBar.Command interface implementation",
+        "Replace menuSelected(MenuItem) with lambda: menuBar.addItem(\"text\", e -> { /* handler */ })",
+        "Before: item.setCommand(new Command() { void menuSelected(MenuItem i) {...} })",
+        "After: menuBar.addItem(\"text\", e -> { /* handler using e.getSource() */ })"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-065",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Notification$Type",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "Notification.Type enum replaced by Notification.addThemeVariants() in Flow",
+      "migrationSteps": [
+        "Type.ERROR_MESSAGE -> NotificationVariant.LUMO_ERROR",
+        "Type.WARNING_MESSAGE -> NotificationVariant.LUMO_WARNING",
+        "Type.HUMANIZED_MESSAGE -> default Notification (no variant needed)",
+        "Type.TRAY_NOTIFICATION -> Notification with setPosition(Position.BOTTOM_END)",
+        "Import com.vaadin.flow.component.notification.NotificationVariant"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-066",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.AbstractComponent",
+      "target": "com.vaadin.flow.component.Component",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "AbstractComponent base class -> Component abstract class in Flow",
+      "migrationSteps": [
+        "Replace extends AbstractComponent with extends Component (or Composite<Div> for custom components)",
+        "setStyleName() -> addClassName() / removeClassName() / setClassName()",
+        "setDescription() (tooltip) -> use Tooltip.forComponent(this).setText(...) in Vaadin 24",
+        "setImmediate() -> removed, all Flow components are immediate by default",
+        "getState() -> removed, use getElement().getProperty() for client-side state"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-067",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Component",
+      "target": "com.vaadin.flow.component.Component",
+      "actionType": "CHANGE_PACKAGE",
+      "automatable": "YES",
+      "context": "Component interface in V7 -> Component abstract class in Flow",
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.Component -> com.vaadin.flow.component.Component",
+        "Flow Component is an abstract class, not an interface - adjust implements -> extends if needed",
+        "getParent() returns Optional<Component> in Flow, not Component directly",
+        "isAttached() -> check getUI().isPresent() instead",
+        "setVisible()/isVisible() work the same way"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-068",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Component$Focusable",
+      "target": "com.vaadin.flow.component.Focusable",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "Component.Focusable inner interface -> standalone Focusable interface in Flow",
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.Component.Focusable -> com.vaadin.flow.component.Focusable",
+        "Flow Focusable<T> is generic - implement as Focusable<MyComponent>",
+        "focus() and blur() methods work similarly; setTabIndex() available"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-069",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Component$Event",
+      "target": "com.vaadin.flow.component.ComponentEvent",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "Component.Event -> ComponentEvent<T> in Flow",
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.Component.Event -> com.vaadin.flow.component.ComponentEvent",
+        "Flow ComponentEvent is generic: extend ComponentEvent<MyComponent>",
+        "Constructor requires (source, fromClient) instead of just (source)",
+        "getSource() is typed in Flow - no casting needed"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-070",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Alignment",
+      "target": "com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "Alignment enum replaced by FlexComponent.Alignment and JustifyContentMode in Flow",
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.Alignment -> com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment",
+        "Alignment.MIDDLE_CENTER -> layout.setAlignItems(Alignment.CENTER) + layout.setJustifyContentMode(JustifyContentMode.CENTER)",
+        "Alignment.TOP_LEFT -> layout.setAlignItems(Alignment.START) + layout.setJustifyContentMode(JustifyContentMode.START)",
+        "Alignment.BOTTOM_RIGHT -> layout.setAlignItems(Alignment.END) + layout.setJustifyContentMode(JustifyContentMode.END)",
+        "Per-component: layout.setAlignSelf(Alignment.CENTER, component) replaces layout.setComponentAlignment(component, Alignment.MIDDLE_CENTER)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-071",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.AbstractField",
+      "target": "com.vaadin.flow.component.AbstractField",
+      "actionType": "CHANGE_PACKAGE",
+      "automatable": "PARTIAL",
+      "context": "AbstractField moved to Flow component package with different generics",
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.AbstractField -> com.vaadin.flow.component.AbstractField",
+        "Flow AbstractField<C,T> has two type params: component type and value type",
+        "setRequired() -> setRequiredIndicatorVisible(true)",
+        "setValidationVisible() -> removed, use Binder validation instead",
+        "getValue()/setValue() API remains similar"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-072",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.AbstractTextField",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AbstractTextField removed; use TextField or TextArea directly",
+      "migrationSteps": [
+        "Replace extends AbstractTextField with extends TextField or TextArea as appropriate",
+        "setNullRepresentation(\"\") -> removed, Flow fields handle null natively",
+        "setTextChangeEventMode() -> removed, all changes are immediate in Flow",
+        "setTextChangeTimeout() -> use setValueChangeMode(ValueChangeMode.LAZY) and setValueChangeTimeout(ms)",
+        "getTextChangeEventMode() -> getValueChangeMode()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-073",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.AbstractTextField$TextChangeEventMode",
+      "target": "com.vaadin.flow.data.value.ValueChangeMode",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "TextChangeEventMode enum -> ValueChangeMode in Flow",
+      "migrationSteps": [
+        "Replace import and all references: TextChangeEventMode -> ValueChangeMode",
+        "EAGER -> ValueChangeMode.EAGER",
+        "LAZY -> ValueChangeMode.LAZY",
+        "TIMEOUT -> ValueChangeMode.TIMEOUT",
+        "textField.setValueChangeMode(ValueChangeMode.LAZY)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-074",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.AbstractLayout",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AbstractLayout removed; use VerticalLayout, HorizontalLayout, or Div",
+      "migrationSteps": [
+        "Replace extends AbstractLayout with extends VerticalLayout, HorizontalLayout, or Composite<Div>",
+        "setMargin() -> layout.setPadding(true)/layout.setMargin(true) in Flow ordered layouts",
+        "setSpacing() -> layout.setSpacing(true) in Flow ordered layouts",
+        "setSizeFull() -> works the same in Flow"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-075",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.AbstractOrderedLayout",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AbstractOrderedLayout removed; use VerticalLayout or HorizontalLayout directly",
+      "migrationSteps": [
+        "Replace extends AbstractOrderedLayout with extends VerticalLayout or HorizontalLayout",
+        "setExpandRatio(component, 1.0f) -> layout.setFlexGrow(1.0, component)",
+        "setComponentAlignment() -> layout.setAlignSelf(Alignment.X, component)",
+        "addComponentAsFirst() -> layout.addComponentAsFirst(component) (works the same)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-076",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.AbstractComponentContainer",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AbstractComponentContainer removed; use Composite or HasComponents in Flow",
+      "migrationSteps": [
+        "Replace extends AbstractComponentContainer with extends Composite<Div> or implement HasComponents",
+        "addComponent() -> add() in Flow",
+        "removeComponent() -> remove() in Flow",
+        "removeAllComponents() -> removeAll() in Flow",
+        "getComponentCount() -> getChildren().count()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-077",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.HasComponents",
+      "target": "com.vaadin.flow.component.HasComponents",
+      "actionType": "CHANGE_PACKAGE",
+      "automatable": "YES",
+      "context": "HasComponents interface moved to Flow package",
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.HasComponents -> com.vaadin.flow.component.HasComponents",
+        "add()/remove() methods are the same in Flow",
+        "iterator() -> getChildren() returns Stream<Component> in Flow"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-078",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.ComponentContainer",
+      "target": "com.vaadin.flow.component.HasComponents",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "ComponentContainer interface -> HasComponents in Flow",
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.ComponentContainer -> com.vaadin.flow.component.HasComponents",
+        "addComponent() -> add()",
+        "removeComponent() -> remove()",
+        "ComponentContainer is fully replaced by HasComponents interface in Flow"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-079",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Layout",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "Layout interface removed; use specific layout classes or HasComponents",
+      "migrationSteps": [
+        "Replace references to Layout interface with specific layout types (VerticalLayout, HorizontalLayout)",
+        "Layout.AlignmentHandler -> use FlexComponent interface which provides alignment methods",
+        "Layout.SpacingHandler -> use ThemableLayout interface (setSpacing/setPadding)",
+        "Layout.MarginHandler -> use ThemableLayout.setMargin()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-080",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.AbsoluteLayout$ComponentPosition",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AbsoluteLayout.ComponentPosition removed; use CSS positioning",
+      "migrationSteps": [
+        "AbsoluteLayout is removed in Flow - use Div with CSS position: absolute",
+        "ComponentPosition.setTop/setLeft -> element.getStyle().set(\"top\",\"10px\").set(\"left\",\"20px\")",
+        "Replace getPosition() with reading CSS properties from the element",
+        "Parent container needs position: relative CSS for absolute positioning to work"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-081",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.JavaScript",
+      "target": "com.vaadin.flow.component.page.Page",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "JavaScript helper class -> Page.executeJs() in Flow",
+      "migrationSteps": [
+        "Replace JavaScript.getCurrent().execute(\"...\") with UI.getCurrent().getPage().executeJs(\"...\")",
+        "JavaScript.eval() with callback -> page.executeJs(\"...\").then(Type.class, result -> ...)",
+        "JavaScript.addFunction() -> use @ClientCallable annotation on component methods",
+        "Import com.vaadin.flow.component.page.Page"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-082",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.JavaScriptFunction",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "JavaScriptFunction removed; use @ClientCallable methods in Flow",
+      "migrationSteps": [
+        "Remove JavaScriptFunction interface usage",
+        "Replace with @ClientCallable annotation on server-side methods",
+        "Client calls: element.$server.methodName(args) from JS",
+        "For JS->server callbacks, use element.executeJs() combined with @ClientCallable"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-083",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Table$ColumnHeaderMode",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "Table.ColumnHeaderMode -> Grid column headers are always visible; hide via CSS",
+      "migrationSteps": [
+        "Table is replaced by Grid in Flow (see COMP-009)",
+        "HIDDEN -> grid.addClassName(\"no-header\") and add CSS: .no-header vaadin-grid::part(header-cell) { display: none; }",
+        "EXPLICIT -> default in Grid, headers show column key/header text",
+        "IMPLICIT -> not needed, Grid always uses explicit header text"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-084",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Table$CellStyleGenerator",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "Table.CellStyleGenerator -> Grid.setClassNameGenerator() in Flow",
+      "migrationSteps": [
+        "Replace Table.CellStyleGenerator with grid.setClassNameGenerator(item -> \"my-class\")",
+        "For column-specific styling: column.setClassNameGenerator(item -> \"col-class\")",
+        "Before: table.setCellStyleGenerator((source, itemId, propertyId) -> \"highlight\")",
+        "After: grid.setClassNameGenerator(item -> item.isImportant() ? \"highlight\" : null)",
+        "Define actual styles in CSS (not Java) for the class names"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-085",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Table$ColumnGenerator",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "Table.ColumnGenerator -> Grid.addComponentColumn() in Flow",
+      "migrationSteps": [
+        "Replace Table.ColumnGenerator with grid.addComponentColumn(item -> new Span(item.getText()))",
+        "Before: table.addGeneratedColumn(\"col\", (source, itemId, colId) -> new Label(...))",
+        "After: grid.addComponentColumn(item -> new Span(item.getCol())).setHeader(\"col\")",
+        "For non-component rendering use grid.addColumn(item -> item.getFormatted()).setHeader(\"col\")"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-086",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Table$*",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "Wildcard Table inner classes - resolve then migrate to Grid equivalents",
+      "migrationSteps": [
+        "Resolve wildcard to specific Table inner types used in code",
+        "ColumnHeaderMode (COMP-083), CellStyleGenerator (COMP-084), ColumnGenerator (COMP-085)",
+        "TableDragMode -> Grid drag support via grid.setRowsDraggable(true)",
+        "TableTransferable -> use Grid DragStartEvent.getDraggedItems()",
+        "HeaderClickListener -> grid.addColumnReorderListener() or grid.addSortListener()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-087",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Upload$FinishedEvent",
+      "target": "com.vaadin.flow.component.upload.SucceededEvent",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "Upload.FinishedEvent -> SucceededEvent in Flow",
+      "migrationSteps": [
+        "Replace Upload.FinishedEvent with SucceededEvent from com.vaadin.flow.component.upload",
+        "FinishedEvent.getFilename() -> SucceededEvent.getFileName()",
+        "FinishedEvent.getMIMEType() -> SucceededEvent.getMIMEType()",
+        "Register via upload.addSucceededListener(e -> ...) instead of addFinishedListener"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-088",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Upload$Receiver",
+      "target": "com.vaadin.flow.component.upload.Receiver",
+      "actionType": "CHANGE_PACKAGE",
+      "automatable": "YES",
+      "context": "Upload.Receiver inner interface -> standalone Receiver in Flow",
+      "migrationSteps": [
+        "Replace import: com.vaadin.ui.Upload.Receiver -> com.vaadin.flow.component.upload.Receiver",
+        "receiveUpload(String filename, String mimeType) signature is the same",
+        "Alternative: use MemoryBuffer or MultiFileMemoryBuffer for simpler in-memory handling"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-089",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.AbstractSplitPanel$SplitPositionChangeEvent",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "SplitLayout replaces SplitPanel; position change event API changed",
+      "migrationSteps": [
+        "Replace AbstractSplitPanel with SplitLayout (see COMP-023)",
+        "SplitPositionChangeEvent -> use splitLayout.addSplitterDragendListener(e -> ...)",
+        "Before: splitPanel.addSplitPositionChangeListener(e -> e.getSplitPosition())",
+        "After: splitLayout.addSplitterDragendListener(e -> { /* read new position */ })"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-090",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.AbstractSplitPanel$SplitPositionChangeListener",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "SplitPositionChangeListener -> lambda on SplitLayout",
+      "migrationSteps": [
+        "Remove SplitPositionChangeListener interface implementation",
+        "Replace with splitLayout.addSplitterDragendListener(e -> { /* handler */ })",
+        "SplitLayout position is set via setSplitterPosition(percentage)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-091",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.AbstractSelect",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AbstractSelect removed; use ComboBox, ListBox, or Select in Flow",
+      "migrationSteps": [
+        "Replace extends AbstractSelect with the specific select component (ComboBox, Select, ListBox)",
+        "setItemCaptionPropertyId() -> use setItemLabelGenerator(item -> item.getName())",
+        "setNullSelectionAllowed() -> ComboBox setClearButtonVisible(true)",
+        "Container-based data -> use DataProvider or setItems(collection)",
+        "setMultiSelect() -> use MultiSelectComboBox or CheckBoxGroup instead"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-092",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.Field",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "Field interface removed; use HasValue in Flow",
+      "migrationSteps": [
+        "Replace com.vaadin.ui.Field with com.vaadin.flow.component.HasValue",
+        "Field<T> -> HasValue<ValueChangeEvent<T>, T>",
+        "setRequired() -> setRequiredIndicatorVisible(true)",
+        "validate() -> use Binder with validators instead of field-level validation",
+        "commit()/discard() -> removed, use Binder.writeBean()/readBean()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-093",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.DragAndDropWrapper$WrapperTransferable",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "DragAndDropWrapper removed; use DragSource/DropTarget in Flow",
+      "migrationSteps": [
+        "Remove DragAndDropWrapper.WrapperTransferable entirely",
+        "Flow uses DragSource.create(component) and DropTarget.create(component)",
+        "Transferable data -> DragSource.setDragData(myObject)",
+        "Access in drop: dropEvent.getDragData().ifPresent(data -> ...)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-094",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.DragAndDropWrapper$DragStartMode",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "DragStartMode removed; use DragSource.setDraggable(true) in Flow",
+      "migrationSteps": [
+        "Remove DragStartMode enum entirely",
+        "DragStartMode.NONE -> do not call DragSource.create()",
+        "DragStartMode.COMPONENT -> DragSource.create(component).setDraggable(true)",
+        "DragStartMode.HTML5 -> default behavior in Flow, all DragSource uses HTML5 DnD"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-095",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.DragAndDropWrapper$*",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "All DragAndDropWrapper inner classes removed; use Flow DnD API",
+      "migrationSteps": [
+        "Resolve: WrapperTransferable (COMP-093), DragStartMode (COMP-094), WrapperTargetDetails",
+        "All replaced by com.vaadin.flow.component.dnd.DragSource and DropTarget",
+        "WrapperTargetDetails -> DropEvent provides component and coordinates",
+        "Remove wildcard import"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "COMP-096",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.AbstractColorPicker$PopupStyle",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "ColorPicker PopupStyle removed; no built-in color picker in Flow",
+      "migrationSteps": [
+        "Remove AbstractColorPicker.PopupStyle - no built-in ColorPicker in Flow",
+        "Use a web component color picker or input type=\"color\"",
+        "Alternative: new Input() and input.getElement().setAttribute(\"type\", \"color\")"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "DATA-012",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.data.Property$ValueChangeEvent",
+      "target": "com.vaadin.flow.component.HasValue.ValueChangeEvent",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "Property.ValueChangeEvent -> HasValue.ValueChangeEvent in Flow",
+      "migrationSteps": [
+        "Replace import: com.vaadin.data.Property.ValueChangeEvent -> com.vaadin.flow.component.HasValue.ValueChangeEvent",
+        "Flow ValueChangeEvent<V> is generic - e.g., ValueChangeEvent<String> for TextField",
+        "getProperty().getValue() -> e.getValue() directly",
+        "e.getOldValue() available in Flow (not in V7 without workaround)",
+        "e.isFromClient() tells if change was user-initiated"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "DATA-013",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.data.Property$ValueChangeListener",
+      "target": "com.vaadin.flow.component.HasValue.ValueChangeListener",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "Property.ValueChangeListener -> HasValue.ValueChangeListener in Flow",
+      "migrationSteps": [
+        "Replace import: com.vaadin.data.Property.ValueChangeListener -> com.vaadin.flow.component.HasValue.ValueChangeListener",
+        "Remove interface implementation; use lambda: field.addValueChangeListener(e -> ...)",
+        "Before: field.addValueChangeListener(new Property.ValueChangeListener() { void valueChange(ValueChangeEvent e) {...} })",
+        "After: field.addValueChangeListener(e -> { /* handler, e.getValue() returns typed value */ })",
+        "Flow listener is generic: ValueChangeListener<ValueChangeEvent<String>>"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "DATA-014",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.data.Property$*",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "Wildcard Property inner classes - resolve to ValueChangeEvent, ValueChangeListener",
+      "migrationSteps": [
+        "Resolve wildcard to specific types: ValueChangeEvent (DATA-012), ValueChangeListener (DATA-013)",
+        "Property.ReadOnlyStatusChangeEvent -> field.setReadOnly() is still available, listen via addValueChangeListener",
+        "Property.Editor -> removed, use Binder for field binding",
+        "Remove wildcard import after resolving all references"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "DATA-015",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.data.Property",
+      "target": "com.vaadin.flow.component.HasValue",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "Property interface -> HasValue interface in Flow",
+      "migrationSteps": [
+        "Replace com.vaadin.data.Property with com.vaadin.flow.component.HasValue",
+        "Property.getValue() -> HasValue.getValue()",
+        "Property.setValue() -> HasValue.setValue()",
+        "Property.getType() -> removed, use generics HasValue<E,T> where T is value type",
+        "Property.isReadOnly()/setReadOnly() -> HasValue.isReadOnly()/setReadOnly()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "DATA-016",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.data.util.BeanItem",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "BeanItem removed; Flow uses direct bean binding via Binder",
+      "migrationSteps": [
+        "Remove BeanItem entirely - Flow does not use Item/Property model",
+        "Replace new BeanItem<>(bean) with direct bean usage: binder.readBean(bean)",
+        "Property access via BeanItem.getItemProperty(\"name\") -> use bean getter directly: bean.getName()",
+        "For Grid: grid.setItems(beanList) binds directly to bean properties",
+        "For forms: Binder<Bean> binder = new Binder<>(Bean.class); binder.forField(textField).bind(Bean::getName, Bean::setName)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "DATA-017",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.data.Container$Filter",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Container.Filter removed; use DataProvider filtering in Flow",
+      "migrationSteps": [
+        "Remove Container.Filter implementations entirely",
+        "Replace with DataProvider filter: ListDataProvider<T> dp = new ListDataProvider<>(items); dp.setFilter(item -> predicate)",
+        "For Grid: grid.setItems(items) then grid.getListDataView().setFilter(item -> ...)",
+        "For lazy loading: use CallbackDataProvider with filter parameter"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "DATA-018",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.data.Container$Sortable",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Container.Sortable removed; use DataProvider sorting in Flow",
+      "migrationSteps": [
+        "Remove Container.Sortable interface - sorting is built into DataProvider",
+        "ListDataProvider: dp.setSortComparator(Comparator.comparing(Item::getName))",
+        "Grid columns: column.setSortable(true) is default; column.setComparator(Item::getName)",
+        "For backend sorting: implement SortOrder in CallbackDataProvider"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "DATA-019",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.data.Container$Filterable",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Container.Filterable removed; use DataProvider filtering in Flow",
+      "migrationSteps": [
+        "Remove Container.Filterable interface - filtering is built into DataProvider",
+        "Replace addContainerFilter()/removeContainerFilter() with DataProvider.setFilter()",
+        "ListDataProvider: dataView.setFilter(item -> predicate)",
+        "CallbackDataProvider: filter is passed as parameter to fetch callback"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "DATA-020",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.data.Container$*",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Wildcard Container inner classes",
+      "migrationSteps": [
+        "Resolve to specific types: Filter (DATA-017), Sortable (DATA-018), Filterable (DATA-019)",
+        "Container.ItemSetChangeListener -> use DataProvider.addDataProviderListener()",
+        "Container.PropertySetChangeListener -> removed, schema is fixed at compile time in Flow",
+        "Remove wildcard import after resolving"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "DATA-021",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.data.util.converter.StringToIntegerConverter",
+      "target": "com.vaadin.flow.data.converter.StringToIntegerConverter",
+      "actionType": "CHANGE_PACKAGE",
+      "automatable": "YES",
+      "context": "Converter moved to Flow data package with additional error message parameter",
+      "migrationSteps": [
+        "Replace import: com.vaadin.data.util.converter -> com.vaadin.flow.data.converter",
+        "Flow constructor requires error message: new StringToIntegerConverter(\"Must be a number\")",
+        "V7 default constructor (no error message) no longer exists",
+        "Use with Binder: binder.forField(textField).withConverter(new StringToIntegerConverter(\"error\")).bind(...)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "DATA-022",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.data.util.converter.StringToDoubleConverter",
+      "target": "com.vaadin.flow.data.converter.StringToDoubleConverter",
+      "actionType": "CHANGE_PACKAGE",
+      "automatable": "YES",
+      "context": "Converter moved to Flow data package",
+      "migrationSteps": [
+        "Replace import: com.vaadin.data.util.converter -> com.vaadin.flow.data.converter",
+        "Flow constructor requires error message: new StringToDoubleConverter(\"Must be a number\")",
+        "Use with Binder: binder.forField(textField).withConverter(new StringToDoubleConverter(\"error\")).bind(...)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "DATA-023",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.data.util.converter.StringToBigDecimalConverter",
+      "target": "com.vaadin.flow.data.converter.StringToBigDecimalConverter",
+      "actionType": "CHANGE_PACKAGE",
+      "automatable": "YES",
+      "context": "Converter moved to Flow data package",
+      "migrationSteps": [
+        "Replace import: com.vaadin.data.util.converter -> com.vaadin.flow.data.converter",
+        "Flow constructor requires error message: new StringToBigDecimalConverter(\"Must be a decimal\")",
+        "Use with Binder for BigDecimal fields"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "DATA-024",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.data.util.converter.StringToDateConverter",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "StringToDateConverter removed; use DatePicker with LocalDate directly",
+      "migrationSteps": [
+        "Flow DatePicker uses LocalDate natively - no converter needed for date fields",
+        "If converting String->Date is still needed, use custom Converter<String, LocalDate>",
+        "Replace java.util.Date with java.time.LocalDate throughout",
+        "DateTimePicker uses LocalDateTime; TimePicker uses LocalTime"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "DATA-025",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.data.validator.AbstractStringValidator",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AbstractStringValidator removed; use Validator functional interface in Flow",
+      "migrationSteps": [
+        "Replace extends AbstractStringValidator with Validator<String> lambda or implementation",
+        "Before: class MyValidator extends AbstractStringValidator { boolean isValidValue(String) {...} }",
+        "After: Validator<String> myValidator = (value, context) -> value.matches(regex) ? ValidationResult.ok() : ValidationResult.error(\"Invalid\")",
+        "Register via binder.forField(field).withValidator(myValidator).bind(...)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "DATA-026",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.data.validator.AbstractValidator",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AbstractValidator removed; use Validator functional interface in Flow",
+      "migrationSteps": [
+        "Replace extends AbstractValidator<T> with Validator<T> interface implementation",
+        "Before: class MyValidator extends AbstractValidator<T> { boolean isValidValue(T) {...} }",
+        "After: Validator<T> val = (value, ctx) -> valid ? ValidationResult.ok() : ValidationResult.error(msg)",
+        "com.vaadin.flow.data.validator package has built-in validators: IntegerRangeValidator, StringLengthValidator, etc."
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "DATA-027",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.data.validator.StringLengthValidator",
+      "target": "com.vaadin.flow.data.validator.StringLengthValidator",
+      "actionType": "CHANGE_PACKAGE",
+      "automatable": "YES",
+      "context": "Validator moved to Flow data package with same constructor",
+      "migrationSteps": [
+        "Replace import: com.vaadin.data.validator -> com.vaadin.flow.data.validator",
+        "Flow constructor: new StringLengthValidator(\"Length must be 1-100\", 1, 100)",
+        "Constructor signature is (errorMessage, minLength, maxLength) - same as V7"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "DATA-028",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.data.validator.EmailValidator",
+      "target": "com.vaadin.flow.data.validator.EmailValidator",
+      "actionType": "CHANGE_PACKAGE",
+      "automatable": "YES",
+      "context": "EmailValidator moved to Flow data package",
+      "migrationSteps": [
+        "Replace import: com.vaadin.data.validator -> com.vaadin.flow.data.validator",
+        "Constructor: new EmailValidator(\"Invalid email\") - similar to V7",
+        "Use with Binder: binder.forField(emailField).withValidator(new EmailValidator(\"Invalid\")).bind(...)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "DATA-029",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.data.fieldgroup.FieldGroup$CommitException",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "FieldGroup.CommitException removed; use Binder.validate() and ValidationException in Flow",
+      "migrationSteps": [
+        "Replace FieldGroup with Binder throughout",
+        "try { fieldGroup.commit(); } catch (CommitException e) -> try { binder.writeBean(bean); } catch (ValidationException e)",
+        "Import com.vaadin.flow.data.binder.ValidationException",
+        "ValidationException.getFieldValidationErrors() provides per-field error details"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "DATA-030",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.data.util.ObjectProperty",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "ObjectProperty removed; Flow binds values directly to components",
+      "migrationSteps": [
+        "Remove ObjectProperty<T> entirely - Flow does not use Property model",
+        "Replace new ObjectProperty<>(value, Type.class) with direct setValue() on component",
+        "For shared state between components, use Binder or a shared data model",
+        "If using as a value holder, use a simple AtomicReference<T> or bean property"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "DATA-031",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.data.*",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Wildcard data import - resolve to specific classes first",
+      "migrationSteps": [
+        "Resolve wildcard to specific data classes used: Property, Item, Container, Validator, etc.",
+        "Property -> HasValue (DATA-015), Item -> direct bean access, Container -> DataProvider",
+        "Validator classes -> com.vaadin.flow.data.validator package",
+        "Converter classes -> com.vaadin.flow.data.converter package",
+        "Remove wildcard import after resolving all references"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "DATA-032",
+      "category": "DATA_BINDING",
+      "source": "com.vaadin.data.util.*",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Wildcard data.util import - resolve to specific classes first",
+      "migrationSteps": [
+        "Resolve to specific types: BeanItem (DATA-016), IndexedContainer, HierarchicalContainer, etc.",
+        "BeanItemContainer -> ListDataProvider or grid.setItems()",
+        "IndexedContainer -> ListDataProvider",
+        "HierarchicalContainer -> TreeDataProvider with TreeData",
+        "Remove wildcard import after resolving"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "EVT-003",
+      "category": "EVENT",
+      "source": "com.vaadin.event.LayoutEvents$LayoutClickEvent",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "LayoutClickEvent removed in Flow; use component-level click listeners",
+      "migrationSteps": [
+        "LayoutClickEvent is removed - Flow does not support layout-level click detection",
+        "Replace with individual component click listeners: component.addClickListener(e -> ...)",
+        "For click on layout itself: layout.getElement().addEventListener(\"click\", e -> ...)",
+        "getChildComponent() -> not available; identify clicked component from DOM event target",
+        "getClickedComponent() -> attach listeners to specific child components instead"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "EVT-004",
+      "category": "EVENT",
+      "source": "com.vaadin.event.LayoutEvents$LayoutClickListener",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "LayoutClickListener removed; use component-level listeners",
+      "migrationSteps": [
+        "Remove LayoutClickListener interface implementation",
+        "Replace layout.addLayoutClickListener(this) with individual component listeners",
+        "Before: layout.addLayoutClickListener(e -> e.getChildComponent())",
+        "After: childComponent.getElement().addEventListener(\"click\", e -> { /* handler */ })",
+        "For Div/Span: component.addClickListener(e -> ...) if using ClickNotifier mixin"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "EVT-005",
+      "category": "EVENT",
+      "source": "com.vaadin.event.LayoutEvents$LayoutClickNotifier",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "LayoutClickNotifier removed; use ClickNotifier mixin on individual components",
+      "migrationSteps": [
+        "Remove LayoutClickNotifier interface - not available in Flow layouts",
+        "Flow components implement ClickNotifier<T> individually",
+        "For custom components: implement ClickNotifier<MyComponent> to get addClickListener()",
+        "Layout containers (VerticalLayout, etc.) do not implement ClickNotifier by design"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "EVT-006",
+      "category": "EVENT",
+      "source": "com.vaadin.event.LayoutEvents$*",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Wildcard LayoutEvents - all removed in Flow",
+      "migrationSteps": [
+        "Resolve to specific types: LayoutClickEvent (EVT-003), LayoutClickListener (EVT-004), LayoutClickNotifier (EVT-005)",
+        "All layout-level events are removed in Flow - use component-level listeners",
+        "Remove wildcard import after resolving"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "EVT-007",
+      "category": "EVENT",
+      "source": "com.vaadin.event.ItemClickEvent$ItemClickListener",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "ItemClickEvent.ItemClickListener -> Grid.addItemClickListener() in Flow",
+      "migrationSteps": [
+        "Remove ItemClickListener interface implementation",
+        "Replace with grid.addItemClickListener(e -> { e.getItem(); e.getColumn(); })",
+        "Before: table.addItemClickListener(new ItemClickEvent.ItemClickListener() { void itemClick(ItemClickEvent e) {...} })",
+        "After: grid.addItemClickListener(e -> handleClick(e.getItem(), e.getColumn()))",
+        "For double-click: grid.addItemDoubleClickListener(e -> ...)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "EVT-008",
+      "category": "EVENT",
+      "source": "com.vaadin.event.FieldEvents$TextChangeEvent",
+      "target": "com.vaadin.flow.component.HasValue.ValueChangeEvent",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "TextChangeEvent replaced by ValueChangeEvent with ValueChangeMode in Flow",
+      "migrationSteps": [
+        "Replace TextChangeEvent with ValueChangeEvent<String>",
+        "Set text field mode: textField.setValueChangeMode(ValueChangeMode.EAGER) for character-by-character updates",
+        "Before: textField.addTextChangeListener(e -> e.getText())",
+        "After: textField.addValueChangeListener(e -> e.getValue())",
+        "For LAZY behavior: textField.setValueChangeMode(ValueChangeMode.LAZY); textField.setValueChangeTimeout(300)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "EVT-009",
+      "category": "EVENT",
+      "source": "com.vaadin.event.FieldEvents$TextChangeListener",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "TextChangeListener -> addValueChangeListener with EAGER mode",
+      "migrationSteps": [
+        "Remove TextChangeListener interface implementation",
+        "Replace with textField.addValueChangeListener(e -> { /* handler */ })",
+        "Set textField.setValueChangeMode(ValueChangeMode.EAGER) to match TextChangeListener behavior",
+        "e.getValue() replaces e.getText()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "EVT-010",
+      "category": "EVENT",
+      "source": "com.vaadin.event.FieldEvents$BlurEvent",
+      "target": "com.vaadin.flow.component.BlurNotifier.BlurEvent",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "FieldEvents.BlurEvent -> BlurNotifier.BlurEvent in Flow",
+      "migrationSteps": [
+        "Replace import: com.vaadin.event.FieldEvents.BlurEvent -> com.vaadin.flow.component.BlurNotifier.BlurEvent",
+        "Register via component.addBlurListener(e -> ...) - same pattern",
+        "Flow BlurEvent<T> is generic, typed to the source component"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "EVT-011",
+      "category": "EVENT",
+      "source": "com.vaadin.event.FieldEvents$BlurListener",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "FieldEvents.BlurListener -> lambda with addBlurListener()",
+      "migrationSteps": [
+        "Remove BlurListener interface implementation",
+        "Replace with component.addBlurListener(e -> { /* handler */ })",
+        "Component must implement BlurNotifier (most input fields do)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "EVT-012",
+      "category": "EVENT",
+      "source": "com.vaadin.event.FieldEvents$BlurNotifier",
+      "target": "com.vaadin.flow.component.BlurNotifier",
+      "actionType": "CHANGE_PACKAGE",
+      "automatable": "YES",
+      "context": "BlurNotifier moved to Flow component package",
+      "migrationSteps": [
+        "Replace import: com.vaadin.event.FieldEvents.BlurNotifier -> com.vaadin.flow.component.BlurNotifier",
+        "Flow BlurNotifier<T> is generic - implement as BlurNotifier<MyComponent>",
+        "addBlurListener() method signature is the same"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "EVT-013",
+      "category": "EVENT",
+      "source": "com.vaadin.event.FieldEvents$FocusEvent",
+      "target": "com.vaadin.flow.component.FocusNotifier.FocusEvent",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "FieldEvents.FocusEvent -> FocusNotifier.FocusEvent in Flow",
+      "migrationSteps": [
+        "Replace import: com.vaadin.event.FieldEvents.FocusEvent -> com.vaadin.flow.component.FocusNotifier.FocusEvent",
+        "Register via component.addFocusListener(e -> ...) - same pattern",
+        "Flow FocusEvent<T> is generic, typed to the source component"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "EVT-014",
+      "category": "EVENT",
+      "source": "com.vaadin.event.FieldEvents$FocusListener",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "FieldEvents.FocusListener -> lambda with addFocusListener()",
+      "migrationSteps": [
+        "Remove FocusListener interface implementation",
+        "Replace with component.addFocusListener(e -> { /* handler */ })",
+        "Component must implement FocusNotifier (most input fields do)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "EVT-015",
+      "category": "EVENT",
+      "source": "com.vaadin.event.FieldEvents$*",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "Wildcard FieldEvents - resolve to specific event/listener types",
+      "migrationSteps": [
+        "Resolve to specific types: TextChangeEvent (EVT-008), TextChangeListener (EVT-009), BlurEvent (EVT-010), BlurListener (EVT-011), FocusEvent (EVT-013), FocusListener (EVT-014)",
+        "BlurNotifier (EVT-012) -> com.vaadin.flow.component.BlurNotifier",
+        "Remove wildcard import after resolving"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "EVT-016",
+      "category": "EVENT",
+      "source": "com.vaadin.event.FieldEvents",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "FieldEvents container class removed; events/listeners are standalone in Flow",
+      "migrationSteps": [
+        "FieldEvents class is removed - all inner types became standalone interfaces in Flow",
+        "BlurNotifier -> com.vaadin.flow.component.BlurNotifier",
+        "FocusNotifier -> com.vaadin.flow.component.FocusNotifier",
+        "Text change -> use ValueChangeMode on fields",
+        "Remove the import entirely and import specific Flow types"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "EVT-017",
+      "category": "EVENT",
+      "source": "com.vaadin.event.ShortcutAction$KeyCode",
+      "target": "com.vaadin.flow.component.Key",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "ShortcutAction.KeyCode constants -> Key enum in Flow",
+      "migrationSteps": [
+        "Replace import: com.vaadin.event.ShortcutAction.KeyCode -> com.vaadin.flow.component.Key",
+        "KeyCode.ENTER -> Key.ENTER",
+        "KeyCode.ESCAPE -> Key.ESCAPE",
+        "KeyCode.F1 through F12 -> Key.F1 through Key.F12",
+        "KeyCode.ARROW_DOWN -> Key.ARROW_DOWN (similar naming)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "EVT-018",
+      "category": "EVENT",
+      "source": "com.vaadin.event.ShortcutAction",
+      "target": "com.vaadin.flow.component.Shortcuts",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "ShortcutAction class -> Shortcuts utility and UI.addShortcutListener() in Flow",
+      "migrationSteps": [
+        "Replace new ShortcutAction(...) with Shortcuts or component shortcut API",
+        "For button click: button.addClickShortcut(Key.ENTER)",
+        "For custom action: UI.getCurrent().addShortcutListener(() -> doAction(), Key.KEY_S, KeyModifier.CONTROL)",
+        "For field-scoped: Shortcuts.addShortcutListener(textField, () -> search(), Key.ENTER)",
+        "Remove ShortcutAction import and use com.vaadin.flow.component.Key + Shortcuts"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "EVT-019",
+      "category": "EVENT",
+      "source": "com.vaadin.event.ShortcutListener",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "ShortcutListener removed; use Shortcuts utility in Flow",
+      "migrationSteps": [
+        "Remove ShortcutListener class extension",
+        "Replace with lambda-based shortcuts: UI.getCurrent().addShortcutListener(() -> handleShortcut(), Key.ENTER)",
+        "Before: panel.addAction(new ShortcutListener(\"Enter\", KeyCode.ENTER, null) { void handleAction(...) {...} })",
+        "After: Shortcuts.addShortcutListener(component, () -> handleAction(), Key.ENTER)",
+        "Import com.vaadin.flow.component.Shortcuts and com.vaadin.flow.component.Key"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "EVT-020",
+      "category": "EVENT",
+      "source": "com.vaadin.event.Action",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Action class removed; use Shortcuts or component listeners in Flow",
+      "migrationSteps": [
+        "Remove com.vaadin.event.Action - no direct equivalent in Flow",
+        "For keyboard actions: use Shortcuts API (see EVT-018)",
+        "For context menu actions: use ContextMenu component",
+        "Action.Handler -> replace with specific event listeners on components"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "EVT-021",
+      "category": "EVENT",
+      "source": "com.vaadin.event.Action$Handler",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Action.Handler removed; use specific listener patterns in Flow",
+      "migrationSteps": [
+        "Remove Action.Handler interface implementation",
+        "getActions() -> not needed, register shortcuts directly",
+        "handleAction() -> replace with lambda-based shortcut or click listeners",
+        "For Table/Tree action handlers: use Grid context menu or right-click listeners"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "EVT-022",
+      "category": "EVENT",
+      "source": "com.vaadin.event.MouseEvents$ClickEvent",
+      "target": "com.vaadin.flow.component.ClickEvent",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "MouseEvents.ClickEvent -> generic ClickEvent in Flow",
+      "migrationSteps": [
+        "Replace import: com.vaadin.event.MouseEvents.ClickEvent -> com.vaadin.flow.component.ClickEvent",
+        "Flow ClickEvent<T> is generic, providing getSource(), getClickCount()",
+        "getClientX()/getClientY() available on Flow ClickEvent",
+        "isDoubleClick() -> check e.getClickCount() == 2"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "EVT-023",
+      "category": "EVENT",
+      "source": "com.vaadin.event.MouseEvents",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "MouseEvents container class removed; use ClickEvent directly",
+      "migrationSteps": [
+        "Remove MouseEvents import - inner classes became standalone in Flow",
+        "MouseEvents.ClickEvent -> com.vaadin.flow.component.ClickEvent (EVT-022)",
+        "MouseEvents.DoubleClickEvent -> use ClickEvent with getClickCount() == 2",
+        "Register click listeners via component.addClickListener(e -> ...)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "EVT-024",
+      "category": "EVENT",
+      "source": "com.vaadin.event.*",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Wildcard event import - resolve to specific event classes first",
+      "migrationSteps": [
+        "Resolve wildcard to specific event types used in code",
+        "FieldEvents.* -> see EVT-008 through EVT-016",
+        "LayoutEvents.* -> see EVT-003 through EVT-006",
+        "ShortcutAction -> see EVT-017, EVT-018",
+        "ItemClickEvent -> see EVT-007",
+        "Remove wildcard import and add specific Flow imports"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "EVT-025",
+      "category": "EVENT",
+      "source": "com.vaadin.event.dd.DropHandler",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "DropHandler removed; Flow has HTML5 native drag-and-drop API",
+      "migrationSteps": [
+        "Remove DropHandler interface implementation",
+        "Flow drag-and-drop: use grid.setRowsDraggable(true) for Grid, or DragSource/DropTarget mixins",
+        "Before: implements DropHandler { void drop(DragAndDropEvent e) {...} AcceptCriterion getAcceptCriterion() {...} }",
+        "After: DropTarget.create(component).addDropListener(e -> { e.getDragData(); /* handle */ })",
+        "Import com.vaadin.flow.component.dnd.DropTarget and DragSource"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "EVT-026",
+      "category": "EVENT",
+      "source": "com.vaadin.event.dd.DragAndDropEvent",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "DragAndDropEvent removed; use Flow DnD events",
+      "migrationSteps": [
+        "Replace DragAndDropEvent with specific Flow DnD events",
+        "getTransferable() -> use DragStartEvent.getDragData() or DropEvent.getDragData()",
+        "getTargetDetails() -> use DropEvent.getComponent() for drop target",
+        "Flow DnD: DragSource.create(component), DropTarget.create(component)",
+        "Grid: grid.addDragStartListener(), grid.addDropListener()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "EVT-027",
+      "category": "EVENT",
+      "source": "com.vaadin.event.dd.acceptcriteria.AcceptCriterion",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AcceptCriterion removed; use DropEvent validation in Flow",
+      "migrationSteps": [
+        "Remove AcceptCriterion - Flow validates drops in the DropListener",
+        "Before: getAcceptCriterion() returning AcceptAll.get() or custom criterion",
+        "After: validate in drop listener: dropTarget.addDropListener(e -> { if (isValid(e)) { accept(); } })",
+        "For Grid: use grid.setDropMode(GridDropMode.ON_TOP) and filter in listener"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "EVT-028",
+      "category": "EVENT",
+      "source": "com.vaadin.event.dd.acceptcriteria.AcceptAll",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AcceptAll removed; all drops accepted by default in Flow",
+      "migrationSteps": [
+        "Remove AcceptAll.get() - Flow accepts all drops by default",
+        "If using AcceptAll in getAcceptCriterion(), simply remove the method",
+        "Drop validation is done in the DropListener if needed"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "EVT-029",
+      "category": "EVENT",
+      "source": "com.vaadin.event.Transferable",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Transferable removed; use DragData/DropEvent in Flow",
+      "migrationSteps": [
+        "Remove Transferable interface - Flow uses generic drag data",
+        "Replace transferable.getData(\"itemId\") with DragSource.setDragData(myData) and DropEvent.getDragData()",
+        "Flow drag data is an Object - cast to your expected type in the drop listener",
+        "getSourceComponent() -> DragStartEvent.getComponent() or DropEvent.getDragSourceComponent()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "EVT-030",
+      "category": "EVENT",
+      "source": "com.vaadin.event.dd.*",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Wildcard drag-and-drop - all replaced by Flow DnD API",
+      "migrationSteps": [
+        "Resolve: DropHandler (EVT-025), DragAndDropEvent (EVT-026), DropTarget, Transferable (EVT-029)",
+        "All V7 DnD is replaced by com.vaadin.flow.component.dnd package",
+        "Key classes: DragSource, DropTarget, DragStartEvent, DragEndEvent, DropEvent",
+        "Remove wildcard import and use specific Flow DnD imports"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "EVT-031",
+      "category": "EVENT",
+      "source": "com.vaadin.event.dd.acceptcriteria.*",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Accept criteria package removed; validate in drop listeners",
+      "migrationSteps": [
+        "Remove entire acceptcriteria package usage",
+        "AcceptAll -> drops accepted by default (EVT-028)",
+        "AcceptCriterion -> validate in drop listener (EVT-027)",
+        "ServerSideCriterion -> validate server-side in drop listener",
+        "Not/And/Or criteria -> use Java boolean logic in drop listener"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-016",
+      "category": "SERVER",
+      "source": "com.vaadin.server.FontAwesome",
+      "target": "com.vaadin.flow.component.icon.VaadinIcon",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "FontAwesome enum replaced by VaadinIcon or Lumo icons in Flow",
+      "migrationSteps": [
+        "Replace FontAwesome.XXXX with VaadinIcon.XXXX.create() or new Icon(VaadinIcon.XXXX)",
+        "Not all FontAwesome icons have VaadinIcon equivalents - check VaadinIcon enum",
+        "Common mappings: FontAwesome.EDIT -> VaadinIcon.EDIT, FontAwesome.TRASH -> VaadinIcon.TRASH, FontAwesome.PLUS -> VaadinIcon.PLUS",
+        "Import com.vaadin.flow.component.icon.VaadinIcon and com.vaadin.flow.component.icon.Icon"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-017",
+      "category": "SERVER",
+      "source": "com.vaadin.server.Page",
+      "target": "com.vaadin.flow.component.page.Page",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "Page class moved to Flow; access via UI.getCurrent().getPage()",
+      "migrationSteps": [
+        "Replace import: com.vaadin.server.Page -> com.vaadin.flow.component.page.Page",
+        "Page.getCurrent() -> UI.getCurrent().getPage()",
+        "page.reload() -> page.reload() (same)",
+        "page.setTitle() -> ui.getPage().setTitle()",
+        "page.getStyles().add() -> ui.getPage().addStyleSheet() or use @CssImport"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-018",
+      "category": "SERVER",
+      "source": "com.vaadin.server.Page$Styles",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "Page.Styles removed; use @CssImport or page.addStyleSheet()",
+      "migrationSteps": [
+        "Remove Page.Styles usage",
+        "For inline styles: use @CssImport annotation on view class",
+        "For dynamic styles: ui.getPage().executeJs() to inject style elements",
+        "Preferred: create CSS file and use @CssImport(\"./styles/my-styles.css\")"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-019",
+      "category": "SERVER",
+      "source": "com.vaadin.server.Page$BrowserWindowResizeEvent",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Browser resize event - use Page.addBrowserWindowResizeListener in Flow",
+      "migrationSteps": [
+        "Replace com.vaadin.server.Page.BrowserWindowResizeEvent with Flow equivalent",
+        "UI.getCurrent().getPage().addBrowserWindowResizeListener(e -> { e.getWidth(); e.getHeight(); })",
+        "Import com.vaadin.flow.component.page.BrowserWindowResizeEvent from Flow",
+        "Event provides getWidth() and getHeight() - same API"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-020",
+      "category": "SERVER",
+      "source": "com.vaadin.server.Page$BrowserWindowResizeListener",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "BrowserWindowResizeListener -> lambda on Page",
+      "migrationSteps": [
+        "Remove BrowserWindowResizeListener interface implementation",
+        "Replace with ui.getPage().addBrowserWindowResizeListener(e -> { /* handler */ })",
+        "Lambda receives BrowserWindowResizeEvent with getWidth()/getHeight()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-021",
+      "category": "SERVER",
+      "source": "com.vaadin.server.*",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Wildcard server import - resolve to specific classes first",
+      "migrationSteps": [
+        "Resolve wildcard to specific server classes used in code",
+        "Page -> com.vaadin.flow.component.page.Page (SRV-017)",
+        "FontAwesome -> VaadinIcon (SRV-016)",
+        "VaadinSession -> com.vaadin.flow.server.VaadinSession",
+        "Resource/ThemeResource -> see SRV-022, SRV-023",
+        "Remove wildcard import after resolving"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-022",
+      "category": "SERVER",
+      "source": "com.vaadin.server.Resource",
+      "target": "com.vaadin.flow.server.StreamResource",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "Resource interface -> StreamResource in Flow; external resources use standard URLs",
+      "migrationSteps": [
+        "Replace com.vaadin.server.Resource with com.vaadin.flow.server.StreamResource for dynamic content",
+        "For external URLs: use String URL directly (no wrapper class needed)",
+        "StreamResource: new StreamResource(\"file.pdf\", () -> new ByteArrayInputStream(data))",
+        "For images: use Image component with setSrc(streamResource) or setSrc(\"url\")"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-023",
+      "category": "SERVER",
+      "source": "com.vaadin.server.ThemeResource",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "ThemeResource removed; use CSS-based theming or static resources in Flow",
+      "migrationSteps": [
+        "Remove ThemeResource entirely - themes work differently in Flow",
+        "For images: place in src/main/resources/META-INF/resources/images/ and reference as \"/images/file.png\"",
+        "For icons: use VaadinIcon, LumoIcon, or Icon class with SVG",
+        "For CSS backgrounds: use @CssImport and reference static resources in CSS",
+        "Theme customization: use @Theme annotation with Lumo theme variants"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-024",
+      "category": "SERVER",
+      "source": "com.vaadin.server.FileDownloader",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "FileDownloader removed; use Anchor with StreamResource in Flow",
+      "migrationSteps": [
+        "Remove FileDownloader extension pattern",
+        "Before: FileDownloader fd = new FileDownloader(resource); fd.extend(button);",
+        "After: Anchor anchor = new Anchor(streamResource, \"Download\"); anchor.getElement().setAttribute(\"download\", true);",
+        "For button-triggered download: wrap anchor around button, or use page.open() with StreamResource",
+        "Import com.vaadin.flow.component.html.Anchor and com.vaadin.flow.server.StreamResource"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-025",
+      "category": "SERVER",
+      "source": "com.vaadin.server.BrowserWindowOpener",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "BrowserWindowOpener removed; use Page.open() or Anchor target=_blank",
+      "migrationSteps": [
+        "Remove BrowserWindowOpener extension pattern",
+        "Before: new BrowserWindowOpener(url).extend(button)",
+        "After (link): new Anchor(url, \"Open\").setTarget(\"_blank\")",
+        "After (button click): button.addClickListener(e -> UI.getCurrent().getPage().open(url))"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-026",
+      "category": "SERVER",
+      "source": "com.vaadin.server.WebBrowser",
+      "target": "com.vaadin.flow.server.WebBrowser",
+      "actionType": "CHANGE_PACKAGE",
+      "automatable": "YES",
+      "context": "WebBrowser moved to Flow server package",
+      "migrationSteps": [
+        "Replace import: com.vaadin.server.WebBrowser -> com.vaadin.flow.server.WebBrowser",
+        "Access via VaadinSession.getCurrent().getBrowser()",
+        "isChrome(), isFirefox(), isSafari(), etc. available in Flow"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-027",
+      "category": "SERVER",
+      "source": "com.vaadin.server.VaadinSession$State",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "VaadinSession.State enum exists in Flow but check for API changes",
+      "migrationSteps": [
+        "VaadinSession is available in Flow: com.vaadin.flow.server.VaadinSession",
+        "State enum (OPEN, CLOSING, CLOSED) is similar in Flow",
+        "Access: VaadinSession.getCurrent().getState()",
+        "Session lifecycle mostly unchanged; session attributes work the same"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-028",
+      "category": "SERVER",
+      "source": "com.vaadin.server.StreamResource$StreamSource",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "StreamResource.StreamSource -> InputStreamFactory functional interface in Flow",
+      "migrationSteps": [
+        "Remove StreamSource interface implementation",
+        "Before: new StreamResource.StreamSource() { InputStream getStream() { return ...; } }",
+        "After: new StreamResource(\"file.pdf\", () -> inputStream) - uses InputStreamFactory lambda",
+        "StreamResource constructor in Flow: new StreamResource(filename, InputStreamFactory)",
+        "Import com.vaadin.flow.server.StreamResource"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-029",
+      "category": "SERVER",
+      "source": "com.vaadin.server.StreamVariable",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "StreamVariable removed; use Upload component with Receiver in Flow",
+      "migrationSteps": [
+        "Remove StreamVariable interface - used for streaming uploads in V7",
+        "Replace with Upload component: Upload upload = new Upload(); upload.setReceiver(...)",
+        "For progress: upload.addProgressListener(e -> e.getReadBytes())",
+        "For completion: upload.addSucceededListener(e -> e.getFileName())"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-030",
+      "category": "SERVER",
+      "source": "com.vaadin.server.Responsive",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Responsive extension removed; use CSS media queries or FormLayout responsive steps",
+      "migrationSteps": [
+        "Remove Responsive.makeResponsive(component) - not needed in Flow",
+        "Flow components are responsive by default (web components with Shadow DOM)",
+        "For responsive layouts: use FormLayout with setResponsiveSteps()",
+        "For custom breakpoints: use CSS @media queries in @CssImport files"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-031",
+      "category": "SERVER",
+      "source": "com.vaadin.server.VaadinServletService",
+      "target": "com.vaadin.flow.server.VaadinServletService",
+      "actionType": "CHANGE_PACKAGE",
+      "automatable": "YES",
+      "context": "VaadinServletService moved to Flow server package",
+      "migrationSteps": [
+        "Replace import: com.vaadin.server.VaadinServletService -> com.vaadin.flow.server.VaadinServletService",
+        "Most API methods are similar in Flow",
+        "Access current service: VaadinService.getCurrent()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-032",
+      "category": "SERVER",
+      "source": "com.vaadin.server.UserError",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "UserError removed; use component.setErrorMessage() or Binder validation",
+      "migrationSteps": [
+        "Remove UserError - Flow components have built-in error display",
+        "Before: field.setComponentError(new UserError(\"Invalid value\"))",
+        "After: field.setErrorMessage(\"Invalid value\"); field.setInvalid(true);",
+        "For form validation: use Binder with validators, errors display automatically",
+        "To clear: field.setInvalid(false)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-033",
+      "category": "SERVER",
+      "source": "com.vaadin.server.DefaultErrorHandler",
+      "target": "com.vaadin.flow.server.ErrorHandler",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "DefaultErrorHandler -> ErrorHandler functional interface in Flow",
+      "migrationSteps": [
+        "Replace extends DefaultErrorHandler with ErrorHandler implementation",
+        "Before: VaadinSession.getCurrent().setErrorHandler(new DefaultErrorHandler() { void error(ErrorEvent e) {...} })",
+        "After: VaadinSession.getCurrent().setErrorHandler(event -> { /* handle event.getThrowable() */ })",
+        "Import com.vaadin.flow.server.ErrorHandler and com.vaadin.flow.server.ErrorEvent"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-034",
+      "category": "SERVER",
+      "source": "com.vaadin.server.BootstrapListener",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "BootstrapListener removed; use IndexHtmlRequestListener in Flow",
+      "migrationSteps": [
+        "Replace BootstrapListener with com.vaadin.flow.server.communication.IndexHtmlRequestListener",
+        "Register as a VaadinServiceInitListener in META-INF/services/",
+        "Before: modifyBootstrapPage(BootstrapPageResponse response)",
+        "After: modifyIndexHtmlResponse(IndexHtmlResponse response)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-035",
+      "category": "SERVER",
+      "source": "com.vaadin.server.SessionInitListener",
+      "target": "com.vaadin.flow.server.SessionInitListener",
+      "actionType": "CHANGE_PACKAGE",
+      "automatable": "YES",
+      "context": "SessionInitListener moved to Flow server package",
+      "migrationSteps": [
+        "Replace import: com.vaadin.server.SessionInitListener -> com.vaadin.flow.server.SessionInitListener",
+        "Register via VaadinServiceInitListener: service.addSessionInitListener(e -> ...)",
+        "Create META-INF/services/com.vaadin.flow.server.VaadinServiceInitListener file"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-036",
+      "category": "SERVER",
+      "source": "com.vaadin.server.DownloadStream",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "DownloadStream removed; use StreamResource with Anchor in Flow",
+      "migrationSteps": [
+        "Remove DownloadStream entirely",
+        "Replace with StreamResource: new StreamResource(\"file.pdf\", () -> inputStream)",
+        "Attach to Anchor with download attribute",
+        "Content-Type is inferred or set via streamResource.setContentType()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-037",
+      "category": "SERVER",
+      "source": "com.vaadin.spring.annotation.SpringUI",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "@SpringUI removed; Spring Boot auto-configures Vaadin Flow",
+      "migrationSteps": [
+        "Remove @SpringUI annotation entirely - not needed in Flow",
+        "Flow with Spring Boot auto-discovers @Route views and manages the UI lifecycle",
+        "The UI class concept is replaced by @Route views + AppShellConfigurator",
+        "Before: @SpringUI @Theme(\"mytheme\") public class MyUI extends UI { void init(VaadinRequest) {...} }",
+        "After: @Route(\"\") public class MainView extends VerticalLayout { public MainView() { /* init */ } }"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-038",
+      "category": "SERVER",
+      "source": "com.vaadin.spring.annotation.EnableVaadin",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "YES",
+      "context": "@EnableVaadin removed; Spring Boot starter auto-configures",
+      "migrationSteps": [
+        "Remove @EnableVaadin annotation - vaadin-spring-boot-starter auto-configures everything",
+        "Ensure vaadin-spring-boot-starter dependency is in build.gradle/pom.xml",
+        "No manual configuration needed for component scanning in Flow + Spring Boot"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-039",
+      "category": "SERVER",
+      "source": "com.vaadin.spring.server.SpringVaadinServlet",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "YES",
+      "context": "SpringVaadinServlet removed; auto-configured by Spring Boot",
+      "migrationSteps": [
+        "Remove SpringVaadinServlet class/configuration - Spring Boot auto-configures the servlet",
+        "If custom servlet configuration needed: extend SpringServlet from com.vaadin.flow.spring",
+        "Custom init params: use application.properties with vaadin.* prefix instead"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-040",
+      "category": "SERVER",
+      "source": "com.vaadin.util.CurrentInstance",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "CurrentInstance still available but rarely needed in Flow",
+      "migrationSteps": [
+        "CurrentInstance utility exists in Flow but usage patterns change",
+        "For UI access: UI.getCurrent() (same pattern)",
+        "For VaadinSession: VaadinSession.getCurrent()",
+        "If using for custom ThreadLocal storage: consider Spring @RequestScope or @SessionScope beans instead"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-041",
+      "category": "SERVER",
+      "source": "com.vaadin.server.Sizeable$Unit",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "Sizeable.Unit removed; use CSS strings for sizing in Flow",
+      "migrationSteps": [
+        "Remove Sizeable.Unit - Flow uses CSS string values for sizing",
+        "Before: component.setWidth(100, Unit.PERCENTAGE) After: component.setWidth(\"100%\")",
+        "Before: component.setHeight(200, Unit.PIXELS) After: component.setHeight(\"200px\")",
+        "setSizeFull(), setWidthFull(), setHeightFull() work the same in Flow"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-042",
+      "category": "SERVER",
+      "source": "com.vaadin.server.CustomizedSystemMessages",
+      "target": "com.vaadin.flow.server.CustomizedSystemMessages",
+      "actionType": "CHANGE_PACKAGE",
+      "automatable": "YES",
+      "context": "CustomizedSystemMessages moved to Flow server package",
+      "migrationSteps": [
+        "Replace import: com.vaadin.server.CustomizedSystemMessages -> com.vaadin.flow.server.CustomizedSystemMessages",
+        "Register via SystemMessagesProvider in VaadinServiceInitListener",
+        "API is similar: setSessionExpiredCaption(), setCommunicationErrorMessage(), etc."
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-043",
+      "category": "SERVER",
+      "source": "com.vaadin.server.SystemMessagesProvider",
+      "target": "com.vaadin.flow.server.SystemMessagesProvider",
+      "actionType": "CHANGE_PACKAGE",
+      "automatable": "YES",
+      "context": "SystemMessagesProvider moved to Flow server package",
+      "migrationSteps": [
+        "Replace import: com.vaadin.server.SystemMessagesProvider -> com.vaadin.flow.server.SystemMessagesProvider",
+        "Register in VaadinServiceInitListener: service.setSystemMessagesProvider(info -> { ... return msgs; })"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-044",
+      "category": "SERVER",
+      "source": "com.vaadin.server.VaadinServletRequest",
+      "target": "com.vaadin.flow.server.VaadinServletRequest",
+      "actionType": "CHANGE_PACKAGE",
+      "automatable": "YES",
+      "context": "VaadinServletRequest moved to Flow server package",
+      "migrationSteps": [
+        "Replace import: com.vaadin.server.VaadinServletRequest -> com.vaadin.flow.server.VaadinServletRequest",
+        "Access: VaadinServletRequest.getCurrent() or cast from VaadinRequest"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "SRV-045",
+      "category": "SERVER",
+      "source": "com.vaadin.server.VaadinServletResponse",
+      "target": "com.vaadin.flow.server.VaadinServletResponse",
+      "actionType": "CHANGE_PACKAGE",
+      "automatable": "YES",
+      "context": "VaadinServletResponse moved to Flow server package",
+      "migrationSteps": [
+        "Replace import: com.vaadin.server.VaadinServletResponse -> com.vaadin.flow.server.VaadinServletResponse",
+        "Access: VaadinServletResponse.getCurrent() or cast from VaadinResponse"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "NAV-006",
+      "category": "NAVIGATION",
+      "source": "com.vaadin.navigator.ViewChangeListener$ViewChangeEvent",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "ViewChangeEvent -> BeforeEnterEvent/BeforeLeaveEvent in Flow",
+      "migrationSteps": [
+        "Replace ViewChangeEvent with BeforeEnterEvent or BeforeLeaveEvent depending on usage",
+        "event.getViewName() -> the @Route value of the target view",
+        "event.getParameters() -> use HasUrlParameter<T> interface on the view class",
+        "event.getOldView() -> use BeforeLeaveEvent in the departing view",
+        "event.getNewView() -> use BeforeEnterEvent in the arriving view"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "NAV-007",
+      "category": "NAVIGATION",
+      "source": "com.vaadin.navigator.ViewChangeListener",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "ViewChangeListener -> BeforeEnterObserver/BeforeLeaveObserver interfaces in Flow",
+      "migrationSteps": [
+        "Remove ViewChangeListener interface",
+        "For entering a view: implement BeforeEnterObserver on the view class",
+        "For leaving a view: implement BeforeLeaveObserver on the view class",
+        "beforeEnter(BeforeEnterEvent) replaces beforeViewChange(ViewChangeEvent) for navigation guard",
+        "beforeLeave(BeforeLeaveEvent) with event.postpone() for unsaved changes confirmation"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "NAV-008",
+      "category": "NAVIGATION",
+      "source": "com.vaadin.navigator.Navigator",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "Navigator removed; use @Route and UI.navigate() in Flow",
+      "migrationSteps": [
+        "Remove Navigator entirely - Flow uses automatic routing via @Route annotations",
+        "navigator.navigateTo(\"view\") -> UI.getCurrent().navigate(\"view\")",
+        "navigator.addView(\"name\", ViewClass.class) -> not needed, use @Route(\"name\") on view class",
+        "navigator.addViewChangeListener() -> implement BeforeEnterObserver/BeforeLeaveObserver on views"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "NAV-009",
+      "category": "NAVIGATION",
+      "source": "com.vaadin.navigator.ViewDisplay",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "ViewDisplay removed; use RouterLayout in Flow",
+      "migrationSteps": [
+        "Remove ViewDisplay interface - Flow uses RouterLayout for parent layouts",
+        "Before: implements ViewDisplay { void showView(View view) { setContent(view); } }",
+        "After: @Route(value = \"child\", layout = MainLayout.class) on child views",
+        "MainLayout implements RouterLayout",
+        "Import com.vaadin.flow.router.RouterLayout"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "NAV-010",
+      "category": "NAVIGATION",
+      "source": "com.vaadin.navigator.ViewProvider",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "ViewProvider removed; Flow auto-discovers @Route annotated views",
+      "migrationSteps": [
+        "Remove ViewProvider implementations - not needed in Flow",
+        "Flow automatically discovers all classes annotated with @Route at startup",
+        "For dynamic routing: use HasUrlParameter<T> on view classes",
+        "For access control: implement BeforeEnterObserver and use event.rerouteToError() or event.forwardTo()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "NAV-011",
+      "category": "NAVIGATION",
+      "source": "com.vaadin.navigator.*",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Wildcard navigator import - resolve to specific classes",
+      "migrationSteps": [
+        "Resolve to specific types: View (NAV-001), Navigator (NAV-008), ViewChangeListener (NAV-007), ViewDisplay (NAV-009), ViewProvider (NAV-010)",
+        "All navigation in Flow uses @Route annotations + UI.navigate()",
+        "Remove wildcard import after resolving"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "THM-001",
+      "category": "THEME",
+      "source": "com.vaadin.ui.themes.Runo",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Runo theme removed; use Lumo theme in Flow",
+      "migrationSteps": [
+        "Remove all Runo theme constant references (Runo.BUTTON_SMALL, Runo.PANEL_LIGHT, etc.)",
+        "Flow uses Lumo theme by default - no explicit theme constants needed",
+        "Runo.BUTTON_SMALL -> button.addThemeVariants(ButtonVariant.LUMO_SMALL)",
+        "Runo.BUTTON_DEFAULT -> button.addThemeVariants(ButtonVariant.LUMO_PRIMARY)",
+        "Runo.PANEL_LIGHT -> use CSS custom properties: --lumo-contrast-5pct for light backgrounds",
+        "For custom styling: use @CssImport and Lumo CSS custom properties (--lumo-*)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "THM-002",
+      "category": "THEME",
+      "source": "com.vaadin.annotations.Theme",
+      "target": "com.vaadin.flow.theme.Theme",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "@Theme annotation moved to Flow with different usage",
+      "migrationSteps": [
+        "Replace import: com.vaadin.annotations.Theme -> com.vaadin.flow.theme.Theme",
+        "Before: @Theme(\"runo\") on UI class",
+        "After: @Theme(\"my-theme\") on a class implementing AppShellConfigurator, or omit for default Lumo",
+        "Lumo is the default theme - @Theme annotation only needed for custom themes"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "THM-003",
+      "category": "THEME",
+      "source": "com.vaadin.annotations.StyleSheet",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "@StyleSheet replaced by @CssImport in Flow",
+      "migrationSteps": [
+        "Replace @StyleSheet(\"mystyles.css\") with @CssImport(\"./styles/mystyles.css\")",
+        "Place CSS files in frontend/styles/ directory (resolved from src/main/frontend/)",
+        "For external stylesheets: @StyleSheet(\"https://...\") still works in Flow but @CssImport is preferred",
+        "Import com.vaadin.flow.component.dependency.CssImport"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "THM-004",
+      "category": "THEME",
+      "source": "com.vaadin.annotations.JavaScript",
+      "target": "com.vaadin.flow.component.dependency.JsModule",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "@JavaScript replaced by @JsModule in Flow",
+      "migrationSteps": [
+        "Replace @JavaScript(\"myscript.js\") with @JsModule(\"./myscript.js\")",
+        "Place JS files in src/main/frontend/ directory",
+        "For external scripts: use page.addJavaScript(\"https://...\") or @JavaScript for URLs",
+        "@JsModule is for ES module imports; @JavaScript for non-module scripts"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "THM-005",
+      "category": "THEME",
+      "source": "com.vaadin.annotations.PreserveOnRefresh",
+      "target": "com.vaadin.flow.router.PreserveOnRefresh",
+      "actionType": "CHANGE_PACKAGE",
+      "automatable": "YES",
+      "context": "@PreserveOnRefresh moved to Flow router package",
+      "migrationSteps": [
+        "Replace import: com.vaadin.annotations.PreserveOnRefresh -> com.vaadin.flow.router.PreserveOnRefresh",
+        "Apply @PreserveOnRefresh on @Route view classes instead of UI class",
+        "Behavior is the same: preserves view state on browser refresh"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "THM-006",
+      "category": "THEME",
+      "source": "com.vaadin.annotations.Title",
+      "target": "com.vaadin.flow.router.PageTitle",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "@Title replaced by @PageTitle in Flow",
+      "migrationSteps": [
+        "Replace @Title(\"My Page\") with @PageTitle(\"My Page\")",
+        "Import com.vaadin.flow.router.PageTitle",
+        "Apply on @Route view classes; for dynamic titles implement HasDynamicTitle"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "THM-007",
+      "category": "THEME",
+      "source": "com.vaadin.annotations.Push",
+      "target": "com.vaadin.flow.component.page.Push",
+      "actionType": "CHANGE_PACKAGE",
+      "automatable": "YES",
+      "context": "@Push annotation moved to Flow",
+      "migrationSteps": [
+        "Replace import: com.vaadin.annotations.Push -> com.vaadin.flow.component.page.Push",
+        "Apply on class implementing AppShellConfigurator (not on UI class)",
+        "@Push enables server push (WebSocket by default)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "THM-008",
+      "category": "THEME",
+      "source": "com.vaadin.annotations.*",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "Wildcard annotations import - resolve to specific annotations",
+      "migrationSteps": [
+        "Resolve to specific annotations: Theme (THM-002), StyleSheet (THM-003), JavaScript (THM-004), PreserveOnRefresh (THM-005), Title (THM-006), Push (THM-007)",
+        "All annotations moved to different Flow packages",
+        "Remove wildcard import after resolving"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "THM-009",
+      "category": "THEME",
+      "source": "com.vaadin.shared.ui.label.ContentMode",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "ContentMode enum removed; use Html component or element API in Flow",
+      "migrationSteps": [
+        "Remove ContentMode import entirely",
+        "ContentMode.HTML -> use Html component: new Html(\"<span>rich <b>text</b></span>\")",
+        "ContentMode.TEXT -> use Span or Text component (default behavior)",
+        "ContentMode.PREFORMATTED -> use Pre component or Span with white-space: pre CSS",
+        "Before: new Label(\"<b>bold</b>\", ContentMode.HTML) After: new Html(\"<span><b>bold</b></span>\")",
+        "IMPORTANT: Html component requires a single root element - wrap in <span> if needed"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "THM-010",
+      "category": "THEME",
+      "source": "com.vaadin.shared.ui.button.ButtonState",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "ButtonState removed; no shared state model in Flow",
+      "migrationSteps": [
+        "Remove ButtonState entirely - shared state model does not exist in Flow",
+        "Button properties are accessed via component API: button.setText(), button.setEnabled(), etc.",
+        "If extending ButtonState in custom connector: rewrite as a Flow web component",
+        "Server-side state is managed through element properties: getElement().setProperty(\"key\", value)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "THM-011",
+      "category": "THEME",
+      "source": "com.vaadin.shared.MouseEventDetails$MouseButton",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "MouseButton enum removed; use ClickEvent.getButton() in Flow",
+      "migrationSteps": [
+        "Remove MouseEventDetails.MouseButton import",
+        "Flow ClickEvent provides getButton() returning int (0=left, 1=middle, 2=right)",
+        "Before: if (details.getButton() == MouseButton.LEFT)",
+        "After: if (event.getButton() == 0) // left click",
+        "For context menu: use ContextMenu component"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "THM-012",
+      "category": "THEME",
+      "source": "com.vaadin.shared.ui.MultiSelectMode",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "MultiSelectMode removed; Grid uses SelectionMode.MULTI in Flow",
+      "migrationSteps": [
+        "Remove MultiSelectMode import",
+        "Replace with Grid.setSelectionMode(Grid.SelectionMode.MULTI)",
+        "MultiSelectMode.DEFAULT -> Grid.SelectionMode.MULTI (click to select)",
+        "Access selection: grid.asMultiSelect().addValueChangeListener(e -> e.getValue())"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "THM-013",
+      "category": "THEME",
+      "source": "com.vaadin.shared.ui.datefield.Resolution",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "Resolution enum removed; use DatePicker/DateTimePicker with step in Flow",
+      "migrationSteps": [
+        "Remove Resolution import - Flow DatePicker uses LocalDate (day resolution always)",
+        "Resolution.DAY -> DatePicker (default)",
+        "Resolution.HOUR/MINUTE/SECOND -> DateTimePicker with step: dateTimePicker.setStep(Duration.ofMinutes(15))",
+        "Resolution.MONTH/YEAR -> no direct equivalent; use Select or custom picker"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "THM-014",
+      "category": "THEME",
+      "source": "com.vaadin.shared.ui.MarginInfo",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "MarginInfo removed; use CSS or ThemableLayout.setMargin() in Flow",
+      "migrationSteps": [
+        "Remove MarginInfo - Flow layouts use simpler margin API",
+        "Before: layout.setMargin(new MarginInfo(true, false, true, false))",
+        "After: layout.getStyle().set(\"margin-top\", \"var(--lumo-space-m)\").set(\"margin-bottom\", \"var(--lumo-space-m)\")",
+        "Or use layout.setMargin(true) for uniform margin on all sides"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "THM-015",
+      "category": "THEME",
+      "source": "com.vaadin.shared.ui.window.WindowMode",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "WindowMode removed; Dialog does not have normal/maximized modes by default",
+      "migrationSteps": [
+        "Remove WindowMode import - Dialog replaces Window in Flow",
+        "WindowMode.NORMAL -> default Dialog state",
+        "WindowMode.MAXIMIZED -> dialog.setSizeFull()",
+        "For toggle maximize: add a maximize button that toggles between setSizeFull() and default size"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "THM-016",
+      "category": "THEME",
+      "source": "com.vaadin.shared.ui.combobox.FilteringMode",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "FilteringMode removed; ComboBox uses setItems with filter in Flow",
+      "migrationSteps": [
+        "Remove FilteringMode import",
+        "FilteringMode.CONTAINS -> default ComboBox behavior in Flow",
+        "FilteringMode.STARTSWITH -> comboBox.setFilter((item, query) -> item.startsWith(query))",
+        "FilteringMode.OFF -> comboBox.setItems(items) without filter callback"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "THM-017",
+      "category": "THEME",
+      "source": "com.vaadin.shared.ui.BorderStyle",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "BorderStyle removed; use CSS styling in Flow",
+      "migrationSteps": [
+        "Remove BorderStyle import - purely CSS concern in Flow",
+        "component.getStyle().set(\"border\", \"1px solid var(--lumo-contrast-20pct)\")",
+        "Or use addClassName() with CSS class defining border styles"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "THM-018",
+      "category": "THEME",
+      "source": "com.vaadin.shared.ui.dd.VerticalDropLocation",
+      "target": "com.vaadin.flow.component.grid.dnd.GridDropLocation",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "VerticalDropLocation -> GridDropLocation for Grid DnD in Flow",
+      "migrationSteps": [
+        "Replace VerticalDropLocation with GridDropLocation for Grid drag-and-drop",
+        "TOP -> GridDropLocation.ABOVE",
+        "MIDDLE -> GridDropLocation.ON_TOP",
+        "BOTTOM -> GridDropLocation.BELOW",
+        "Import com.vaadin.flow.component.grid.dnd.GridDropLocation"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "THM-019",
+      "category": "THEME",
+      "source": "com.vaadin.shared.ui.*",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Wildcard shared.ui - all shared state removed in Flow",
+      "migrationSteps": [
+        "Resolve to specific types: ContentMode (THM-009), MultiSelectMode (THM-012), Resolution (THM-013), etc.",
+        "All com.vaadin.shared.* classes are removed in Flow - the shared-state architecture is gone",
+        "Replace with component API calls or CSS styling",
+        "Remove wildcard import after resolving"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "THM-020",
+      "category": "THEME",
+      "source": "com.vaadin.shared.communication.ServerRpc",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "ServerRpc removed; use @ClientCallable methods in Flow",
+      "migrationSteps": [
+        "Remove ServerRpc interface - RPC model replaced by element API in Flow",
+        "Before: interface MyRpc extends ServerRpc { void onClick(MouseEventDetails details); }",
+        "After: @ClientCallable public void onClick(String data) { /* handler */ }",
+        "Client calls server via element.$server.onClick(data) in JavaScript"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "THM-021",
+      "category": "THEME",
+      "source": "com.vaadin.shared.communication.ClientRpc",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "ClientRpc removed; use Element.executeJs() in Flow",
+      "migrationSteps": [
+        "Remove ClientRpc interface - replaced by element.executeJs() in Flow",
+        "Before: getRpcProxy(MyClientRpc.class).showMessage(\"text\")",
+        "After: getElement().executeJs(\"this.showMessage($0)\", \"text\")",
+        "For component state updates: getElement().setProperty(\"key\", value)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "THM-022",
+      "category": "THEME",
+      "source": "com.vaadin.shared.ui.Connect",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "@Connect removed; Flow uses web components, not GWT connectors",
+      "migrationSteps": [
+        "Remove @Connect annotation - GWT connector model does not exist in Flow",
+        "Flow web components use @Tag, @NpmPackage, and @JsModule instead",
+        "Before: @Connect(MyServerComponent.class) public class MyConnector extends AbstractComponentConnector",
+        "After: @Tag(\"my-component\") @JsModule(\"./my-component.js\") public class MyComponent extends Component",
+        "Full rewrite required: create a Lit/web component JS file and a Java wrapper class"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "THM-023",
+      "category": "THEME",
+      "source": "com.vaadin.shared.ui.colorpicker.Color",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Color class removed; use CSS color strings in Flow",
+      "migrationSteps": [
+        "Remove com.vaadin.shared.ui.colorpicker.Color",
+        "Use CSS color strings directly: \"#FF0000\", \"rgb(255,0,0)\", \"var(--lumo-primary-color)\"",
+        "component.getStyle().set(\"color\", \"#FF0000\")"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "THM-024",
+      "category": "THEME",
+      "source": "com.vaadin.client.ui.AbstractComponentConnector",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "GWT connectors removed; rewrite as Flow web component wrapper",
+      "migrationSteps": [
+        "Remove AbstractComponentConnector entirely - GWT client-side framework removed in Flow",
+        "Flow uses web components (Lit/Polymer) instead of GWT widgets",
+        "Create JS web component: class MyComponent extends LitElement { ... }",
+        "Create Java wrapper: @Tag(\"my-component\") @JsModule(\"./my-component.js\") public class MyComponent extends Component",
+        "State sync via getElement().setProperty()/getElement().addPropertyChangeListener()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "THM-025",
+      "category": "THEME",
+      "source": "com.vaadin.client.*",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Entire client (GWT) package removed; rewrite as web components",
+      "migrationSteps": [
+        "All com.vaadin.client.* classes are GWT-based and completely removed in Flow",
+        "Connectors -> @Tag + @JsModule web component wrappers",
+        "Widgets (VButton, VLabel, etc.) -> Flow uses native web components",
+        "StateChangeEvent -> use element property change listeners",
+        "This requires a full architectural rewrite from GWT to web components"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "THM-026",
+      "category": "THEME",
+      "source": "com.vaadin.client.ui.*",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "GWT widget classes removed; use Flow web components",
+      "migrationSteps": [
+        "All VButton, VLabel, VVerticalLayout etc. are GWT widgets - removed in Flow",
+        "Flow renders via web components in the browser, not GWT widgets",
+        "For custom widgets: create a Lit element JS file and Java wrapper",
+        "Remove all com.vaadin.client.ui.* imports"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "WILD-001",
+      "category": "COMPONENT",
+      "source": "com.vaadin.ui.*",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Wildcard UI import - must resolve to specific component imports first",
+      "migrationSteps": [
+        "CRITICAL: Resolve this wildcard to the specific com.vaadin.ui classes actually used in the file",
+        "Search for all V7 type references in the file: Button, TextField, Label, Grid, Table, etc.",
+        "Apply the corresponding COMP-xxx rule for each resolved type",
+        "Flow components live in different sub-packages: com.vaadin.flow.component.button.Button, com.vaadin.flow.component.textfield.TextField, etc.",
+        "Do NOT replace with com.vaadin.flow.component.* - use explicit imports"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
     }
   ]
 }
