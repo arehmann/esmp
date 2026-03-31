@@ -401,9 +401,12 @@ public class RiskService {
       cypher.append("MATCH (c:JavaClass)\nWHERE c." + notNullProp + " IS NOT NULL\n");
     }
 
-    // Only show classes with migration actions (Vaadin-related).
-    // Excludes Swing/AWT desktop classes, data-layer packages, and other non-migration noise.
+    // Only show classes with Vaadin 7 migration actions.
+    // Filter out javax→jakarta, non-UI packages, and other non-Vaadin migration noise.
+    // Uses a subquery to check that at least one migration action has a com.vaadin source.
     cypher.append("  AND c.migrationActionCount > 0\n");
+    cypher.append("  AND EXISTS { MATCH (c)-[:HAS_MIGRATION_ACTION]->(ma:MigrationAction) "
+        + "WHERE ma.source STARTS WITH 'com.vaadin' }\n");
 
     if (packageName != null && !packageName.isBlank()) {
       cypher.append("  AND c.packageName STARTS WITH $packageName\n");
