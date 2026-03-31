@@ -56,7 +56,7 @@ public class LexiconService {
    * @return list of matching terms as response records
    */
   public List<BusinessTermResponse> findByFilters(
-      String criticality, Boolean curated, String search, String sourceType) {
+      String criticality, Boolean curated, String search, String sourceType, Integer limit) {
     StringBuilder cypher = new StringBuilder("""
         MATCH (t:BusinessTerm)
         WHERE 1=1
@@ -85,7 +85,10 @@ public class LexiconService {
     for (String condition : conditions) {
       cypher.append("  AND ").append(condition).append("\n");
     }
-    cypher.append("RETURN t");
+    cypher.append("RETURN t ORDER BY t.usageCount DESC");
+
+    int effectiveLimit = (limit != null && limit > 0) ? limit : 500;
+    cypher.append(" LIMIT ").append(effectiveLimit);
 
     Collection<BusinessTermResponse> results = neo4jClient.query(cypher.toString())
         .bindAll(params)

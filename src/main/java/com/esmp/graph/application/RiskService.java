@@ -401,6 +401,12 @@ public class RiskService {
       cypher.append("MATCH (c:JavaClass)\nWHERE c." + notNullProp + " IS NOT NULL\n");
     }
 
+    // Exclude data-layer packages that are not migration-relevant
+    cypher.append("  AND NOT (c.packageName CONTAINS 'castor' "
+        + "OR c.packageName CONTAINS 'persistentObjects' "
+        + "OR c.packageName CONTAINS 'businessObjects' "
+        + "OR c.packageName CONTAINS 'com4j')\n");
+
     if (packageName != null && !packageName.isBlank()) {
       cypher.append("  AND c.packageName STARTS WITH $packageName\n");
       params.put("packageName", packageName);

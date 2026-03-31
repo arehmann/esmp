@@ -43,11 +43,13 @@ export function fetchLexicon(params?: {
   sourceType?: string;
   criticality?: string;
   search?: string;
+  limit?: number;
 }): Promise<BusinessTermResponse[]> {
   const p = new URLSearchParams();
   if (params?.sourceType) p.set("sourceType", params.sourceType);
   if (params?.criticality) p.set("criticality", params.criticality);
   if (params?.search) p.set("search", params.search);
+  p.set("limit", String(params?.limit ?? 500));
   return fetchJson(`${BASE}/lexicon/?${p}`);
 }
 

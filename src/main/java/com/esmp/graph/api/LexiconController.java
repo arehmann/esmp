@@ -50,8 +50,9 @@ public class LexiconController {
       @RequestParam(required = false) String criticality,
       @RequestParam(required = false) Boolean curated,
       @RequestParam(required = false) String search,
-      @RequestParam(required = false) String sourceType) {
-    List<BusinessTermResponse> terms = lexiconService.findByFilters(criticality, curated, search, sourceType);
+      @RequestParam(required = false) String sourceType,
+      @RequestParam(required = false) Integer limit) {
+    List<BusinessTermResponse> terms = lexiconService.findByFilters(criticality, curated, search, sourceType, limit);
     return ResponseEntity.ok(terms);
   }
 

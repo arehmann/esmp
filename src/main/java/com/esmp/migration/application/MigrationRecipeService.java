@@ -283,6 +283,7 @@ public class MigrationRecipeService {
         WHERE split(c.packageName, '.')[2] = $module
           AND NOT (c.packageName CONTAINS 'castor'
                 OR c.packageName CONTAINS 'persistentObjects'
+                OR c.packageName CONTAINS 'businessObjects'
                 OR c.packageName CONTAINS 'com4j')
         OPTIONAL MATCH (c)-[:HAS_MIGRATION_ACTION]->(ma:MigrationAction)
         WITH c, count(ma) AS actionCount,
@@ -307,6 +308,7 @@ public class MigrationRecipeService {
         WHERE split(c.packageName, '.')[2] = $module
           AND NOT (c.packageName CONTAINS 'castor'
                 OR c.packageName CONTAINS 'persistentObjects'
+                OR c.packageName CONTAINS 'businessObjects'
                 OR c.packageName CONTAINS 'com4j')
           AND NOT ma.isInherited
         WITH DISTINCT ma.source AS src, ma.automatable AS auto
@@ -375,6 +377,7 @@ public class MigrationRecipeService {
         WHERE split(c.packageName, '.')[2] = $module
           AND NOT (c.packageName CONTAINS 'castor'
                 OR c.packageName CONTAINS 'persistentObjects'
+                OR c.packageName CONTAINS 'businessObjects'
                 OR c.packageName CONTAINS 'com4j')
           AND NOT ma.isInherited
         RETURN count(ma) AS totalUsages,
