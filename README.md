@@ -38,6 +38,7 @@ ESMP analyzes your legacy Java/Vaadin codebase, builds a knowledge graph of ever
 - [Running Tests](#running-tests)
 - [Health & Monitoring](#health--monitoring)
 - [Troubleshooting](#troubleshooting)
+- [Prompting the AI Agent](#prompting-the-ai-agent)
 - [v1: Manual AI-Assisted Migration](#v1-manual-ai-assisted-migration)
   - [The Big Picture](#the-big-picture)
   - [Phase 1: Preparation](#phase-1-preparation--analyze--index--schedule)
@@ -2538,6 +2539,83 @@ Here's a complete workflow from start to finish:
   - applyMigrationRecipes(fqn)
   - getSourceCode(fqn)
 ```
+
+---
+
+## Prompting the AI Agent
+
+Once ESMP is running and Claude Code (or any MCP client) is connected, here's how to drive a migration session. Copy-paste these into your terminal.
+
+### Session Start — Orient the Agent
+
+```console
+> Read AGENT-GUIDE.md, then call getDomainGlossary() to understand the business domain
+  and decode abbreviations used in this codebase.
+```
+
+### Assess a Module Before Migration
+
+```console
+> Use getModuleMigrationSummary("dialogs") to assess the dialogs module.
+  How many classes are fully automatable? What are the top unmapped types?
+  Then show me the risk heatmap for the module with getRiskAnalysis().
+```
+
+### Migrate a Specific Class
+
+```console
+> I want to migrate com.example.ForeignSupplementPanel from Vaadin 7 to Vaadin 24.
+  First call getMigrationContext to understand what it does, its dependencies, business
+  terms, and risk. Then get the migration plan and apply the automatable recipes.
+  Show me the diff before writing anything.
+```
+
+### Understand a Class Before Touching It
+
+```console
+> What does com.example.ScheduleCompositionDialog do in business terms?
+  Use getMigrationContext and explain: what domain area, what UI strings it uses,
+  what it depends on, and how risky it is to change.
+```
+
+### Find Code by Business Concept
+
+```console
+> Search for all code related to "commission settlement" using searchKnowledge.
+  Then browse domain terms in the CONTRACT_MANAGEMENT area to understand the
+  business vocabulary around settlements.
+```
+
+### Validate Before and After
+
+```console
+> Run validateSystemHealth() and tell me if there are any integrity issues
+  in the knowledge graph or vector index before I start migrating.
+```
+
+### Full Migration Workflow (Single Class)
+
+```console
+> Migrate com.example.OrderPanel to Vaadin 24. Follow this workflow:
+  1. getMigrationContext — understand the class
+  2. getMigrationPlan — see what's automatable
+  3. applyMigrationRecipes — get the mechanical diff
+  4. getSourceCode — read the current source
+  5. Apply the recipe diff, then rewrite the complex parts (Table→Grid,
+     BeanFieldGroup→Binder, layout changes) using the business context
+     and uiRole mappings from the migration context.
+  6. Show me the complete new file before writing.
+```
+
+### Batch Assessment
+
+```console
+> For each module in the codebase, call getModuleMigrationSummary and create a
+  table showing: module name, total classes, automation score, top 3 unmapped types.
+  Sort by automation score descending — I want to migrate the easiest modules first.
+```
+
+> **Tip:** The AGENT-GUIDE.md file in the project root contains the full reference for all 12 MCP tools, domain areas, UI role→component mappings, abbreviation glossary, and risk score interpretation. Include it in your agent's context for best results.
 
 ---
 
