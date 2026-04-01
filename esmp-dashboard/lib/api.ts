@@ -50,7 +50,7 @@ export function fetchLexicon(params?: {
   if (params?.criticality) p.set("criticality", params.criticality);
   if (params?.search) p.set("search", params.search);
   p.set("limit", String(params?.limit ?? 500));
-  return fetchJson(`${BASE}/lexicon/?${p}`);
+  return fetchJson(`${BASE}/lexicon?${p}`);
 }
 
 export function fetchMigrationPlan(fqn: string): Promise<MigrationPlan> {

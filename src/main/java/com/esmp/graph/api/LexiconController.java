@@ -45,7 +45,7 @@ public class LexiconController {
    * @param sourceType  optional filter by source type (e.g., "CLASS_NAME", "ENUM", "JAVADOC")
    * @return 200 with list of {@link BusinessTermResponse} (relatedClassFqns is empty for list view)
    */
-  @GetMapping("/")
+  @GetMapping({"", "/"})
   public ResponseEntity<List<BusinessTermResponse>> listTerms(
       @RequestParam(required = false) String criticality,
       @RequestParam(required = false) Boolean curated,
