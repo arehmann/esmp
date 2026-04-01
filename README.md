@@ -31,11 +31,12 @@ ESMP analyzes your legacy Java/Vaadin codebase, builds a knowledge graph of ever
   - [15. Module-Aware Batch Parsing](#15-module-aware-batch-parsing)
   - [16. Next.js Dashboard](#16-nextjs-dashboard)
   - [17. NLS Lexicon Extraction](#17-nls-lexicon-extraction)
+  - [18. Lexicon Enhancement (uiRole, domainArea, Abbreviations, Doc Ingestion)](#18-lexicon-enhancement)
 - [REST API Reference](#rest-api-reference)
 - [Next.js Dashboard](#nextjs-dashboard)
 - [Configuration Reference](#configuration-reference)
 - [Running Tests](#running-tests)
-- [Monitoring](#monitoring)
+- [Health & Monitoring](#health--monitoring)
 - [Troubleshooting](#troubleshooting)
 - [v1: Manual AI-Assisted Migration](#v1-manual-ai-assisted-migration)
   - [The Big Picture](#the-big-picture)
@@ -130,10 +131,10 @@ ESMP is a Spring Boot application backed by three specialized databases:
      |   queries      | |   similarity   | |                  |
      +----------------+ +----------------+ +------------------+
 
-     +----------------+ +----------------+
-     |   Prometheus   | |    Grafana     |
-     |   (Metrics)    | |  (Dashboards)  |
-     +----------------+ +----------------+
+     +------------------+
+     | Next.js Dashboard|
+     |  (localhost:3001) |
+     +------------------+
 ```
 
 ### Technology Stack
@@ -142,13 +143,13 @@ ESMP is a Spring Boot application backed by three specialized databases:
 |-------|-----------|---------|
 | **Language** | Java 21 (virtual threads) | Performance + modern features |
 | **Framework** | Spring Boot 3.5.11 | Application backbone |
-| **UI** | Vaadin 24.9.12 | Rich web dashboard |
+| **Dashboard** | Next.js 15 + shadcn/ui | Migration governance dashboard |
 | **Graph DB** | Neo4j 2026.01.4 | Code relationships + queries |
 | **Vector DB** | Qdrant 1.13.0 | Semantic code search |
 | **Embeddings** | Spring AI + all-MiniLM-L6-v2 | 384-dim ONNX embeddings |
 | **AST Parser** | OpenRewrite 8.74.3 | Java source code analysis |
 | **Relational DB** | MySQL 8.4 | Job state + audit trail |
-| **Monitoring** | Prometheus + Grafana | Metrics + dashboards |
+| **Health** | Spring Boot Actuator | `/actuator/health` endpoint |
 | **Build** | Gradle 9.3 (Kotlin DSL) | Build + dependency management |
 | **Deployment** | Docker (multi-stage) | Containerized deployment |
 | **Git Access** | JGit 7.1.0 | Runtime GitHub clone for source access |
@@ -171,15 +172,16 @@ cd esmp
 cp .env.example .env
 # Edit .env to set SOURCE_ROOT to your legacy codebase path
 
-# 3. Start everything (ESMP + Neo4j + Qdrant + MySQL + Prometheus + Grafana)
+# 3. Start everything (ESMP + Neo4j + Qdrant + MySQL + Dashboard)
 docker compose -f docker-compose.full.yml up -d
 
 # 4. Wait for all services (~2 minutes for first build)
 docker compose -f docker-compose.full.yml ps   # All should show "healthy"
 
 # 5. Open the dashboard
-# Backend API: http://localhost:8080
-# Dashboard UI: http://localhost:3001
+# Backend API:   http://localhost:8080
+# Dashboard UI:  http://localhost:3001
+# Neo4j Browser: http://localhost:7474
 ```
 
 **Source access strategies** (set in `.env`):
@@ -241,7 +243,7 @@ cd esmp
 
 ### Step 2: Start Docker Services
 
-ESMP requires three databases and two monitoring tools. Docker Compose handles all of them:
+ESMP requires three databases. Docker Compose handles all of them:
 
 ```bash
 docker compose up -d
@@ -260,12 +262,6 @@ This starts:
   +----------+     +----------+     +----------+
        Graph         Vectors        Relational
        Storage       Storage        Storage
-
-  +----------+     +----------+
-  |Prometheus|     | Grafana  |
-  |  :9090   |     |  :3000   |
-  +----------+     +----------+
-      Metrics       Dashboards
 ```
 
 **Wait for all services to be healthy** (about 30 seconds):
@@ -289,7 +285,6 @@ mysql   mysql:8.4                Up (healthy)
 |---------|----------|----------|-------------|
 | Neo4j | `neo4j` | `esmp-local-password` | `NEO4J_PASSWORD` |
 | MySQL | `esmp` | `esmp-local-password` | `MYSQL_PASSWORD` |
-| Grafana | `admin` | `admin` | `GRAFANA_PASSWORD` |
 
 ### Step 3: Build and Run ESMP
 
@@ -750,44 +745,64 @@ Response shows pass/fail for each query with details:
 
 ### 4. Domain Lexicon
 
-**What it does:** Automatically extracts business terms from two sources: code naming conventions and NLS (National Language Support) XML files. NLS extraction produces high-quality, multilingual domain vocabulary with German definitions — far richer than camelCase-derived terms.
+**What it does:** Extracts and enriches domain business vocabulary from four sources:
 
 ```
-  Source 1: Code Analysis                Source 2: NLS XML Files (30,000+ entries)
-  =======================                =========================================
-
-  class InvoiceCalculator {              <NLSResource key="lblBranchOffice">
-      --> Terms: "Invoice"                 <NLSMapping language="English" value="Branch office"/>
-  }                                        <NLSMapping language="Deutsch" value="Geschäftsstelle"/>
-  enum PaymentStatus {                   </NLSResource>
-      --> Terms: "Payment"
-  }                                      getNLS("lblBranchOffice") in Java source
-  /** Computes total */                    --> Links term to the class containing the call
-      --> Javadoc scanned
-
-  Code Extraction Rules:                 NLS Term Categories (from key prefix):
-  - CamelCase splitting                  - lbl*      → NLS_LABEL (domain vocabulary)
-  - Enum types and constants             - msg*      → NLS_MESSAGE (business rules)
-  - Class-level Javadoc                  - TypeText_ → NLS_TYPE (domain enums)
-  - 28 stop-suffixes filtered            - Function_ → NLS_FUNCTION (business operations)
-                                         - ToolTip_  → NLS_TOOLTIP (field descriptions)
+  Source 1: NLS XML Files (30,000+ entries)     Source 2: Code Analysis
+  =========================================     =======================
+  <NLSResource key="lblBranchOffice">           class InvoiceCalculator → "Invoice"
+    English="Branch office"                     enum PaymentStatus → "Payment"
+    Deutsch="Geschäftsstelle"                   Javadoc → definition seed
+  </NLSResource>
+    → uiRole:     LABEL (from "lbl" prefix)     Source 3: Abbreviation Glossary
+    → domainArea: ADMINISTRATION (from XML file) ===========================
+                                                 SC → Schedule Composition
+  Source 4: Legacy Documentation (912 sections)  AEP → Ad Edition Part
+  =============================================  DS → Distribution Schedule
+  7 AdSuite docs (2005-2013) pre-extracted       BP → Business Partner
+  via Apache Tika → fuzzy keyword matching       13 known + auto-detected
+  → documentContext on each matched term
 ```
 
-**NLS integration:** During extraction, `LexiconVisitor` detects `getNLS("key")` method invocations, resolves the key against pre-loaded NLS XML files, and stores the English value as displayName with the German value as definition. This gives the MCP AI agent real business context — "Geschäftsstelle" = "Branch office" — instead of generic camelCase fragments.
+**Enrichment layers on each NLS term:**
+
+| Field | Source | Purpose |
+|-------|--------|---------|
+| `displayName` | NLS English value | Code-facing label for the AI agent |
+| `definition` | NLS German value | Primary business meaning |
+| `uiRole` | NLS key prefix (`lbl`→LABEL, `msg`→MESSAGE, `btn`→BUTTON, etc.) | Tells the agent which Vaadin 24 component to use |
+| `domainArea` | NLS XML filename (Order.xml→ORDER_MANAGEMENT, etc.) | Business domain grouping |
+| `documentContext` | Fuzzy-matched legacy doc section | Business explanation from human-written docs |
+| `businessDescription` | Assembled per-class from linked terms | Compact English summary for MCP responses |
+
+**UI Role mapping** (13 roles derived from NLS key prefix):
+
+| Prefix | uiRole | Migration guidance |
+|--------|--------|-------------------|
+| `lbl` | LABEL | `field.setLabel()` or `button.setText()` |
+| `msg` | MESSAGE | `Notification.show()` or `ConfirmDialog` |
+| `tooltip`/`tt` | TOOLTIP | `Tooltip.forComponent()` |
+| `title` | TITLE | `dialog.setHeaderTitle()` or `new H2()` |
+| `btn` | BUTTON | `new Button(text)` |
+| `error` | ERROR | `Notification` with ERROR theme variant |
+| `TypeText_` | ENUM_DISPLAY | ComboBox item label |
 
 **How to use it:**
 
 ```bash
-# List all extracted business terms
-curl "http://localhost:8080/api/lexicon/"
+# List NLS terms only (default — suppresses CLASS_NAME noise)
+curl "http://localhost:8080/api/lexicon/?nlsOnly=true"
 
-# Filter by criticality
-curl "http://localhost:8080/api/lexicon/?criticality=High"
+# Filter by UI role and domain area
+curl "http://localhost:8080/api/lexicon/?uiRole=LABEL&domainArea=ORDER_MANAGEMENT"
 
-# Get term details (which classes use it)
-curl "http://localhost:8080/api/lexicon/invoice"
+# Get the full domain glossary (areas, abbreviations, top terms)
+curl "http://localhost:8080/api/lexicon/glossary"
 
-# Curate a term (update definition, set criticality)
+# Trigger documentation ingestion (enriches terms with legacy doc context)
+curl -X POST "http://localhost:8080/api/lexicon/ingest-docs"
+
+# Curate a term (protected from re-extraction overwrite)
 curl -X PUT "http://localhost:8080/api/lexicon/invoice" \
   -H "Content-Type: application/json" \
   -d '{
@@ -797,7 +812,7 @@ curl -X PUT "http://localhost:8080/api/lexicon/invoice" \
   }'
 ```
 
-> **Curated terms are protected** - once you mark a term as curated, re-running extraction won't overwrite your changes.
+> **Curated terms are protected** — once you mark a term as curated, re-running extraction won't overwrite your changes. Abbreviation glossary entries and documentation context are preserved across re-extraction.
 
 ---
 
@@ -1209,21 +1224,23 @@ curl "http://localhost:8080/api/scheduling/recommend?sourceRoot=/path/to/project
   ┌─────────────────────────────┐
   │   MCP Server (Spring AI)    │
   │                             │
-  │  9 Tools:                   │
+  │  12 Tools:                  │
   │  ┌───────────────────────┐  │
   │  │ getMigrationContext   │──┼──▶ MigrationContextAssembler (5 services in parallel)
   │  │ searchKnowledge       │──┼──▶ VectorSearchService (semantic code search)
   │  │ getDependencyCone     │──┼──▶ GraphQueryService (graph traversal)
   │  │ getRiskAnalysis       │──┼──▶ RiskService (structural + domain risk)
-  │  │ browseDomainTerms     │──┼──▶ LexiconService (business vocabulary)
+  │  │ browseDomainTerms     │──┼──▶ LexiconService (NLS-only by default, compact)
+  │  │ getDomainGlossary     │──┼──▶ LexiconService (project-wide domain overview)
   │  │ validateSystemHealth  │──┼──▶ ValidationService (47 integrity checks)
-  │  │ getMigrationPlan      │──┼──▶ MigrationRecipeService (per-class migration plan)
-  │  │ applyMigrationRecipes │──┼──▶ MigrationRecipeService (preview OpenRewrite diffs)
-  │  │ getModuleMigrationSummary──▶ MigrationRecipeService (module-level summary)
+  │  │ getMigrationPlan      │──┼──▶ MigrationRecipeService (per-class plan)
+  │  │ applyMigrationRecipes │──┼──▶ MigrationRecipeService (preview diffs)
+  │  │ getModuleMigrationSummary──▶ MigrationRecipeService (module summary)
+  │  │ getRecipeBookGaps     │──┼──▶ RecipeBookRegistry (unmapped types)
+  │  │ getSourceCode         │──┼──▶ Neo4jClient + filesystem (read source)
   │  └───────────────────────┘  │
   │                             │
   │  Caffeine Cache (3 caches)  │
-  │  Micrometer Metrics         │
   └─────────────────────────────┘
 ```
 
@@ -1252,20 +1269,23 @@ docker compose up -d && ./gradlew bootRun -Dorg.gradle.java.home="/path/to/java2
 }
 ```
 
-**Step 3:** Open Claude Code in the ESMP project directory. It automatically discovers the MCP server and all 10 tools. Verify by asking:
+**Step 3:** Open Claude Code in the ESMP project directory. It automatically discovers the MCP server and all 12 tools. Verify by asking:
 
 ```
 You: "What tools do you have from ESMP?"
-Claude: I have 9 ESMP tools available:
-        - getMigrationContext
-        - searchKnowledge
-        - getDependencyCone
-        - getRiskAnalysis
-        - browseDomainTerms
-        - validateSystemHealth
-        - getMigrationPlan
-        - applyMigrationRecipes
-        - getModuleMigrationSummary
+Claude: I have 12 ESMP tools available:
+        - getMigrationContext      (primary context for a class)
+        - searchKnowledge          (semantic vector search)
+        - getDependencyCone        (graph-based dependency traversal)
+        - getRiskAnalysis          (structural + domain risk)
+        - browseDomainTerms        (NLS business vocabulary, compact)
+        - getDomainGlossary        (project-wide domain overview + abbreviations)
+        - validateSystemHealth     (47 integrity checks)
+        - getMigrationPlan         (per-class OpenRewrite plan)
+        - applyMigrationRecipes    (preview diffs, no disk write)
+        - getModuleMigrationSummary (module-level automation stats)
+        - getRecipeBookGaps        (unmapped Vaadin 7 types)
+        - getSourceCode            (read Java source by FQN)
 ```
 
 > **For other MCP clients** (Cursor, custom agents): point your MCP client's SSE transport at `http://localhost:8080/mcp/sse`. The server conforms to the standard MCP SSE protocol.
@@ -2061,6 +2081,27 @@ Browser (port 3001) → Next.js standalone server
 
 ---
 
+### 18. Lexicon Enhancement
+
+**What it does:** Enriches the raw NLS lexicon with four layers of intelligence so the migration agent understands *what the business does*, not just what strings exist.
+
+**Layer 1: UI Role Classification** — Each NLS term gets a `uiRole` derived from its key prefix (e.g., `lbl`→LABEL, `msg`→MESSAGE). This tells the migration agent which Vaadin 24 component to use.
+
+**Layer 2: Domain Area Grouping** — Terms are grouped by `domainArea` based on which XML file they come from (e.g., Order.xml→ORDER_MANAGEMENT, Contract.xml→CONTRACT_MANAGEMENT).
+
+**Layer 3: Abbreviation Glossary** — 13 curated domain abbreviations (SC=Schedule Composition, AEP=Ad Edition Part, etc.) plus auto-detection of unknown uppercase abbreviations from class names. Stored as `sourceType=ABBREVIATION` BusinessTerm nodes.
+
+**Layer 4: Legacy Documentation Context** — 7 AdSuite documents (2005-2013) pre-extracted via Apache Tika into 912 searchable sections. At extraction time, each NLS term is fuzzy-matched against doc sections by keyword overlap, and the best-matching snippet is stored as `documentContext`.
+
+**Per-class `businessDescription`:** After extraction, each JavaClass with linked NLS terms receives a compact English summary (max 300 chars) assembled from its terms' domain areas, UI roles, and doc context. This is returned by `getMigrationContext` so the agent immediately knows what a class does.
+
+**MCP response size control:**
+- `browseDomainTerms` strips `documentContext` from list responses (compact)
+- `getMigrationContext` returns `businessDescription` (1-3 sentences) instead of full term dump
+- Full doc context available only when drilling into specific terms
+
+---
+
 ## REST API Reference
 
 Complete list of all 33 endpoints:
@@ -2337,42 +2378,14 @@ ESMP has comprehensive test coverage with 35 test suites:
 
 ---
 
-## Monitoring
+## Health & Monitoring
 
-### Prometheus (http://localhost:9090)
-
-ESMP exposes Spring Boot Actuator metrics at `/actuator/prometheus`. Prometheus scrapes these automatically.
-
-Useful queries:
-
-```promql
-# JVM memory usage
-jvm_memory_used_bytes{area="heap"}
-
-# HTTP request rate
-rate(http_server_requests_seconds_count[5m])
-
-# Request latency (95th percentile)
-histogram_quantile(0.95, rate(http_server_requests_seconds_bucket[5m]))
-```
-
-### Grafana (http://localhost:3000)
-
-Login with `admin` / `admin` (or your configured password).
-
-Add Prometheus as a data source:
-1. Go to Configuration > Data Sources > Add data source
-2. Select Prometheus
-3. URL: `http://prometheus:9090`
-4. Click "Save & Test"
-
-### Health Check
+ESMP uses Spring Boot Actuator for health checks. All MCP tool calls are logged with structured `latencyMs=` fields for performance analysis.
 
 ```bash
+# Health check (all datastores)
 curl http://localhost:8080/actuator/health
 ```
-
-Returns status of all datastores (Neo4j, MySQL, Qdrant):
 
 ```json
 {
@@ -2383,6 +2396,11 @@ Returns status of all datastores (Neo4j, MySQL, Qdrant):
     "qdrant": { "status": "UP" }
   }
 }
+```
+
+```bash
+# Check extraction progress (grep Docker logs)
+docker logs esmp-esmp-1 2>&1 | grep -iE "wave|batch|persist|ingestion|complete"
 ```
 
 ---
@@ -2493,29 +2511,32 @@ rm -rf build/ node_modules/ src/main/frontend/generated/
 Here's a complete workflow from start to finish:
 
 ```
-  Step 1: Setup                    Step 2: Analyze
+  Step 1: Deploy                   Step 2: Extract & Analyze
   cp .env.example .env             POST /api/extraction/trigger
-  docker compose -f                  (returns jobId, runs async)
-    docker-compose.full.yml        POST /api/vector/index
-    up -d
+  docker compose -f                  → parses all Java files (async)
+    docker-compose.full.yml          → NLS terms with uiRole + domainArea
+    up -d                            → abbreviation glossary
+                                     → doc ingestion (legacy docs)
+       |                             → vector indexing
+       v                             → risk scoring
+
+  Step 3: Explore (Dashboard)      Step 4: Plan Migration
+  http://localhost:3001            GET /api/scheduling/recommend
+  - Risk heatmap                   - Wave-based migration order
+  - Lexicon browse (NLS terms)     - Pilot module selection
+  - Migration readiness            GET /api/pilot/validate/{module}
+  - Class detail + dependencies
 
        |                                |
        v                                v
 
-  Step 3: Explore                  Step 4: Plan
-  Open http://localhost:8080       GET /api/scheduling/recommend
-  Review risk heatmap              Review wave assignment
-  Explore dependencies             Pick pilot module
-  Curate business terms            GET /api/pilot/validate/{module}
-
-       |                                |
-       v                                v
-
-  Step 5: Migrate                  Step 6: Keep Updated
-  POST /api/rag/context            POST /api/indexing/incremental
-  (Get AI context for migration)   (After each code change)
-  Write new Vaadin 24 code         Re-check risk scores
-  Repeat for each class            Monitor validation health
+  Step 5: Migrate with AI         Step 6: Keep Updated
+  Claude Code + MCP tools:        POST /api/indexing/incremental
+  - getMigrationContext(fqn)         (after each code change)
+  - getDomainGlossary()           Re-check risk + validation
+  - getMigrationPlan(fqn)         Dashboard auto-refreshes
+  - applyMigrationRecipes(fqn)
+  - getSourceCode(fqn)
 ```
 
 ---
