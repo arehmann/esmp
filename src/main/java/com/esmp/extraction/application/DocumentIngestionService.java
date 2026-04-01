@@ -55,7 +55,7 @@ public class DocumentIngestionService {
       "und", "oder", "aber", "von", "für", "mit", "auf", "aus", "bei", "nach", "über", "unter",
       "durch", "bis", "als", "wie", "wenn", "dann", "auch", "noch", "nur", "schon", "kann",
       "wird", "ist", "sind", "hat", "haben", "sein", "werden", "nicht", "sich", "zur", "zum",
-      "vom", "ins", "dieser", "diese", "dieses", "einem", "alle", "wird", "kann", "dass",
+      "vom", "ins", "dieser", "diese", "dieses", "alle", "dass",
       "the", "and", "for", "with", "from", "this", "that", "are", "was", "were", "has", "have",
       "been", "will", "can", "not", "all", "but", "also", "into"
   );
