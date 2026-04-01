@@ -143,11 +143,14 @@ public class LexiconVisitor extends JavaIsoVisitor<ExtractionAccumulator> {
               String classFqn = resolveEnclosingClassFqn();
               if (classFqn != null) {
                 acc.addBusinessTerm(
-                    entry.key(),        // termId = NLS key
+                    entry.key(),          // termId = NLS key
                     entry.englishValue(), // displayName = English value
                     classFqn,
-                    entry.category(),    // sourceType = NLS_LABEL, NLS_MESSAGE, etc.
-                    entry.germanValue()  // javadocSeed = German value (business definition)
+                    entry.category(),     // sourceType = NLS_LABEL, NLS_MESSAGE, etc.
+                    entry.germanValue(),  // definition = German value (business definition)
+                    entry.uiRole(),       // uiRole = LABEL, MESSAGE, TOOLTIP, etc.
+                    entry.domainArea(),   // domainArea = ORDER_MANAGEMENT, COMMON, etc.
+                    entry.sourceFile()    // nlsFileName = Order.xml, Contract.xml, etc.
                 );
               }
             }

@@ -246,9 +246,29 @@ public class MigrationContextAssembler {
           classFqn, MAX_CONE_NODES_WHEN_TRUNCATED);
     }
 
+    // Fetch pre-computed business description from ClassNode
+    String businessDescription = null;
+    try {
+      var descResult = neo4jClient.query("""
+              MATCH (c:JavaClass {fullyQualifiedName: $fqn})
+              RETURN c.businessDescription AS desc
+              """)
+          .bind(classFqn).to("fqn")
+          .fetch().one();
+      if (descResult.isPresent()) {
+        Object desc = descResult.get().get("desc");
+        if (desc instanceof String s && !s.isBlank()) {
+          businessDescription = s;
+        }
+      }
+    } catch (Exception e) {
+      log.debug("Failed to fetch business description for {}: {}", classFqn, e.getMessage());
+    }
+
     long durationMs = System.currentTimeMillis() - startMs;
     return new MigrationContext(
         classFqn,
+        businessDescription,
         cone,
         risk,
         terms,
@@ -281,7 +301,12 @@ public class MigrationContextAssembler {
                t.status AS status,
                t.sourceType AS sourceType,
                t.primarySourceFqn AS primarySourceFqn,
-               t.usageCount AS usageCount
+               t.usageCount AS usageCount,
+               t.uiRole AS uiRole,
+               t.domainArea AS domainArea,
+               t.nlsFileName AS nlsFileName,
+               t.documentContext AS documentContext,
+               t.documentSource AS documentSource
         """;
 
     Collection<Map<String, Object>> rows = neo4jClient
@@ -306,7 +331,12 @@ public class MigrationContextAssembler {
           (String) row.get("sourceType"),
           (String) row.get("primarySourceFqn"),
           row.get("usageCount") instanceof Long l ? l.intValue() : 0,
-          List.of()));
+          List.of(),
+          (String) row.get("uiRole"),
+          (String) row.get("domainArea"),
+          (String) row.get("nlsFileName"),
+          (String) row.get("documentContext"),
+          (String) row.get("documentSource")));
     }
     return result;
   }

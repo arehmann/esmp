@@ -74,6 +74,38 @@ public class BusinessTermNode {
   /** Number of source locations (class FQNs) that reference this term. */
   private int usageCount = 0;
 
+  /**
+   * UI role derived from NLS key prefix (e.g., LABEL, MESSAGE, TOOLTIP, BUTTON).
+   * Tells the migration agent which Vaadin 24 component to use for this string.
+   * Null for non-NLS terms.
+   */
+  private String uiRole;
+
+  /**
+   * Business domain area derived from the NLS XML source filename (e.g., ORDER_MANAGEMENT,
+   * CONTRACT_MANAGEMENT, COMMON). Null for non-NLS terms.
+   */
+  private String domainArea;
+
+  /**
+   * Name of the NLS XML file this term was extracted from (e.g., "Order.xml").
+   * Null for non-NLS terms.
+   */
+  private String nlsFileName;
+
+  /**
+   * Excerpt from legacy documentation matched to this term by keyword overlap.
+   * Provides business context explaining what this concept means in the domain.
+   * Null if no matching documentation was found.
+   */
+  private String documentContext;
+
+  /**
+   * Source reference for the documentation context (e.g., "AdSuite_Bedienungshandbuch.pdf § 4.3 Anzeigendisposition").
+   * Null if no documentation context was matched.
+   */
+  private String documentSource;
+
   public BusinessTermNode() {}
 
   public BusinessTermNode(String termId) {
@@ -174,5 +206,45 @@ public class BusinessTermNode {
 
   public void setUsageCount(int usageCount) {
     this.usageCount = usageCount;
+  }
+
+  public String getUiRole() {
+    return uiRole;
+  }
+
+  public void setUiRole(String uiRole) {
+    this.uiRole = uiRole;
+  }
+
+  public String getDomainArea() {
+    return domainArea;
+  }
+
+  public void setDomainArea(String domainArea) {
+    this.domainArea = domainArea;
+  }
+
+  public String getNlsFileName() {
+    return nlsFileName;
+  }
+
+  public void setNlsFileName(String nlsFileName) {
+    this.nlsFileName = nlsFileName;
+  }
+
+  public String getDocumentContext() {
+    return documentContext;
+  }
+
+  public void setDocumentContext(String documentContext) {
+    this.documentContext = documentContext;
+  }
+
+  public String getDocumentSource() {
+    return documentSource;
+  }
+
+  public void setDocumentSource(String documentSource) {
+    this.documentSource = documentSource;
   }
 }

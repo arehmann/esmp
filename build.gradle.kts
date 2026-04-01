@@ -29,7 +29,7 @@ dependencies {
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.spring.boot.starter.data.neo4j)
     implementation(libs.spring.boot.starter.data.jpa)
-    implementation(libs.micrometer.prometheus)
+
     implementation(libs.flyway.core)
     implementation(libs.flyway.mysql)
     implementation(libs.mysql.connector)

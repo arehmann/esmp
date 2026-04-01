@@ -2,7 +2,7 @@ import type {
   RiskHeatmapEntry, RiskDetailResponse, DependencyConeResponse,
   SearchResponse, BusinessTermResponse, MigrationPlan,
   MigrationResult, ModuleMigrationSummary, RecipeRule,
-  ExtractionTriggerResponse,
+  ExtractionTriggerResponse, DomainGlossaryResponse,
 } from "./types";
 
 const BASE = "/esmp-api";
@@ -43,14 +43,24 @@ export function fetchLexicon(params?: {
   sourceType?: string;
   criticality?: string;
   search?: string;
+  uiRole?: string;
+  domainArea?: string;
+  nlsOnly?: boolean;
   limit?: number;
 }): Promise<BusinessTermResponse[]> {
   const p = new URLSearchParams();
   if (params?.sourceType) p.set("sourceType", params.sourceType);
   if (params?.criticality) p.set("criticality", params.criticality);
   if (params?.search) p.set("search", params.search);
+  if (params?.uiRole) p.set("uiRole", params.uiRole);
+  if (params?.domainArea) p.set("domainArea", params.domainArea);
+  if (params?.nlsOnly) p.set("nlsOnly", "true");
   p.set("limit", String(params?.limit ?? 500));
   return fetchJson(`${BASE}/lexicon?${p}`);
+}
+
+export function fetchDomainGlossary(): Promise<DomainGlossaryResponse> {
+  return fetchJson(`${BASE}/lexicon/glossary`);
 }
 
 export function fetchMigrationPlan(fqn: string): Promise<MigrationPlan> {

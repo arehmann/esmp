@@ -1,0 +1,287 @@
+{
+  "sourceDocument": "Dokumentation_AdSuite_Administration_V0.97_20050525.doc",
+  "sectionCount": 56,
+  "totalChars": 33537,
+  "sections": [
+    {
+      "heading": "PREAMBLE",
+      "charCount": 2028,
+      "body": "Leistungsbeschreibung alfa AdSuite Enterprise\nLeistungsbeschreibung alfa AdSuite Enterprise\n\nLeistungsbeschreibung\n\nalfa AdSuiteEnterprise\n\nSeligenstadt, 06.06.2005\n\nVersion 0.97\nInhalt\n\n51\nEinleitung\n\n\n62\nAdSuite Administration\n\n\n62.1\nAdministration allgemein\n\n\n62.2\nAdministration im Überblick\n\n\n62.2.1\nMenü Datei\n\n\n62.2.1.1\nRepaint/Beenden\n\n\n62.2.2\nMenü Konfiguration\n\n\n72.2.2.1\nKriterien\n\n\n82.2.2.2\nSchlüssel-Tabellen\n\n\n82.2.2.3\nGeschäftsstellen-Einstellungen\n\n\n92.2.2.4\nArbeitsplätze\n\n\n92.2.2.5\nObjektsperren\n\n\n102.2.2.6\nMandanten-Einstellungen\n\n\n112.2.2.7\nLokalisierungen\n\n\n112.2.2.8\nServeraufträge\n\n\n122.2.2.9\nImport Bankdaten\n\n\n122.2.2.10\nImport Branchen\n\n\n122.2.2.11\nBranchen exportieren\n\n\n132.2.2.12\nPLZ-Daten importieren\n\n\n132.2.2.13\nNeuaufbau Volltext-Suchindex\n\n\n132.2.2.14\nIndex für Volltextsuche optimieren\n\n\n142.2.2.15\nVorlagen-Gruppen-Einstellungen\n\n\n152.2.3\nMenü Kommerzielle Daten\n\n\n152.2.3.1\nNummernkreise\n\n\n162.2.3.2\nWerbetexte\n\n\n162.2.3.3\nZahlungsbedingungen\n\n\n172.2.3.4\nChiffregebühr\n\n\n182.2.3.5\nChiffreabhängige Daten\n\n\n202.2.3.6\nErlösverteilungen\n\n\n212.2.3.7\nFakturaläufe\n\n\n212.2.3.8\nRechnungsdruckläufe\n\n\n222.2.3.9\nFiBu-Exportläufe\n\n\n232.2.3.10\nProvisionierung\n\n\n252.2.4\nMenü Produktionsstruktur\n\n\n252.2.4.1\nProduktionsstruktur\n\n\n302.2.4.2\nAuftragnehmer\n\n\n322.2.4.3\nStatus-Einstellungen\n\n\n342.2.4.4\nHierarchie der Produktionsstruktur-Teile\n\n\n352.2.4.5\nSeitenmaße und -struktur-Einstellungen\n\n\n352.2.4.6\nSeitenteil-Einstellungen\n\n\n352.2.4.7\nAnnahmeschluss-Einstellungen\n\n\n362.2.4.8\nAps Ressource-Eigenschaften\n\n\n382.2.4.9\nBranchen\n\n\n382.2.4.10\nExport\n\n\n392.2.4.11\nImport\n\n\n392.2.4.12\nFormatverwaltung\n\n\n402.2.5\nMenü Preis-Struktur\n\n\n402.2.5.1\nPreislisten\n\n\n412.2.5.2\nTarife und Preise\n\n\n422.2.5.3\nPreisstaffeln\n\n\n432.2.5.4\nPreis-Schemata\n\n\n442.2.5.5\nMWSt.-Eigenschaften\n\n\n442.2.6\nMenü Rechteverwaltung\n\n\n442.2.6.1\nBenutzer\n\n\n462.2.6.2\nBenutzergruppen\n\n\n462.2.6.3\nBenutzerrollen\n\n\n472.2.6.4\nRechte-Pakete\n\n\n472.2.6.5\nModule\n\n\n482.2.6.6\nFachobjekt Konfiguration\n\n\n492.2.7\nMenü Hilfe\n\n\n492.2.8\nMenü Sprache"
+    },
+    {
+      "heading": "1 Einleitung",
+      "charCount": 952,
+      "body": "Diese Beschreibung der Administration stellt ein generelles Papier dar, in dem die gegenwärtigen und zukünftigen Leistungen des alfa-Moduls AdSuite Enterprise aufgelistet sind. Die Beschreibung basiert auf einem Leistungsumfang, der in dem heute verfügbaren Software-Releasestand ggf. überhaupt noch nicht oder zumindest nicht vollumfänglich verfügbar ist. Die Leistungen, die heute noch nicht vollständig bzw. gar nicht implementiert sind oder zukünftig andere Leistungsumfänge bekommen oder geändert werden, sind speziell gekennzeichnet (anderer Schrifttyp).\n\nNachfolgende Beschreibungen sollen die Möglichkeiten der Administration darlegen, sie ersetzen aber im Detail nicht die Beschreibung eines Handbuches bzw. einer Online-Hilfe. Die hier dargestellten Abbildungen der Applikation können ggf. von dem aktuellen Stand der Software abweichen. Eine Ableitung der konkreten Funktionalität aus dieser Beschreibung ist aus diesem Grunde nicht möglich."
+    },
+    {
+      "heading": "2 AdSuite Administration",
+      "charCount": 448,
+      "body": "Dieser Bereich umfasst die Konfiguration und Administration von AdSuite sowohl aus produk-tionstechnischer als auch aus kommerzieller Sicht. Auch in diesem Bereich gilt, dass aufgrund der Weiterentwicklung der Software nicht in jedem Falle die gültigen Funktionen und Fenster gezeigt werden können. Diese Beschreibung soll die globalen Leistungen von alfa AdSuite Enterprise aufzeigen. Details der Konfiguration werden in den Schulungen vermittelt."
+    },
+    {
+      "heading": "2.1 Administration allgemein",
+      "charCount": 345,
+      "body": "Beide Sichtweisen, die produktionstechnische und die kommerzielle, betreffen oft notwendiger-weise ein und dieselbe Adminstrationsnotwendigkeit (z.B. Rubriken), weshalb die Administration diese beiden Bereiche zum Teil integriert.\n\nMit jedem AdSuite wird eine Basiskonfiguration ausgeliefert, die jeweils für einen Anwender angepasst werden kann"
+    },
+    {
+      "heading": "2.2.1.1 Repaint/Beenden",
+      "charCount": 91,
+      "body": "Mit Repaint kann der Bildschirm neu aufgebaut werden. „Beenden“ beendet die Administration."
+    },
+    {
+      "heading": "2.2.2 Menü Konfiguration",
+      "charCount": 224,
+      "body": "In diesem Menü werden die grundsätzlichen Eckdaten des Systems hinterlegt. Die Mandanten-Einstellungen, die Konfiguration jedes einzelnen Arbeitsplatzes und viele weitere Grunddaten müssen an dieser Stelle hinterlegt werden."
+    },
+    {
+      "heading": "2.2.2.1 Kriterien",
+      "charCount": 772,
+      "body": "Im Menü Konfiguration ( Kriterien wird in der AdSuite-Applikation der Reiter Kriterien mit Inhalt gefüllt.\n\nDer Inhalt im Reiter Kriterien ist kundenindividuell definierbar. Eine beliebige Anzahl von Feldern kann für bestimmte Aufgaben eingerichtet werden. Falls das Feld mit einer Drop-Down-Liste ausgestattet sein soll, wird dieses durch die Definition des Inhaltes automatisch erzeugt. Im Bild ist es am Beispiel von Geschlecht mit den Menü-Einträgen weiblich bzw. männlich und bei der Funktion mit vier verschiedenen Inhalten zu sehen.\n\nOb das Feld Kriterien im Stammdaten-Reiter, im Reiter der Auftragsdaten oder im Reiter Ansprechpartner bei Stammdaten bzw. Auftragsdaten erscheint, wird mit der Zuordnung des Feldes zu Kunde, Auftrag oder Ansprechpartner definiert."
+    },
+    {
+      "heading": "2.2.2.2 Schlüssel-Tabellen",
+      "charCount": 362,
+      "body": "Mit Hilfe der Schlüsseltabellen werden Inhalte in den Stammdaten als Popup-Menü vorbelegt. Das wird z. B. bei dem Feld „Anrede“ mit den hier dargestellten Inhalten gezeigt.\n\n\nWeitere Inhalte für Felder in den Stammdaten bzw. im Auftrag sind im Bild bei Platzierungscode zu erkennen. Für den Auftrag sind an dieser Stelle verschiedene Platzierungscodes definiert."
+    },
+    {
+      "heading": "2.2.2.3 Geschäftsstellen-Einstellungen",
+      "charCount": 336,
+      "body": "Über die Geschäftsstellen-Einstellungen im Menü Konfiguration können Geschäftsstellen definiert werden.\n\n\nDie im nächsten Menüpunkt definierten Arbeitsplätze werden einzelnen Geschäftsstellen zugeordnet. So wird bei der Anmeldung jedes Arbeitsplatzes im Hintergrund mitgeführt, aus welchem Bereich die Anmeldung und die Anzeigen kommen."
+    },
+    {
+      "heading": "2.2.2.4 Arbeitsplätze",
+      "charCount": 173,
+      "body": "Wie bereits vorher beschrieben, werden hier die Arbeitsplätze mit Namenskennung definiert. Sie können neben der Geschäftsstellenzuordnung auch ein Gültigkeitsdatum bekommen."
+    },
+    {
+      "heading": "2.2.2.5 Objektsperren",
+      "charCount": 397,
+      "body": "Dieser Menüpunkt gestattet keinerlei Konfiguration. Hier werden sämtliche Sperren angezeigt, von den Datensätzen, die z. Zt. gerade auf den Arbeitsplätzen in Arbeit sind.\n\n\nFalls ein Kundensatz oder ein Auftrag aus nicht erklärbaren Gründen „in use“ ist, kann der Datensatz über diesen Menüpunkt wieder freigegeben werden.\nVORSICHT: Nur bei tatsächlich irrtümlich gesperrten Datensätzen verwenden!"
+    },
+    {
+      "heading": "2.2.2.6 Mandanten-Einstellungen",
+      "charCount": 500,
+      "body": "Das System kann für mehrere, voneinander unabhängige Mandanten betrieben werden. Innerhalb eines Mandanten können mehrere Firmen verwaltet werden. Für Firmen ist charakteristisch, dass sie sich einen Teil der Daten gemeinsam nutzen können (z.B. Ortsdaten, Straßendaten und die reinen postalischen Adressen), einen anderen jedoch nicht (z.B. Kundenkonditionen und die Verwendung von Adressen). Dieser Menüpunkt eröffnet die Möglichkeit der Definition und der Basiseinstellungen für einzelne Mandanten."
+    },
+    {
+      "heading": "2.2.2.7 Lokalisierungen",
+      "charCount": 214,
+      "body": "Über dieses Menü muss die Lokalisierung stattfinden. Wie hier zu erkennen ist, wird die Lokalisierung mit der entsprechenden Sprache und dem Ländercode definiert. Das Icon mit der Flagge erscheint im Sprachen-Menu."
+    },
+    {
+      "heading": "2.2.2.8 Serveraufträge",
+      "charCount": 165,
+      "body": "Über dieses Menü werden die durch andere Funktionen ausgelösten Aufträge gepflegt. Diese können wie hier zu sehen, z. B. ein Fakturalauf oder ein Rechnungslauf sein."
+    },
+    {
+      "heading": "2.2.2.9 Import Bankdaten",
+      "charCount": 117,
+      "body": "Über diesen Menüpunkt werden bei Bestätigung die alten Bankdaten gelöscht und aus der aktuellen BLZ-Datei importiert."
+    },
+    {
+      "heading": "2.2.2.10 Import Branchen",
+      "charCount": 64,
+      "body": "Dieser Menüpunkt importiert neue Branchen von einem Datenträger."
+    },
+    {
+      "heading": "2.2.2.11 Branchen exportieren",
+      "charCount": 85,
+      "body": "Dieser Menüpunkt exportiert die im System vorhandenen Branchen auf einen Datenträger."
+    },
+    {
+      "heading": "2.2.2.12 PLZ-Daten importieren",
+      "charCount": 635,
+      "body": "Dieser Menüpunkt importiert die Postleitzahlen von einem Datenträger, in der Regel von einer Post-CD.\n\nFür die postalische Prüfung von Adressen innerhalb der Bundesrepublik Deutschland steht ein jeweils aktuelles PLZ-Verzeichnis mit den Zustell-, Postfach- und Großkundenpostleitzahlen zur Verfügung.\n\nFür die postalische Prüfung von Adressen innerhalb der Bundesrepublik Deutschland steht ein jeweils aktuelles Straßenverzeichnis für Orte mit mehreren Postleitzahlen zur Verfügung. Zudem kann ein erweitertes, flächendeckendes Straßenverzeichnis zur Verfügung gestellt werden. Hinweis: Diese Daten sind verlagsindividuell zu erwerben."
+    },
+    {
+      "heading": "2.2.2.13 Neuaufbau Volltext-Suchindex",
+      "charCount": 223,
+      "body": "Bei Anwahl dieses Menüpunktes wird der Volltext-Index komplett neu aufgebaut. Dieses wird in der Regel nur zu Beginn des Systemaufbaus benötigt, da der Volltext-Index durch einen Server-Auftrag regelmäßig aktualisiert wird."
+    },
+    {
+      "heading": "2.2.2.14 Index für Volltextsuche optimieren",
+      "charCount": 183,
+      "body": "Dieser Menüpunkt optimiert den Volltextindex. Diese Optimierung ist im Laufe der Zeit notwendig, da der Index, ähnlich wie bei der Festplattenfragmentierung, neu geordnet werden muss."
+    },
+    {
+      "heading": "2.2.2.15 Vorlagen-Gruppen-Einstellungen",
+      "charCount": 865,
+      "body": "Über diesen Menüpunkt können Zuordnungen von bestimmten PageOne-Vorlagen zu Gruppen, z. B. Fliessatz-Gruppe mit verschiedenen Fliessatz-Formaten definiert werden. Dieses dient dazu, dieser Gruppe spezielle Konditionen über eine spezielle Preisstruktur zuzuordnen.\n\n\nÜber den großen Bereich kann eine neue Basis-Gruppe definiert werden. In den beiden unteren Tabellen stehen im linken Bereich alle Formate, die für die Gestaltung von Anzeigen im System definiert und hinterlegt sind. Nachdem im oberen Bereich eine Gruppe neu definiert wurde, kann aus der linken Tabellenspalte mit den vorhandenen Formaten das jeweils notwendige Format über die Pfeiltasten in die rechte Tabellenhälfte übernommen werden. Das können auch mehrere Formate sein, die zu einer Gruppe gehören. Alle der Basis-Gruppe zugeordneten Formate bekommen jetzt   z. B. spezielle Preiskonditionen."
+    },
+    {
+      "heading": "2.2.3.1 Nummernkreise",
+      "charCount": 1294,
+      "body": "Für Rechnungsnummern, Kundennummern, Chiffrenummern und einer Vielzahl weiterer vom System automatisch zu vergebender Nummern können wahlweise je Mandant, Firma und führendem Objekt Nummernkreise mit Start- und Endwerten sowie mit Regeln für die Bildung von Nummern (Präfix) festgelegt werden.\n\nZur Erzeugung einer im System eindeutigen Chiffrenummer können je nach Anforderung mehrere Nummernbereiche angelegt werden. Diese Bereiche werden definiert für einen Auftragnehmer und unterscheiden sich in den Chiffretypen sowie optional dem Objekt und der Geschäftsstelle.\n\n\nJedes Chiffreobjekt besitzt eine Chiffrenummer, unabhängig davon ob sie im Chiffrecode oder Zusatztext angezeigt wird.\n\nFür bestimmte Typen von Nummernkreisen (z.B. Debitorennummer) können bei Bedarf auch willkürlich individuelle Nummern vergeben werden, die allerdings aus einem der gültigen Nummernkreise stammen müssen. Rechnungsnummernkreise werden anhand folgender Kriterien für ihre Verwendung in einer bestimmten Rechnung charakterisiert\n\n· Mandant (muss)\n\n· Gültigkeitszeitraum (muss): Buchungsdatum, nicht Rechnungsdatum\n\n· Zahlungsart (kann)\n\n· Firma (kann)\n\n· Objekt (kann)\n\nBei der Pflege von Rechnungsnummernkreisen wird sichergestellt, dass eine evtl. angegebene Firma zu einem evtl. angegebenen Objekt passt."
+    },
+    {
+      "heading": "2.2.3.2 Werbetexte",
+      "charCount": 209,
+      "body": "Hinterlegung von Werbetexten, die auf der Rechnung mit angedruckt werden sollen. Wenn für eine Rechnung mehrere Werbetexte zutreffen (z.B. weil sich ihre Gültigkeiten überschneiden), so werden alle aufgeführt."
+    },
+    {
+      "heading": "2.2.3.3 Zahlungsbedingungen",
+      "charCount": 625,
+      "body": "Eine Zahlungsbedingung kann der Firma zugeordnet werden. Es werden keine Prozentsätze und Fristen hinterlegt (die Überprüfung der Einhaltung ist Sache der Buchhaltung, hier spielen diese nur rein textlich eine Rolle und sind im Text enthalten), außer dem Lastschriftprozentsatz.\n\n\nEine Zahlungsbedingung hat eine Reihe von teils optionalen Bezügen (Zahlungsarten, Leistungsart, Anzeigenart) und wird für eine Rechnung nur dann wirksam, wenn alle Rechnungssubpositionen diese Bezüge erfüllen.\n\nZahlungsbedingungen haben einen Gültigkeitszeitraum und einen Rechnungsbetrag ab welchem die Zahlungsbedingung in Kraft treten soll."
+    },
+    {
+      "heading": "2.2.3.4 Chiffregebühr",
+      "charCount": 305,
+      "body": "Die Chiffregebühr ist abhängig vom Chiffretyp, der Ausgabe bzw. Ausgabekombination und der Kundenart (Privatperson, Firma, etc.). Diese Gebühr wird bei der Preisberechnung aufgrund der Berechnungsangabe unterschiedlich verwendet. Sie kann einmalig oder pro Erscheinungs-Termin in Rechnung gestellt werden."
+    },
+    {
+      "heading": "2.2.3.5 Chiffreabhängige Daten",
+      "charCount": 954,
+      "body": "Chiffrecode und Zusatztext werden je nach Chiffretyp unterschiedlich erzeugt. Zudem sind sie abhängig vom Zeitungsobjekt und evtl. der (Abhol-)Geschäftsstelle. Dazu wird eine Generierungsvorschrift verwendet.\n\n\n\nDie Angaben in den Feldern für die Generierungsregeln werden je nach Bedeutung duch die Echtdaten ersetzt. Hierbei steht z.B. „@y§@“ für die Geschäftsstelle. Eingetragen werden diese Codes mittels der Buttons unter den Textfeldern oder über das Kontextmenu. Zur Verdeutlichung der Generierungsinstruktion kann diese im Grafikmodus angezeigt werden. In den obigen Beispielen erscheinen dann folgende Fenster.\n\n\n\nDiese Generierungsvorschriften wirken nicht im AdCounter-Umfeld. Dort wird der Text über eine xsl-Tranformation erzeugt.\n\nBeispiele\nDie oben gezeigten Daten wirken sich bei der Buchung einer Anzeige folgendermaßen aus.\n\n\n\nHierbei ist deutlich zu erkennen, dass die Chiffrenummer und der Zusatztext nach den Vorgaben erzeugt wurden."
+    },
+    {
+      "heading": "2.2.3.6 Erlösverteilungen",
+      "charCount": 325,
+      "body": "In der Administration der kommerziellen Daten kann nun die Verteilung auf die Erlöskonten der FiBu nach diversen Kriterien konfiguriert werden. U.a. besteht die Möglichkeit des Splittings von festen Kombinationen auf die Anteile der Einzelausgaben gemäß den Anteilswerten, die in der Kombinationsverwaltung eingegeben wurden."
+    },
+    {
+      "heading": "2.2.3.7 Fakturaläufe",
+      "charCount": 458,
+      "body": "Dieses Menü ist für die Definition von Fakturaläufen vorhanden. Hier können neben der Eingrenzung des zeitlichen Bereiches, der Objekt und Ausgabe für die die Faktura angestoßen werden soll, auch andere Filter wie die Rechnungslegungsperiode, die Leistungsart sowie die Anzeigenarten angegeben werden.\n\n\nDieser Fakturalauf wird über die Freigabe den Serverläufen im Menü Konfiguration überstellt, wo er dann über den Serverprozess automatisch gestartet wird."
+    },
+    {
+      "heading": "2.2.3.8 Rechnungsdruckläufe",
+      "charCount": 948,
+      "body": "Rechnungsdruckläufe legen fest,\n\n· welche der fakturierten Rechnungen (z. B. nur bestimmte Belegtypen, bestimmte Kundenkreise)\n\n· in welcher Sortierung (z. B. aufsteigend nach Postleitzahlen, innerhalb der Postleitzahlen aufsteigend nach Kundennummern)\n\n· in welcher physischen Form (per EMail, in eine Datei, auf einen bestimmten Drucker) ausgegeben werden sollen.\n\nZu einem Rechnungsdrucklauf können mehrere Konfigurationen eingerichtet werden, so dass z. B. für Kunden mit Rechnungs-Versandart „Email“ veranlasst werden kann, dass diese ein PDF-Dokument zugesandt bekommen, und eine Kopie dieses Dokuments in einem bestimmten Verzeichnis auf dem Server abgelegt wird. Gleichzeitig kann in einer weiteren Konfiguration eingetragen werden, dass die Rechnungen aller übrigen Kunden direkt auf einem bestimmten Drucker ausgegeben werden sollen.\n\nDie Bearbeitung eines eingerichteten Rechnungsdrucklaufes geschieht asynchron über einen Serverprozess."
+    },
+    {
+      "heading": "2.2.3.9 FiBu-Exportläufe",
+      "charCount": 140,
+      "body": "Dieses Menü steht zum Export von Daten an die FiBu zur Verfügung. AdSuite exportiert dazu die Fakturadaten sowie die Stammdaten an die FiBu."
+    },
+    {
+      "heading": "2.2.3.10 Provisionierung",
+      "charCount": 374,
+      "body": "Unter dem Punkt Provisionierung gibt es drei weitere Unter-Menüs, die alle in Verbindung zueinander stehen. Differenziertes Einpflegen von Kundenrabatten und Agenturprovisionen, steuerbar nach Leistungsarten, Anzeigenarten, Gültigkeitszeitraum, Objekt / Ausgabe / Rubrik; Auswertung dieser Rabatte in den Preisschemaschritten Kundenrabatt und AE-Provision sind hier möglich."
+    },
+    {
+      "heading": "2.2.4.1 Produktionsstruktur",
+      "charCount": 5103,
+      "body": "Die Produktionsstruktur unterteilt sich in vier Bereiche: Die Kalender, die Kalender-Filter, die Märkte sowie die gesamte Verlagsstruktur (Objekt, Ausgabe, Rubrik etc.).\n\n\nKalender\nÜber den Kalender werden für die jeweiligen Vertriebsausgaben die Erscheinungsweisen anhand des Kalenders definiert. Für eine täglich erscheinende Zeitung wird ein Kalender von Montag bis Samstag definiert. Für eine Zeitung, die z. B. Mittwoch und Sonntag erscheint, wird ein Kalender für Mittwoch und Sonntag angelegt. Es können für Nichterscheinungstage Ausweichtermine definiert werden. Diese Ausweichtermine müssen selbst nicht als Erscheinungstermine eingetragen sein.\n\nEs gibt verschiedene Möglichkeiten der Kalender-Definition. Es ist nicht zwingend erforderlich, für jede Ausgabe einen Kalender zu hinterlegen. Über die nächste Möglichkeit des Kalender-Filters können verschiedene Kombinationen und Zusammenhänge definiert werden.\n\nKalender-Filter\nDer Kalender-Filter dient der Definition von tatsächlichen Erscheinungsweisen innerhalb von Ausgaben, Hauptrubriken, Rubriken etc. So kann z. B. definiert werden, dass eine Hauptrubrik (KFZ-Markt) von Montag bis Freitag in einer Rubrik erscheint, am Samstag aber mit allen Unterrubriken (Audi, BMW usw.) Zudem kann hierbei eingeschränkt werden, auf welche Applikation sich ein Filter bezieht. So ist es z.B. möglich für die Buchung über den AdCounter andere Erscheinungsweisen zu definieren. Auch der Kundentyp (Firma, Privatperson, etc.) wirkt sich darauf aus.\n\n\nMarkt\nDer Markt ist nur für den AdCounter relevant. Hier werden die Oberbegriffe, die der Kunde auf der Webseite sieht, z. B. Immobilien, KFZ-Markt etc. definiert.\n\n\n\nVerlagsstruktur\n\n\nIn den Kommerziellen Objekten wird die gesamte Struktur des Verlages abgebildet. Angefangen von den Objekten bis hin zur Unterrubrik, alles wird hier abgebildet.\nObjekte\nDie Zeitungs- und Zeitschriftenobjekte (Titel) des eigenen Verlages sowie von Partnerverlagen sind die Grundlage für Veröffentlichungsaufträge von Anzeigen und Beilagen (Printmedien), daneben gibt es Spezial-Objekte für Prospektverteilung und andere Medien, z.B. Radiosender oder Internet.\n\nAusgaben\nAusgaben sind die kleinsten in einem Objekt vom jeweiligen Medientyp belegbaren Einheiten, also z.B. Anzeigenausgabe, Verteilausgabe oder Sendestation.\n\nAusgabenkombinationen\nAusgaben können zu festen Ausgabekombinationen zusammengeführt werden, und zwar sowohl, um hierfür einen speziellen Preis zu ermöglichen als auch um einen bestimmten Typ von Abschlüssen zu definieren.\n\nAusgabenteile\nEinzelnen Anzeigenausgaben werden Ausgabenteile zugewiesen. Jeder Ausgabenteil kann in mehreren Anzeigenausgaben erscheinen. Diese haben unterschiedliche Typen:\n\n· Rubrik,\n\n· Kollektiv: Kollektive (sowohl einmalige als auch periodische) bilden neben Objekt, Ausgabe und Rubrik eine eigenständige Kategorie, die z.B. eine eigenständige Terminierung und Rubrizierung besitzen kann und in der Regel auch für die Preisfindung relevant ist.\n\n· Platzierung: P... [TRUNCATED]"
+    },
+    {
+      "heading": "2.2.4.2 Auftragnehmer",
+      "charCount": 210,
+      "body": "Im Menü Auftragnehmer werden generelle Funktionen der Faktura und der FiBu hinterlegt. Die hier getätigten Einstellungen können teilweise durch individuelle Einstellungen in anderen Dialogen übersteuert werden."
+    },
+    {
+      "heading": "2.2.4.3 Status-Einstellungen",
+      "charCount": 1308,
+      "body": "Bei den Status Einstellungen gibt es mehrere Verzeichnisse, die den Status für unterschiedliche Bereiche steuern. Für alle Status gilt, dass sie kundenindividuell angelegt werden können. Die Steuerung und Abläufe bei Statusübergängen (welche Aktionen ausgelöst werden) können ebenfalls kundenindividuell eingerichtet werden.\n\nAuftrags-Status\nBeim Auftrags-Status wird der Anzeigenauftrag (nicht Motiv) mit allen Statusebenen definiert.\n\n\n\n\nAnzeigen-Termin-Status\nDer Anzeigen-Termin-Status steuert die Erscheinungstermine unabhängig vom Auftrag und vom Motiv. Beispielsweise kann bei einer gewünschten Platzierung einer Anzeige ein Konflikt auftreten (Platzierung besetzt). Dabei wird der Anzeigen-Termin-Status auf „Warten auf Freigabe“ gesetzt, solange der Platz belegt ist.\n\n\nAnzeigen-Motiv-Status\nDer Anzeigen-Motiv-Status bezieht sich ausschließlich auf das Anzeigenmotiv und nicht auf den Anzeigenauftrag. Hier wird der Gestaltungsfortschritt festgelegt.\n\n\nAlle weiteren Status-Einstellungen gelten jeweils für bestimmte Bereiche und können gezielt genutzt werden.\n\nBeilagen-Termin-Status\n\n\nFremdbeilagen-Status\n\n\n\nKorrektur-Status (Reklamation)\n\nAnzeigenberater-Status\n\n\n\nServerauftrags-Status\n\n\n\nBusinessPartner-Status\n\n\nKollektiv-Status\n\n\n\nRed. Text-Status\n\n\n\nFaktura-Status\n\n\n\nAbschlussfolge-Status"
+    },
+    {
+      "heading": "2.2.4.4 Hierarchie der Produktionsstruktur-Teile",
+      "charCount": 190,
+      "body": "In diesem Bereich wird die Hierarchie für das Menü Produktions-Struktur hinterlegt. Hier können die verschiedenen Ebenen der Rubriken, der Platzierung und der Kollektive eingerichtet werden."
+    },
+    {
+      "heading": "2.2.4.5 Seitenmaße und -struktur-Einstellungen",
+      "charCount": 600,
+      "body": "Hiermit kann der Aufbau einer Ausgabe definiert werden. Verschiedene Seiten einer Ausgabe können unterschiedlich aufgebaut sein. Beispiel: Der Textteil besteht aus sechs Spalten, der Anzeigenteil aus sieben Spalten. Verschiedenen Ausgaben können unterschiedliche Seitendimensionen zugewiesen werden. Seitendimensionen besitzen folgende Attribute: Höhe in mm, typabhängig Spaltenraster, Anzahl Spalten, Spaltenbreite in mm und Zwischenschlag in mm sowie Fläche und Breite in mm, Seitenbreite in mm, Seitenhöhe in mm, Breite des Steg in mm, Breite des Abstands zu den Rändern oben, unten, außen, innen."
+    },
+    {
+      "heading": "2.2.4.6 Seitenteil-Einstellungen",
+      "charCount": 391,
+      "body": "Zur Einschränkung der Anzeigengrößen in verschiedenen Ausgaben-Ausgabenteil-Kompositionen stehen logische Seitenteile zur Verfügung. Je nach verwendetem Seitendimensionstyp kann auf Anzahl Spalten und Höhe in mm bzw. Breite und Höhe in mm eingeschränkt werden. Hierzu gibt es jeweils minimale und maximale Werte. Bei Fließsätzen kann auch die Anzahl der Zeilen einer Limitierung unterliegen."
+    },
+    {
+      "heading": "2.2.4.7 Annahmeschluss-Einstellungen",
+      "charCount": 616,
+      "body": "Dieses Menü definiert den Annahmeschluss für bestimmte Anzeigentypen an möglichen unterschiedlichen Tagen und Applikationen. Zusätzlich können unterschiedliche Schlusszeiten für jede Geschäftsstelle definiert werden. Angegeben werden die Differenz in Tagen und die Tageszeit.\n\nDie unterschiedlichen Zeiten haben folgende Auswirkungen.\n\nDer Annahmeschluss gilt für alle Benutzer.\nDieser kann bis zum Produktionsstart von Benutzern mit einem besonderen Recht überschritten werden.\nDie Verwendung des Express-Annahmeschlusses ist jedem Benutzer gestattet. Die so gebuchten Anzeigen werden mit einem Aufschlag berechnet."
+    },
+    {
+      "heading": "2.2.4.8 Aps Ressource-Eigenschaften",
+      "charCount": 833,
+      "body": "Über diese Möglichkeit werden verschiedene Konfigurationsparameter definiert und eingestellt. Die Abbildung zeigt die Definition von Füllern. Die Füller können explizit bis in die unterste Struktur zugeordnet werden. So kann z. B. ein Füller nur in einer bestimmten Rubrik erscheinen.\n\n\nAußerdem werden an dieser Stelle die Rubrikenköpfe den jeweiligen Rubriken zugeordnet. Die Rubrikenköpfe müssen in den unterschiedlichen Spaltenbreiten vorhanden sein, die ggf. in der Ausgabe erscheinen können. Auch hier spielt die Rubrikenstruktur eine wesentliche Rolle. Die Köpfe müssen in der Struktur der Erscheinungsweisen hinterlegt werden. Falls z. B. von Montag bis Freitag nur ein Kfz-Markt erscheint, muss der Kopf dafür hinterlegt werden. Erscheinen am Samstag alle Einzelrubriken, muss für jede Einzelrubrik ein Kopf hinterlegt sein."
+    },
+    {
+      "heading": "2.2.4.9 Branchen",
+      "charCount": 160,
+      "body": "Dieses Menü listet alle Branchen auf, die von einem Datenträger eingelesen worden sind. Außerdem können hierüber neue Branchen definiert und hinzugefügt werden."
+    },
+    {
+      "heading": "2.2.4.10 Export",
+      "charCount": 179,
+      "body": "Der Export exportiert die gesamte Produktionsstruktur des Verlages aus der ASE-Datenbank mit Objekten, Ausgaben,  Rubriken, Kalendern usw. Diese Datei wird als xml-Datei abgelegt."
+    },
+    {
+      "heading": "2.2.4.11 Import",
+      "charCount": 203,
+      "body": "Im umgekehrten Fall importiert AdSuite aus einem Fremdsystem die gesamte Produktionsstruktur des Verlages mit Objekten, Ausgaben, Rubriken, Kalendern usw. Voraussetzung für den Import ist eine xml-Datei."
+    },
+    {
+      "heading": "2.2.4.12 Formatverwaltung",
+      "charCount": 639,
+      "body": "Über die Formatverwaltung werden sämtliche Formate definiert, die in der Gestaltung mit alfa     PageOne benutzt werden.\n\n\nFür jedes Format, welches in PageOne benutzt wird, kann eine Zuordnung erfolgen, in der definiert wird, für welche Ausgabe, für welche Ausgaben-Kombination oder für welche Rubrik dieses Format benutzt werden darf. Zusätzlich kann hinterlegt werden, ob das Format Farbe erlaubt, die Anzahl Farben und ob Rahmen erlaubt sind oder nicht. Außerdem kann die maximale Größe für das Erfassen einer Anzeige definiert werden. Das gilt sowohl für die minimale und maximale Spaltigkeit sowie für die minimale und maximale Höhe."
+    },
+    {
+      "heading": "2.2.5.1 Preislisten",
+      "charCount": 327,
+      "body": "Hier werden die Preislisten je Mandant mit den jeweils gültigen Terminen hinterlegt.\n\nDie Einrichtung einer neuen Preisliste wird von System unterstützt, indem ein Preisanpassungsfaktor und die Gültigkeit des neuen Objekts angegeben werden. Bei der dann zu startenden Kopie werden auch die Preise und Preismodifizierer kopiert."
+    },
+    {
+      "heading": "2.2.5.2 Tarife und Preise",
+      "charCount": 1530,
+      "body": "Hier gibt es eine zweistufige Hierarchie. Ein Tarif ist abhängig vom Anzeigentyp, der Klassifizierung des Inserenten (Privatperson, Firma, etc.) und Anzahl Farben. Er definiert die Leistungsart (Millimeteranzeigen, Zeileanzeigen, usw.).\n\n\nZudem können einem Tarif mehrere Preismodifizierer zugewiesen werden. Diese haben verschiedene Typen.\n\n· Formatgruppe\n\n· Express-Annahmeschluss\n\n· Zeitungsteil\n\n· Farbentyp (Anzahl)\n\n· Typ des Kunden (Privat, Firma, etc.)\n\nDie beiden letzten können nur angegeben werden, wenn die entsprechende Angabe im Tarif undefiniert ist.\n\nDiese Modifizierer besitzen ein Kriterium (z.B. Farbtyp 4C) und einen Faktor (z.B. 2). Mit diesem Faktor wird der gefundene Einheitenpreis multipliziert, falls die Kriterien bei der zu berechnenden Anzeige zutreffen. Im Beispiel würde der Preis eine 4C-Anzeige verdoppelt.\n\nOb der Faktor explizit auf der Rechnung erscheint, kann ebenfalls angegeben werden.\n\n\nEin Tarifpreis ist abhängig vom Wochentag und wird Ausgaben, Ausgabenkombinationen und Ausgabenteilen zugewiesen. Dieses Objekt besitzt unterschiedliche Beträge für Orts- und Grundpreis.\n\n\nInklusivpreise, die in der Nennung gegenüber dem Kunden die Mehrwertsteuer enthalten, werden Netto mit vier Nachkommastellen abgelegt. Bei einer Mehrwertsteuererhöhung wird dieser Preis manuell durch einen ab dann gültigen Folgepreis ersetzt. Durch dieses Verfahren ist es auch möglich, beide Preisarten auf einer Rechnung auszuweisen und bei nicht mehrwertsteuerpflichtiger Rechnungsstellung korrekt zu verfahren."
+    },
+    {
+      "heading": "2.2.5.3 Preisstaffeln",
+      "charCount": 834,
+      "body": "Für gestaffelte Preise und Rabatte sind frei pflegbare und typisierte Staffeln vorgesehen, mittels derer über einen Eingangswert (Beispiel: Abnahmevorsatz in Millimetern) ein Ausgangswert (Beispiel: Abschlussrabatt-Prozentsatz) ermittelt wird. Weitere Beispiele sind Provisionsstaffeln für Vertreterprovisions-Prozentsätze und Gewichtsstaffeln für Beilagenpreise. Provisionsstaffeln können durchgängig wirksam werden oder bestimmten Ausgabekombinationen und damit Objekten zugeordnet werden.\n\nRabattstaffeln können einen Verweis auf einen Nachfolger enthalten, der die fachlich gewünschte Änderung enthält. Dieser Nachfolger wird anstelle des Vorgängers verwendet, wenn nach Ablauf einer Abschlussfolge eine neue Abschlussfolge angelegt wird, weil die Staffel nicht einfach während der Laufzeit eines Abschlusses geändert werden darf."
+    },
+    {
+      "heading": "2.2.5.4 Preis-Schemata",
+      "charCount": 1098,
+      "body": "Zur Verwendung in einem Preisschema können beliebige absolute und prozentuale Zuschläge und Nachlässe definiert werden. In einfachster Form sind dies manuell einzugebende Werte, es kann aber auch ein mehr oder weniger komplexes Regelwerk für die Ermittlung eines Zuschlages oder Nachlasses dahinter stecken, z.B. für Kombinationsnachlass, AE-Provision oder Abschlussrabatt.\n\nPreisschemata sind definierte Abfolgen von prozentualen und absoluten Zuschlägen und Nachlässen mit Vorgaben für die Berechnung. Preisschemata können verschiedenen Kontexten zugeordnet werden, z.B. Mandant, Firma, (führendes) Objekt usw., aber auch Kunden können ihre eigenen Preisschemata besitzen.\n\n\nDie einzelnen Stufen des Preisschemas können u.a. folgende Steuerungselemente enthalten\n\n· schließe den Betrag, der sich auf dieser Stufe ergibt, von der Provisionsbasis (Netto vor Mehrwertsteuer) für die Ermittlung einer erscheinungsbezogenen Provision aus.\n\n· schließe den Betrag, der sich auf dieser Stufe ergibt, von der Provisionsbasis (Netto vor Mehrwertsteuer) für die Ermittlung der umsatzbezogenen Provision aus."
+    },
+    {
+      "heading": "2.2.5.5 MWSt.-Eigenschaften",
+      "charCount": 157,
+      "body": "Mehrwertsteuercodes können hinterlegt und abhängig von Leistung, Firmensitz des Kunden und den Regeln für die umsatzsteuerliche Behandlung zugewiesen werden."
+    },
+    {
+      "heading": "2.2.6.1 Benutzer",
+      "charCount": 1076,
+      "body": "In diesem Menü werden die Benutzer von alfa AdSuite definiert. Der Benutzername sowie die Benutzergruppe für den Benutzer muss angegeben werden. Die Benutzergruppen müssen allerdings zuerst in einem anderen Menü definiert werden, damit sie an dieser Stelle zur Verfügung stehen. Den Benutzern werden an dieser Stelle die Rechte zugeordnet. Im linken Fenster stehen die zur Verfügung stehenden Rechte. Die Rechte, die dem Benutzer zugeordnet werden sollen, können per Maus von links nach rechts über die Pfeiltasten übernommen werden. Die Rechte sind in einer Benutzerrolle zusammengefasst. Theoretisch kann jeder Benutzer über eine eigene Benutzerrolle verfügen. In der Praxis werden typische Benutzerrollen für mehrere Benutzer definiert, z. B. für einen technischen Anzeigensetzer, der mit InDesign oder QuarkXPress arbeitet. Dieser soll z. B. keine kaufmännischen Informationen zu sehen bekommen. Demzufolge wird eine Benutzerrolle mit diesen Einschränkungen definiert.\n\nEine kleine Strukturzeichnung der Rechteverwaltung soll die Übersicht über die Möglichkeiten    geben:"
+    },
+    {
+      "heading": "2.2.6.2 Benutzergruppen",
+      "charCount": 315,
+      "body": "An dieser Stelle werden die Benutzergruppen definiert. In einer solchen Gruppe können Voreinstellungen für die Auftragserfassung definiert werden. So werden bei einem Benutzer, der dieser Gruppe zugewiesen ist, bei einer neuen Anzeige sofort das entsprechende Objekt sowie z. B. der Anzeigentyp Fließsatz vorbelegt."
+    },
+    {
+      "heading": "2.2.6.3 Benutzerrollen",
+      "charCount": 514,
+      "body": "Dieses Menü steuert die Benutzerrollen innerhalb von AdSuite. Hier wird z. B. eine Rolle für die kaufmännischen Mitarbeiter definiert, die Rechte für bestimmte Zugriffe festlegt. Dazu werden den Rollen Rechtepakete zugewiesen.\n\n\nSo können z. B. für die Rolle Anzeigenproduktion bestimmte Bereiche der Auftragsmaske ausgeblendet werden. Das könnte z. B. die gesamte Preisfindung mit den Rabatten, Abschlüssen etc. sein. In diesem Fall werden die entsprechenden Maskenelemente für diesen Bereich gar nicht angeboten."
+    },
+    {
+      "heading": "2.2.6.4 Rechte-Pakete",
+      "charCount": 524,
+      "body": "Ein Rechte-Paket besteht aus mehreren Rechtepaketteilen. Diese beschreiben welches Modul mit welcher Rechtequalität verwendet werden darf. Module haben bestimmte Typen.\n\n· Anwendung\n\n· Maske\n\n· Bereich einer Maske\n\n· Maskenfeld (Eingabe- oder Infofeld)\n\n· Button\n\n· Menu\n\n· Menueintrag\n\n· Status-Übergang\n\nIn Abhängigkeit des Typs können verschiedene Rechtequalitäten gewählt werden. Z.B. können Maskenbereiche und Felder geändert oder angesehen werden. Fehlt eines dieser Rechte werden die entsprechenden teil ausgeblendet."
+    },
+    {
+      "heading": "2.2.6.5 Module",
+      "charCount": 128,
+      "body": "Dieses ist nur für alfa-Mitarbeiter zugänglich. Jedes Modul entspricht einer oder mehreren bestimmten Aktionen in der Anwendung."
+    },
+    {
+      "heading": "2.2.6.6 Fachobjekt Konfiguration",
+      "charCount": 283,
+      "body": "Bei der Erstellung eines Rechtepaketteils kann ein Modul mit seiner Rechtequalität auch auf genau zu spezifizierende Objekte eingeschränkt werden. So ist z.B. bei einem Status-Übergang nur die Verwendung bestimmter Folge-Status erlaubt. Diese Fachobjektgruppen werden hier definiert."
+    },
+    {
+      "heading": "2.2.7 Menü Hilfe",
+      "charCount": 242,
+      "body": "Die Hilfe ist nicht implementiert.\n\nDer Customizing-Information-Modus hilft dem Customizer, indem er interne Informationen zu Modulen anzeigt.\n\nDie Info zeigt verschiedene Informationen über den Releasestand, den Server, den Benutzer etc. an."
+    },
+    {
+      "heading": "2.2.8 Menü Sprache",
+      "charCount": 1266,
+      "body": "In diesem Menü kann per Mausklick auf die jeweils gewünschte Sprache umgestellt werden. Bis zu vier Sprachen gleichzeitig werden unterstützt.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nDatei: AdSuite Leistungsbeschreibung Allgemein\nSeite 2\nAutoren: Rolf Köther mit Unterstützung weiterer alfa-Mitarbeiter\nDruckdatum: 31.08.05\nDatei: AdSuite Leistungsbeschreibung Allgemein\nSeite 3\nAutoren: Rolf Köther mit Unterstützung weiterer alfa-Mitarbeiter\nDruckdatum: 31.08.05\n\n...\n\nBenutzerrolle\n\nz.B.\n\nCall Center\n\nRechtemodul\n\nA\n\nz.B. Applikation\n\nRechtemodul\n\nB\n\nz.B. Dialogfeld\n\nRechtemodul\n\n...\n\nRechtepaket\n\nASP Client\n\nRechtepaket\n\nMotivexport\n\nRechtepaket\n\nSachbearbeiter-\n\nliste\n\nBenutzerrolle\n\nz.B.\n\nAnzeigenabteilung\n\nBenutzerrolle\n\nz.B.\n\nMotivbearbeitung\n\nBenutzer\n\nz.B.\n\nHr. Meier\n\nBenutzer\n\nz.B.\n\nFr. Schmidt\n\nBenutzer\n\nz.B.\n\nHr. M�ller\n\nBenutzergruppe\n\nz.B.\n\nCall Center\n\nBenutzergruppe\n\nz.B.\n\nDisposition"
+    }
+  ]
+}

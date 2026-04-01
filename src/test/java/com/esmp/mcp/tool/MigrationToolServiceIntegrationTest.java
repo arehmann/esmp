@@ -227,7 +227,7 @@ class MigrationToolServiceIntegrationTest {
   @Test
   @DisplayName("browseDomainTerms returns non-empty list of business terms")
   void testBrowseDomainTerms_returnsTerms() {
-    List<BusinessTermResponse> terms = toolService.browseDomainTerms(null, null);
+    List<BusinessTermResponse> terms = toolService.browseDomainTerms(null, null, null, null, true);
 
     assertThat(terms).isNotNull();
     // At least the "invoice-term" seeded in setup

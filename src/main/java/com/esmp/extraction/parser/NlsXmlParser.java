@@ -50,7 +50,9 @@ public class NlsXmlParser {
       String englishValue,
       String germanValue,
       String category,
-      String sourceFile) {}
+      String sourceFile,
+      String uiRole,
+      String domainArea) {}
 
   /**
    * Scans for NLS XML files under the given source root and parses all entries.
@@ -156,7 +158,9 @@ public class NlsXmlParser {
       if (english.length() <= 2 || "xxx".equalsIgnoreCase(english)) continue;
 
       String category = categorizeKey(key);
-      entries.put(key, new NlsEntry(key, english, german, category, sourceFileName));
+      String uiRole = deriveUiRole(key);
+      String domainArea = deriveDomainArea(sourceFileName);
+      entries.put(key, new NlsEntry(key, english, german, category, sourceFileName, uiRole, domainArea));
     }
 
     return entries;
@@ -172,5 +176,49 @@ public class NlsXmlParser {
     if (key.startsWith("Function_")) return "NLS_FUNCTION";
     if (key.startsWith("ToolTipText_") || key.startsWith("ToolTip")) return "NLS_TOOLTIP";
     return "NLS_OTHER";
+  }
+
+  /**
+   * Derives the UI role from the NLS key prefix. The role tells the migration agent which
+   * Vaadin 24 component or API to use for this string resource.
+   */
+  static String deriveUiRole(String key) {
+    if (key.startsWith("lbl") || key.startsWith("Label")) return "LABEL";
+    if (key.startsWith("msg") || key.startsWith("Msg")) return "MESSAGE";
+    if (key.startsWith("tooltip") || key.startsWith("tt")
+        || key.startsWith("ToolTipText_") || key.startsWith("ToolTip")) return "TOOLTIP";
+    if (key.startsWith("help")) return "HELP_TEXT";
+    if (key.startsWith("title") || key.startsWith("Title.")) return "TITLE";
+    if (key.startsWith("btn") || key.startsWith("Button_")) return "BUTTON";
+    if (key.startsWith("mi") || key.startsWith("menu")) return "MENU_ITEM";
+    if (key.startsWith("error.") || key.startsWith("Error")) return "ERROR";
+    if (key.startsWith("warning.") || key.startsWith("Warning")) return "WARNING";
+    if (key.startsWith("log")) return "LOG_MESSAGE";
+    if (key.startsWith("txt")) return "TEXT_BLOCK";
+    if (key.startsWith("TypeText_") || key.startsWith("TypeCode_")) return "ENUM_DISPLAY";
+    return "GENERAL";
+  }
+
+  /**
+   * Derives the business domain area from the NLS XML source filename. Groups terms by the
+   * business function they belong to.
+   */
+  static String deriveDomainArea(String sourceFileName) {
+    if (sourceFileName == null) return "UNKNOWN";
+    // Strip .xml extension for matching
+    String name = sourceFileName.replace(".xml", "").replace(".XML", "");
+    return switch (name) {
+      case "Order" -> "ORDER_MANAGEMENT";
+      case "Contract" -> "CONTRACT_MANAGEMENT";
+      case "AdSuiteAdmin" -> "ADMINISTRATION";
+      case "Basics" -> "COMMON";
+      case "vaadin" -> "UI_FRAMEWORK";
+      case "ASEPROD" -> "PRODUCTION";
+      case "AdsuiteReports" -> "REPORTING";
+      case "SalesRepresentative" -> "SALES";
+      case "Migration" -> "MIGRATION";
+      case "xmlimport" -> "DATA_IMPORT";
+      default -> "OTHER";
+    };
   }
 }

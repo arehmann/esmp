@@ -20,9 +20,6 @@ import com.esmp.migration.application.RecipeBookRegistry;
 import com.esmp.vector.api.SearchRequest;
 import com.esmp.vector.api.SearchResponse;
 import com.esmp.vector.application.VectorSearchService;
-import io.micrometer.core.annotation.Timed;
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,11 +34,10 @@ import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.stereotype.Component;
 
 /**
- * MCP tool service exposing 11 migration-assistance tools to AI assistants.
+ * MCP tool service exposing 12 migration-assistance tools to AI assistants.
  *
  * <p>Each method is annotated with {@link Tool} so that the Spring AI MCP server can discover
- * and expose it as a named tool via the SSE transport. All methods are also instrumented with
- * Micrometer {@link Timed} and {@link Counter} metrics.
+ * and expose it as a named tool via the SSE transport.
  *
  * <p>Tools:
  * <ol>
@@ -50,6 +46,7 @@ import org.springframework.stereotype.Component;
  *   <li>{@link #getDependencyCone} — graph-based dependency traversal
  *   <li>{@link #getRiskAnalysis} — risk heatmap or class-level risk detail
  *   <li>{@link #browseDomainTerms} — lexicon browsing and search
+ *   <li>{@link #getDomainGlossary} — project-wide domain glossary
  *   <li>{@link #validateSystemHealth} — full graph + vector validation report
  *   <li>{@link #getMigrationPlan} — OpenRewrite recipe plan for a class
  *   <li>{@link #applyMigrationRecipes} — apply recipes and return diff (no disk write)
@@ -72,7 +69,6 @@ public class MigrationToolService {
   private final MigrationRecipeService migrationRecipeService;
   private final RecipeBookRegistry recipeBookRegistry;
   private final Neo4jClient neo4jClient;
-  private final MeterRegistry meterRegistry;
 
   public MigrationToolService(
       MigrationContextAssembler assembler,
@@ -83,8 +79,7 @@ public class MigrationToolService {
       ValidationService validationService,
       MigrationRecipeService migrationRecipeService,
       RecipeBookRegistry recipeBookRegistry,
-      Neo4jClient neo4jClient,
-      MeterRegistry meterRegistry) {
+      Neo4jClient neo4jClient) {
     this.assembler = assembler;
     this.graphQueryService = graphQueryService;
     this.riskService = riskService;
@@ -94,7 +89,6 @@ public class MigrationToolService {
     this.migrationRecipeService = migrationRecipeService;
     this.recipeBookRegistry = recipeBookRegistry;
     this.neo4jClient = neo4jClient;
-    this.meterRegistry = meterRegistry;
   }
 
   /**
@@ -108,21 +102,15 @@ public class MigrationToolService {
       + "fully-qualified class name (e.g. com.example.PaymentService). Returns: dependency cone, "
       + "code chunks, business terms, risk analysis, business rules. Use as primary context tool "
       + "before migrating any class.")
-  @Timed(value = "esmp.mcp.request.duration", extraTags = {"tool", "getMigrationContext"})
   public MigrationContext getMigrationContext(String classFqn) {
     long startMs = System.currentTimeMillis();
-    Counter.builder("esmp.mcp.tool.invocations")
-        .tag("tool", "getMigrationContext")
-        .register(meterRegistry)
-        .increment();
 
     MigrationContext result = assembler.assemble(classFqn);
-    long latencyMs = System.currentTimeMillis() - startMs;
 
     log.info("MCP_REQUEST tool=getMigrationContext classFqn={} latencyMs={} completeness={} "
         + "truncated={} warnings={}",
-        classFqn, latencyMs, result.contextCompleteness(), result.truncated(),
-        result.warnings().size());
+        classFqn, System.currentTimeMillis() - startMs, result.contextCompleteness(),
+        result.truncated(), result.warnings().size());
 
     return result;
   }
@@ -139,13 +127,8 @@ public class MigrationToolService {
   @Tool(description = "Semantic vector search across indexed code chunks. Input: query string "
       + "+ optional filters (module, stereotype, topK). Returns: ranked code chunks with "
       + "similarity scores. Use for finding relevant code when you don't have a specific class FQN.")
-  @Timed(value = "esmp.mcp.request.duration", extraTags = {"tool", "searchKnowledge"})
   public SearchResponse searchKnowledge(String query, String module, String stereotype, int topK) {
     long startMs = System.currentTimeMillis();
-    Counter.builder("esmp.mcp.tool.invocations")
-        .tag("tool", "searchKnowledge")
-        .register(meterRegistry)
-        .increment();
 
     SearchRequest request = new SearchRequest(query, topK > 0 ? topK : 10, module, stereotype, null);
     SearchResponse result = vectorSearchService.search(request);
@@ -167,14 +150,9 @@ public class MigrationToolService {
       + "depth (default 10). Returns: all transitively reachable nodes via DEPENDS_ON, EXTENDS, "
       + "IMPLEMENTS, CALLS, BINDS_TO, QUERIES, MAPS_TO_TABLE edges. Use to understand what a "
       + "class depends on.")
-  @Timed(value = "esmp.mcp.request.duration", extraTags = {"tool", "getDependencyCone"})
   @Cacheable(value = "dependencyCones", key = "#classFqn")
   public Optional<DependencyConeResponse> getDependencyCone(String classFqn, int maxDepth) {
     long startMs = System.currentTimeMillis();
-    Counter.builder("esmp.mcp.tool.invocations")
-        .tag("tool", "getDependencyCone")
-        .register(meterRegistry)
-        .increment();
 
     Optional<DependencyConeResponse> result = graphQueryService.findDependencyCone(classFqn);
 
@@ -198,13 +176,8 @@ public class MigrationToolService {
       + "(complexity, fan-in/out, domain criticality, security, financial). If classFqn is "
       + "empty/null, returns risk heatmap filterable by module and sortable by 'structural' or "
       + "'enhanced'. Use when you need risk-specific info.")
-  @Timed(value = "esmp.mcp.request.duration", extraTags = {"tool", "getRiskAnalysis"})
   public Object getRiskAnalysis(String classFqn, String module, String sortBy, int limit) {
     long startMs = System.currentTimeMillis();
-    Counter.builder("esmp.mcp.tool.invocations")
-        .tag("tool", "getRiskAnalysis")
-        .register(meterRegistry)
-        .increment();
 
     Object result;
     if (classFqn != null && !classFqn.isBlank()) {
@@ -222,28 +195,76 @@ public class MigrationToolService {
   }
 
   /**
-   * Browse or search the domain lexicon.
+   * Browse or search the domain lexicon with structured domain intelligence.
+   *
+   * <p>By default, returns only NLS-sourced terms (genuine business vocabulary with UI roles and
+   * domain areas). Set {@code includeAll=true} to also include CLASS_NAME/ENUM noise terms.
    *
    * @param search      optional case-insensitive search text matched against term names
    * @param criticality optional criticality filter: "High", "Medium", or "Low"
-   * @return list of matching business terms with definitions and usage counts
+   * @param uiRole      optional UI role filter: LABEL, MESSAGE, TOOLTIP, BUTTON, TITLE, ERROR, etc.
+   * @param domainArea  optional domain area filter: ORDER_MANAGEMENT, CONTRACT_MANAGEMENT, COMMON, etc.
+   * @param includeAll  if true, include CLASS_NAME/ENUM terms; default false (NLS-only)
+   * @return list of matching business terms with definitions, UI roles, domain areas, and usage counts
    */
-  @Tool(description = "Browse or search the domain lexicon. Input: optional search text and/or "
-      + "criticality filter (High, Medium, Low). Returns: business terms with definitions, "
-      + "related classes, usage counts. Use to understand business terminology in the codebase.")
-  @Timed(value = "esmp.mcp.request.duration", extraTags = {"tool", "browseDomainTerms"})
-  @Cacheable(value = "domainTermsByClass", key = "#search + '_' + #criticality")
-  public List<BusinessTermResponse> browseDomainTerms(String search, String criticality) {
+  @Tool(description = "Browse or search the domain lexicon. Returns business terms with UI roles "
+      + "(LABEL, MESSAGE, TOOLTIP, BUTTON, TITLE, ERROR, WARNING) and domain areas "
+      + "(ORDER_MANAGEMENT, CONTRACT_MANAGEMENT, COMMON, PRODUCTION, SALES, etc.). "
+      + "Input: optional search text, criticality (High/Medium/Low), uiRole filter, "
+      + "domainArea filter. By default returns only NLS-sourced terms (real business vocabulary). "
+      + "Set includeAll=true to also get CLASS_NAME/ENUM terms. "
+      + "UI roles tell you which Vaadin 24 component to use: LABEL→field.setLabel(), "
+      + "MESSAGE→Notification.show(), TOOLTIP→Tooltip.forComponent(), TITLE→dialog.setHeaderTitle().")
+  @Cacheable(value = "domainTermsByClass",
+      key = "#search + '_' + #criticality + '_' + #uiRole + '_' + #domainArea + '_' + #includeAll")
+  public List<BusinessTermResponse> browseDomainTerms(
+      String search, String criticality, String uiRole, String domainArea, boolean includeAll) {
     long startMs = System.currentTimeMillis();
-    Counter.builder("esmp.mcp.tool.invocations")
-        .tag("tool", "browseDomainTerms")
-        .register(meterRegistry)
-        .increment();
 
-    List<BusinessTermResponse> result = lexiconService.findByFilters(criticality, null, search, null, 100);
+    boolean nlsOnly = !includeAll;
+    List<BusinessTermResponse> raw = lexiconService.findByFilters(
+        criticality, null, search, null, uiRole, domainArea, nlsOnly, 100);
 
-    log.info("MCP_REQUEST tool=browseDomainTerms params='search={} criticality={}' latencyMs={}",
-        search, criticality, System.currentTimeMillis() - startMs);
+    // Strip documentContext from list responses to keep MCP payloads compact.
+    // Agents can get full doc context via getMigrationContext for a specific class.
+    List<BusinessTermResponse> result = raw.stream()
+        .map(t -> new BusinessTermResponse(
+            t.termId(), t.displayName(), t.definition(), t.criticality(),
+            t.migrationSensitivity(), t.synonyms(), t.curated(), t.status(),
+            t.sourceType(), t.primarySourceFqn(), t.usageCount(), t.relatedClassFqns(),
+            t.uiRole(), t.domainArea(), t.nlsFileName(), null, null))
+        .toList();
+
+    log.info("MCP_REQUEST tool=browseDomainTerms params='search={} criticality={} uiRole={} "
+        + "domainArea={} includeAll={}' results={} latencyMs={}",
+        search, criticality, uiRole, domainArea, includeAll,
+        result.size(), System.currentTimeMillis() - startMs);
+
+    return result;
+  }
+
+  /**
+   * Returns a project-wide domain glossary: domain area overview, UI role distribution,
+   * and top business terms by usage. Unlike browseDomainTerms (per-class), this gives
+   * the migration agent a high-level map of the entire business domain.
+   *
+   * @return structured glossary with domain areas, UI role counts, and top terms
+   */
+  @Tool(description = "Get project-wide domain glossary. Returns: domain areas with term counts "
+      + "(ORDER_MANAGEMENT, CONTRACT_MANAGEMENT, PRODUCTION, SALES, etc.), "
+      + "UI role distribution (how many LABEL/MESSAGE/TOOLTIP/BUTTON terms exist), "
+      + "top 30 business terms by usage, and abbreviation glossary (SC=Schedule Composition, "
+      + "AEP=Ad Edition Part, DS=Distribution Schedule, BP=Business Partner, etc.). "
+      + "Use to understand what the business does, decode abbreviations in method/class names, "
+      + "and orient yourself before diving into specific classes.")
+  public com.esmp.graph.api.DomainGlossaryResponse getDomainGlossary() {
+    long startMs = System.currentTimeMillis();
+
+    var result = lexiconService.getDomainGlossary();
+
+    log.info("MCP_REQUEST tool=getDomainGlossary params='' areas={} topTerms={} latencyMs={}",
+        result.domainAreas().size(), result.topTerms().size(),
+        System.currentTimeMillis() - startMs);
 
     return result;
   }
@@ -256,13 +277,8 @@ public class MigrationToolService {
   @Tool(description = "Runs all validation queries against the knowledge graph and vector store. "
       + "Returns: pass/fail/warn counts and detailed results for each query. Call before starting "
       + "migration to confirm data integrity.")
-  @Timed(value = "esmp.mcp.request.duration", extraTags = {"tool", "validateSystemHealth"})
   public ValidationReport validateSystemHealth() {
     long startMs = System.currentTimeMillis();
-    Counter.builder("esmp.mcp.tool.invocations")
-        .tag("tool", "validateSystemHealth")
-        .register(meterRegistry)
-        .increment();
 
     ValidationReport result = validationService.runAllValidations();
 
@@ -283,10 +299,8 @@ public class MigrationToolService {
       + "transforms are automatable by OpenRewrite recipe and which need AI-assisted migration. "
       + "Returns automation score, automatable action list (type renames, import swaps), and "
       + "manual action list (complex rewrites like Table to Grid, data binding changes).")
-  @Timed("esmp.mcp.getMigrationPlan")
   public MigrationPlan getMigrationPlan(String classFqn) {
     log.info("MCP getMigrationPlan called for: {}", classFqn);
-    meterRegistry.counter("esmp.mcp.calls", "tool", "getMigrationPlan").increment();
     try {
       return migrationRecipeService.generatePlan(classFqn);
     } catch (Exception e) {
@@ -307,14 +321,9 @@ public class MigrationToolService {
       + "to disk — use your own file writing tools to apply the changes. Only applies transforms "
       + "classified as automatable (type renames, import swaps, package changes). Complex rewrites "
       + "like Table-to-Grid and data binding are left for AI.")
-  @Timed("esmp.mcp.applyMigrationRecipes")
   public MigrationResult applyMigrationRecipes(String classFqn) {
     log.info("MCP applyMigrationRecipes called for: {}", classFqn);
-    meterRegistry.counter("esmp.mcp.calls", "tool", "applyMigrationRecipes").increment();
     try {
-      // Uses preview() intentionally — MCP tools return diff + modified source only.
-      // Claude handles all filesystem writes via its own tools. ESMP never writes to the
-      // target codebase through MCP.
       return migrationRecipeService.preview(classFqn);
     } catch (Exception e) {
       log.error("applyMigrationRecipes failed for {}: {}", classFqn, e.getMessage(), e);
@@ -335,10 +344,8 @@ public class MigrationToolService {
       + "Also returns transitiveClassCount (classes inheriting Vaadin 7 types), coverageByType, "
       + "coverageByUsage (0.0-1.0), and topGaps (top unmapped types). "
       + "Use this to assess migration effort and decide which modules to tackle first.")
-  @Timed("esmp.mcp.getModuleMigrationSummary")
   public ModuleMigrationSummary getModuleMigrationSummary(String module) {
     log.info("MCP getModuleMigrationSummary called for: {}", module);
-    meterRegistry.counter("esmp.mcp.calls", "tool", "getModuleMigrationSummary").increment();
     try {
       return migrationRecipeService.getModuleSummary(module);
     } catch (Exception e) {
@@ -360,10 +367,8 @@ public class MigrationToolService {
       + "descending. Use to discover what types Claude needs to research and add to the recipe book. "
       + "Returns: list of RecipeRule with source FQN, usageCount, and category. "
       + "Add mappings via PUT /api/migration/recipe-book/rules/{id}.")
-  @Timed("esmp.mcp.getRecipeBookGaps")
   public List<RecipeRule> getRecipeBookGaps() {
     log.info("MCP getRecipeBookGaps called");
-    meterRegistry.counter("esmp.mcp.calls", "tool", "getRecipeBookGaps").increment();
     return recipeBookRegistry.getRules().stream()
         .filter(r -> "NEEDS_MAPPING".equals(r.status()))
         .sorted(Comparator.comparingInt(RecipeRule::usageCount).reversed())
@@ -382,13 +387,8 @@ public class MigrationToolService {
   @Tool(description = "Returns the full Java source code for a class by its fully-qualified name. "
       + "Use this when you need to see the actual implementation before rewriting or migrating a class. "
       + "The source is read from the file system path stored in the Neo4j graph.")
-  @Timed(value = "esmp.mcp.tool.latency", extraTags = {"tool", "getSourceCode"})
   public String getSourceCode(String classFqn) {
     long startMs = System.currentTimeMillis();
-    Counter.builder("esmp.mcp.tool.invocations")
-        .tag("tool", "getSourceCode")
-        .register(meterRegistry)
-        .increment();
 
     // Query Neo4j for the source file path
     String sourceFilePath = neo4jClient.query(

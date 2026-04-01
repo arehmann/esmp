@@ -44,6 +44,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -99,6 +100,8 @@ public class ExtractionService {
   private final MigrationRecipeService migrationRecipeService;
   private final ModuleDetectionService moduleDetectionService;
   private final VectorIndexingService vectorIndexingService;
+  private final AbbreviationExtractor abbreviationExtractor;
+  private final DocumentIngestionService documentIngestionService;
   private final NlsXmlParser nlsXmlParser = new NlsXmlParser();
 
   /** NLS entries loaded at the start of each extraction run. Thread-safe (immutable after load). */
@@ -126,7 +129,9 @@ public class ExtractionService {
       MigrationRecipeService migrationRecipeService,
       ModuleDetectionService moduleDetectionService,
       ClasspathLoader classpathLoader,
-      VectorIndexingService vectorIndexingService) {
+      VectorIndexingService vectorIndexingService,
+      AbbreviationExtractor abbreviationExtractor,
+      DocumentIngestionService documentIngestionService) {
     this.javaSourceParser = javaSourceParser;
     this.mapper = mapper;
     this.classNodeRepository = classNodeRepository;
@@ -148,6 +153,8 @@ public class ExtractionService {
     this.moduleDetectionService = moduleDetectionService;
     this.classpathLoader = classpathLoader;
     this.vectorIndexingService = vectorIndexingService;
+    this.abbreviationExtractor = abbreviationExtractor;
+    this.documentIngestionService = documentIngestionService;
   }
 
   /**
@@ -266,6 +273,13 @@ public class ExtractionService {
     // (LEX-02/LEX-04 compliance: curated=true terms are never overwritten by re-extraction)
     persistBusinessTermNodes(businessTermNodes);
 
+    // Extract and persist domain abbreviation glossary from class names
+    Set<String> classSimpleNames = accumulator.getClasses().values().stream()
+        .map(ExtractionAccumulator.ClassNodeData::simpleName)
+        .collect(java.util.stream.Collectors.toSet());
+    List<BusinessTermNode> abbreviationTerms = abbreviationExtractor.extract(classSimpleNames);
+    persistBusinessTermNodes(abbreviationTerms);
+
     // Persist migration action nodes using batched UNWIND MERGE
     // Must persist BEFORE linkAllRelationships() so HAS_MIGRATION_ACTION MATCH can find them
     persistMigrationActionNodesBatched(migrationActionNodes);
@@ -285,6 +299,17 @@ public class ExtractionService {
     // Run migration post-processing: transitive detection, score recompute, enrichment
     // MUST run after linkAllRelationships() (EXTENDS edges exist) AND computeRiskScores()
     migrationRecipeService.migrationPostProcessing();
+
+    // Enrich NLS terms with legacy documentation context and generate class descriptions.
+    // MUST run after linking (USES_TERM edges exist) and risk scoring.
+    try {
+      int termsEnriched = documentIngestionService.enrichBusinessTermsWithDocs();
+      int classesDescribed = documentIngestionService.generateClassBusinessDescriptions();
+      log.info("Documentation ingestion: {} terms enriched, {} classes described",
+          termsEnriched, classesDescribed);
+    } catch (Exception e) {
+      log.warn("Documentation ingestion failed (non-fatal): {}", e.getMessage());
+    }
 
     // Vector indexing: embed all classes into Qdrant for semantic search / RAG
     sendProgress(jobId, "VECTOR_INDEXING", 0, 0);
@@ -454,6 +479,16 @@ public class ExtractionService {
     sendModuleProgress(jobId, null, "MIGRATION", 0, 0, "Migration post-processing", null);
     migrationRecipeService.migrationPostProcessing();
 
+    // Documentation ingestion: enrich terms + generate class descriptions
+    try {
+      int termsEnriched = documentIngestionService.enrichBusinessTermsWithDocs();
+      int classesDescribed = documentIngestionService.generateClassBusinessDescriptions();
+      log.info("Documentation ingestion: {} terms enriched, {} classes described",
+          termsEnriched, classesDescribed);
+    } catch (Exception e) {
+      log.warn("Documentation ingestion failed (non-fatal): {}", e.getMessage());
+    }
+
     // Vector indexing: embed all classes into Qdrant for semantic search / RAG
     sendModuleProgress(jobId, null, "VECTOR_INDEXING", 0, 0, "Building semantic code index", null);
     try {
@@ -520,6 +555,14 @@ public class ExtractionService {
     persistModuleNodesBatched(moduleNodes);
     persistDBTableNodesBatched(dbTableNodes);
     persistBusinessTermNodes(businessTermNodes);
+
+    // Extract and persist domain abbreviation glossary from class names
+    Set<String> classSimpleNames = accumulator.getClasses().values().stream()
+        .map(ExtractionAccumulator.ClassNodeData::simpleName)
+        .collect(java.util.stream.Collectors.toSet());
+    List<BusinessTermNode> abbreviationTerms = abbreviationExtractor.extract(classSimpleNames);
+    persistBusinessTermNodes(abbreviationTerms);
+
     persistMigrationActionNodesBatched(migrationActionNodes);
 
     log.info("Persisted module nodes: {} classes, {} annotations, {} packages",
@@ -1213,24 +1256,36 @@ public class ExtractionService {
             + "  t.sourceType = row.sourceType, "
             + "  t.primarySourceFqn = row.fqn, "
             + "  t.usageCount = row.usageCount, "
-            + "  t.synonyms = [] "
+            + "  t.synonyms = [], "
+            + "  t.uiRole = row.uiRole, "
+            + "  t.domainArea = row.domainArea, "
+            + "  t.nlsFileName = row.nlsFileName "
             + "ON MATCH SET "
             + "  t.displayName = CASE WHEN t.curated THEN t.displayName ELSE row.displayName END, "
             + "  t.definition = CASE WHEN t.curated THEN t.definition ELSE row.definition END, "
             + "  t.criticality = CASE WHEN t.curated THEN t.criticality ELSE row.criticality END, "
             + "  t.usageCount = row.usageCount, "
-            + "  t.status = CASE WHEN t.curated THEN 'curated' ELSE 'auto' END";
+            + "  t.status = CASE WHEN t.curated THEN 'curated' ELSE 'auto' END, "
+            + "  t.uiRole = CASE WHEN t.curated THEN t.uiRole ELSE coalesce(row.uiRole, t.uiRole) END, "
+            + "  t.domainArea = CASE WHEN t.curated THEN t.domainArea ELSE coalesce(row.domainArea, t.domainArea) END, "
+            + "  t.nlsFileName = CASE WHEN t.curated THEN t.nlsFileName ELSE coalesce(row.nlsFileName, t.nlsFileName) END";
 
     List<Map<String, Object>> rows = businessTermNodes.stream()
-        .map(node -> Map.<String, Object>of(
-            "termId", node.getTermId(),
-            "displayName", node.getDisplayName() != null ? node.getDisplayName() : node.getTermId(),
-            "definition", node.getDefinition() != null ? node.getDefinition() : "",
-            "criticality", node.getCriticality(),
-            "sensitivity", node.getMigrationSensitivity(),
-            "sourceType", node.getSourceType() != null ? node.getSourceType() : "UNKNOWN",
-            "fqn", node.getPrimarySourceFqn() != null ? node.getPrimarySourceFqn() : "",
-            "usageCount", node.getUsageCount()))
+        .map(node -> {
+          Map<String, Object> row = new HashMap<>();
+          row.put("termId", node.getTermId());
+          row.put("displayName", node.getDisplayName() != null ? node.getDisplayName() : node.getTermId());
+          row.put("definition", node.getDefinition() != null ? node.getDefinition() : "");
+          row.put("criticality", node.getCriticality());
+          row.put("sensitivity", node.getMigrationSensitivity());
+          row.put("sourceType", node.getSourceType() != null ? node.getSourceType() : "UNKNOWN");
+          row.put("fqn", node.getPrimarySourceFqn() != null ? node.getPrimarySourceFqn() : "");
+          row.put("usageCount", node.getUsageCount());
+          row.put("uiRole", node.getUiRole());
+          row.put("domainArea", node.getDomainArea());
+          row.put("nlsFileName", node.getNlsFileName());
+          return row;
+        })
         .toList();
 
     for (int i = 0; i < rows.size(); i += BATCH_SIZE) {

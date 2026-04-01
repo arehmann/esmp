@@ -57,6 +57,24 @@ public class LexiconService {
    */
   public List<BusinessTermResponse> findByFilters(
       String criticality, Boolean curated, String search, String sourceType, Integer limit) {
+    return findByFilters(criticality, curated, search, sourceType, null, null, false, limit);
+  }
+
+  /**
+   * Returns all business terms with optional filtering including uiRole and domainArea.
+   *
+   * @param criticality optional filter: "High", "Medium", or "Low"
+   * @param curated     optional filter: true for curated terms only
+   * @param search      optional case-insensitive substring on termId or displayName
+   * @param sourceType  optional filter by source type
+   * @param uiRole      optional filter by UI role (LABEL, MESSAGE, TOOLTIP, etc.)
+   * @param domainArea  optional filter by domain area (ORDER_MANAGEMENT, COMMON, etc.)
+   * @param nlsOnly     if true, only return NLS-sourced terms (sourceType starts with NLS_)
+   * @param limit       max results (default 500)
+   */
+  public List<BusinessTermResponse> findByFilters(
+      String criticality, Boolean curated, String search, String sourceType,
+      String uiRole, String domainArea, boolean nlsOnly, Integer limit) {
     StringBuilder cypher = new StringBuilder("""
         MATCH (t:BusinessTerm)
         WHERE 1=1
@@ -80,6 +98,17 @@ public class LexiconService {
     if (sourceType != null && !sourceType.isBlank()) {
       conditions.add("t.sourceType = $sourceType");
       params.put("sourceType", sourceType);
+    }
+    if (uiRole != null && !uiRole.isBlank()) {
+      conditions.add("t.uiRole = $uiRole");
+      params.put("uiRole", uiRole);
+    }
+    if (domainArea != null && !domainArea.isBlank()) {
+      conditions.add("t.domainArea = $domainArea");
+      params.put("domainArea", domainArea);
+    }
+    if (nlsOnly) {
+      conditions.add("t.sourceType STARTS WITH 'NLS_'");
     }
 
     for (String condition : conditions) {
@@ -199,6 +228,106 @@ public class LexiconService {
     return new ArrayList<>(results);
   }
 
+  /**
+   * Returns a structured domain glossary with area summaries, UI role distribution, and top terms.
+   */
+  public com.esmp.graph.api.DomainGlossaryResponse getDomainGlossary() {
+    // 1. Domain area summaries with top terms per area
+    String areaCypher = """
+        MATCH (t:BusinessTerm)
+        WHERE t.sourceType STARTS WITH 'NLS_' AND t.domainArea IS NOT NULL
+        WITH t.domainArea AS area, t
+        ORDER BY t.usageCount DESC
+        WITH area, count(t) AS cnt, collect(t.displayName)[0..5] AS topTerms
+        RETURN area, cnt, topTerms
+        ORDER BY cnt DESC
+        """;
+
+    var areaSummaries = neo4jClient.query(areaCypher)
+        .fetchAs(com.esmp.graph.api.DomainGlossaryResponse.DomainAreaSummary.class)
+        .mappedBy((ts, r) -> new com.esmp.graph.api.DomainGlossaryResponse.DomainAreaSummary(
+            r.get("area").asString(),
+            r.get("cnt").asLong(),
+            r.get("topTerms").asList(v -> v.asString())))
+        .all();
+
+    // 2. UI role distribution
+    String roleCypher = """
+        MATCH (t:BusinessTerm)
+        WHERE t.sourceType STARTS WITH 'NLS_' AND t.uiRole IS NOT NULL
+        RETURN t.uiRole AS role, count(t) AS cnt
+        ORDER BY cnt DESC
+        """;
+
+    Map<String, Long> uiRoleCounts = new java.util.LinkedHashMap<>();
+    neo4jClient.query(roleCypher).fetch().all().forEach(row ->
+        uiRoleCounts.put((String) row.get("role"), (Long) row.get("cnt")));
+
+    // 3. Top NLS terms by usage
+    String topCypher = """
+        MATCH (t:BusinessTerm)
+        WHERE t.sourceType STARTS WITH 'NLS_'
+        RETURN t.termId AS termId, t.displayName AS displayName,
+               t.definition AS definition, t.uiRole AS uiRole,
+               t.domainArea AS domainArea, t.usageCount AS usageCount
+        ORDER BY t.usageCount DESC
+        LIMIT 30
+        """;
+
+    var topTerms = neo4jClient.query(topCypher)
+        .fetchAs(com.esmp.graph.api.DomainGlossaryResponse.TopTerm.class)
+        .mappedBy((ts, r) -> new com.esmp.graph.api.DomainGlossaryResponse.TopTerm(
+            r.get("termId").asString(),
+            r.get("displayName").asString(""),
+            r.get("definition").isNull() ? null : r.get("definition").asString(),
+            r.get("uiRole").isNull() ? null : r.get("uiRole").asString(),
+            r.get("domainArea").isNull() ? null : r.get("domainArea").asString(),
+            r.get("usageCount").asLong(0)))
+        .all();
+
+    // 4. Abbreviations
+    String abbrevCypher = """
+        MATCH (t:BusinessTerm)
+        WHERE t.sourceType = 'ABBREVIATION'
+        RETURN t.termId AS abbreviation, t.displayName AS displayName, t.definition AS evidence
+        ORDER BY t.termId
+        """;
+
+    var abbreviations = neo4jClient.query(abbrevCypher)
+        .fetchAs(com.esmp.graph.api.DomainGlossaryResponse.Abbreviation.class)
+        .mappedBy((ts, r) -> {
+          String displayName = r.get("displayName").asString("");
+          // Extract expansion from "SC — Schedule Composition" format
+          String expansion = displayName.contains(" — ")
+              ? displayName.substring(displayName.indexOf(" — ") + 3)
+              : displayName;
+          return new com.esmp.graph.api.DomainGlossaryResponse.Abbreviation(
+              r.get("abbreviation").asString(),
+              expansion,
+              r.get("evidence").isNull() ? null : r.get("evidence").asString());
+        })
+        .all();
+
+    // 5. Totals
+    String countCypher = """
+        MATCH (t:BusinessTerm)
+        RETURN count(t) AS total,
+               count(CASE WHEN t.sourceType STARTS WITH 'NLS_' THEN 1 END) AS nlsTotal
+        """;
+
+    Map<String, Object> counts = neo4jClient.query(countCypher).fetch().one().orElse(Map.of());
+    long totalAll = counts.get("total") instanceof Long l ? l : 0;
+    long totalNls = counts.get("nlsTotal") instanceof Long l ? l : 0;
+
+    return new com.esmp.graph.api.DomainGlossaryResponse(
+        new ArrayList<>(areaSummaries),
+        uiRoleCounts,
+        new ArrayList<>(topTerms),
+        new ArrayList<>(abbreviations),
+        totalNls,
+        totalAll);
+  }
+
   // ---------------------------------------------------------------------------
   // Mapping helpers
   // ---------------------------------------------------------------------------
@@ -217,6 +346,11 @@ public class LexiconService {
         node.get("sourceType").asString(""),
         node.get("primarySourceFqn").asString(""),
         (int) node.get("usageCount").asLong(0L),
-        relatedFqns);
+        relatedFqns,
+        node.get("uiRole").isNull() ? null : node.get("uiRole").asString(),
+        node.get("domainArea").isNull() ? null : node.get("domainArea").asString(),
+        node.get("nlsFileName").isNull() ? null : node.get("nlsFileName").asString(),
+        node.get("documentContext").isNull() ? null : node.get("documentContext").asString(),
+        node.get("documentSource").isNull() ? null : node.get("documentSource").asString());
   }
 }

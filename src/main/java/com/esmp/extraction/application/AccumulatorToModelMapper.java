@@ -403,6 +403,9 @@ public class AccumulatorToModelMapper {
     node.setSourceType(data.sourceType);
     node.setPrimarySourceFqn(data.primarySourceFqn);
     node.setUsageCount(data.allSourceFqns.size());
+    node.setUiRole(data.uiRole);
+    node.setDomainArea(data.domainArea);
+    node.setNlsFileName(data.nlsFileName);
     return node;
   }
 

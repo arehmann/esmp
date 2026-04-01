@@ -16,6 +16,7 @@ import java.util.List;
  * preserved in the final output.
  *
  * @param classFqn            fully-qualified class name of the focal class
+ * @param businessDescription concise English description of what this class does in business terms
  * @param dependencyCone      transitive dependency cone (null if graph service failed)
  * @param riskAnalysis        per-class risk detail with domain scores (null if risk service failed)
  * @param domainTerms         business terms linked to this class via USES_TERM edges
@@ -29,6 +30,7 @@ import java.util.List;
  */
 public record MigrationContext(
     String classFqn,
+    String businessDescription,
     DependencyConeResponse dependencyCone,
     RiskDetailResponse riskAnalysis,
     List<BusinessTermResponse> domainTerms,

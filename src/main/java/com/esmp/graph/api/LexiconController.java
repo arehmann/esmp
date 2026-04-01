@@ -1,10 +1,13 @@
 package com.esmp.graph.api;
 
+import com.esmp.extraction.application.DocumentIngestionService;
 import com.esmp.graph.application.LexiconService;
 import java.util.List;
+import java.util.Map;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,9 +34,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class LexiconController {
 
   private final LexiconService lexiconService;
+  private final DocumentIngestionService documentIngestionService;
 
-  public LexiconController(LexiconService lexiconService) {
+  public LexiconController(LexiconService lexiconService,
+                            DocumentIngestionService documentIngestionService) {
     this.lexiconService = lexiconService;
+    this.documentIngestionService = documentIngestionService;
   }
 
   /**
@@ -42,7 +48,10 @@ public class LexiconController {
    * @param criticality optional filter by criticality ("High", "Medium", "Low")
    * @param curated     optional filter by curation status (true/false)
    * @param search      optional case-insensitive substring matched against termId or displayName
-   * @param sourceType  optional filter by source type (e.g., "CLASS_NAME", "ENUM", "JAVADOC")
+   * @param sourceType  optional filter by source type (e.g., "CLASS_NAME", "NLS_LABEL")
+   * @param uiRole      optional filter by UI role (LABEL, MESSAGE, TOOLTIP, BUTTON, etc.)
+   * @param domainArea  optional filter by domain area (ORDER_MANAGEMENT, COMMON, etc.)
+   * @param nlsOnly     if true, only return NLS-sourced terms (default false)
    * @return 200 with list of {@link BusinessTermResponse} (relatedClassFqns is empty for list view)
    */
   @GetMapping({"", "/"})
@@ -51,9 +60,23 @@ public class LexiconController {
       @RequestParam(required = false) Boolean curated,
       @RequestParam(required = false) String search,
       @RequestParam(required = false) String sourceType,
+      @RequestParam(required = false) String uiRole,
+      @RequestParam(required = false) String domainArea,
+      @RequestParam(required = false, defaultValue = "false") boolean nlsOnly,
       @RequestParam(required = false) Integer limit) {
-    List<BusinessTermResponse> terms = lexiconService.findByFilters(criticality, curated, search, sourceType, limit);
+    List<BusinessTermResponse> terms = lexiconService.findByFilters(
+        criticality, curated, search, sourceType, uiRole, domainArea, nlsOnly, limit);
     return ResponseEntity.ok(terms);
+  }
+
+  /**
+   * Returns the domain glossary: domain area overview, UI role distribution, and top terms.
+   *
+   * @return 200 with {@link DomainGlossaryResponse}
+   */
+  @GetMapping("/glossary")
+  public ResponseEntity<DomainGlossaryResponse> getGlossary() {
+    return ResponseEntity.ok(lexiconService.getDomainGlossary());
   }
 
   /**
@@ -97,5 +120,20 @@ public class LexiconController {
     return lexiconService.updateTerm(termId, request.definition(), request.criticality(), request.synonyms())
         .map(ResponseEntity::ok)
         .orElse(ResponseEntity.notFound().build());
+  }
+
+  /**
+   * Triggers on-demand documentation ingestion: enriches NLS terms with legacy doc context
+   * and generates business descriptions for classes with linked NLS terms.
+   *
+   * @return 200 with counts of enriched terms and described classes
+   */
+  @PostMapping("/ingest-docs")
+  public ResponseEntity<Map<String, Object>> ingestDocs() {
+    int termsEnriched = documentIngestionService.enrichBusinessTermsWithDocs();
+    int classesDescribed = documentIngestionService.generateClassBusinessDescriptions();
+    return ResponseEntity.ok(Map.of(
+        "termsEnriched", termsEnriched,
+        "classesDescribed", classesDescribed));
   }
 }

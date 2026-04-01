@@ -351,10 +351,29 @@ public class ExtractionAccumulator {
    */
   public void addBusinessTerm(
       String termId, String displayName, String sourceFqn, String sourceType, String definition) {
+    addBusinessTerm(termId, displayName, sourceFqn, sourceType, definition, null, null, null);
+  }
+
+  /**
+   * Adds an NLS-sourced business term with UI role, domain area, and source filename enrichment.
+   *
+   * @param termId      the NLS resource key (e.g., "lblBranchOffice")
+   * @param displayName the English translation (e.g., "Branch office")
+   * @param sourceFqn   FQN of the class containing the getNLS() call
+   * @param sourceType  NLS category (e.g., "NLS_LABEL", "NLS_MESSAGE")
+   * @param definition  the German translation (primary business definition)
+   * @param uiRole      derived UI role (e.g., "LABEL", "MESSAGE", "TOOLTIP")
+   * @param domainArea  derived domain area (e.g., "ORDER_MANAGEMENT", "COMMON")
+   * @param nlsFileName source NLS XML filename (e.g., "Order.xml")
+   */
+  public void addBusinessTerm(
+      String termId, String displayName, String sourceFqn, String sourceType, String definition,
+      String uiRole, String domainArea, String nlsFileName) {
     if (sourceType != null && sourceType.startsWith("NLS_")) {
       // NLS terms: use key as-is for termId, preserve displayName
       businessTerms.computeIfAbsent(
-          termId, id -> new BusinessTermData(id, displayName, sourceFqn, sourceType, definition));
+          termId, id -> new BusinessTermData(id, displayName, sourceFqn, sourceType, definition,
+              uiRole, domainArea, nlsFileName));
       businessTerms.get(termId).allSourceFqns.add(sourceFqn);
     } else {
       // Fallback to word-based extraction for non-NLS terms
@@ -736,6 +755,9 @@ public class ExtractionAccumulator {
     public final String primarySourceFqn;
     public final String sourceType;
     public final String javadocSeed;
+    public final String uiRole;
+    public final String domainArea;
+    public final String nlsFileName;
     /** All class/type FQNs that reference this term. Updated on each occurrence. */
     public final Set<String> allSourceFqns = new LinkedHashSet<>();
 
@@ -745,11 +767,26 @@ public class ExtractionAccumulator {
         String primarySourceFqn,
         String sourceType,
         String javadocSeed) {
+      this(termId, displayName, primarySourceFqn, sourceType, javadocSeed, null, null, null);
+    }
+
+    public BusinessTermData(
+        String termId,
+        String displayName,
+        String primarySourceFqn,
+        String sourceType,
+        String javadocSeed,
+        String uiRole,
+        String domainArea,
+        String nlsFileName) {
       this.termId = termId;
       this.displayName = displayName;
       this.primarySourceFqn = primarySourceFqn;
       this.sourceType = sourceType;
       this.javadocSeed = javadocSeed;
+      this.uiRole = uiRole;
+      this.domainArea = domainArea;
+      this.nlsFileName = nlsFileName;
     }
   }
 }

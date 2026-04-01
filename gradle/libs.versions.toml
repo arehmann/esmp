@@ -18,7 +18,7 @@ spring-boot-starter-data-neo4j = { module = "org.springframework.boot:spring-boo
 spring-boot-starter-data-jpa  = { module = "org.springframework.boot:spring-boot-starter-data-jpa" }
 spring-boot-starter-test      = { module = "org.springframework.boot:spring-boot-starter-test" }
 spring-boot-testcontainers    = { module = "org.springframework.boot:spring-boot-testcontainers" }
-micrometer-prometheus         = { module = "io.micrometer:micrometer-registry-prometheus" }
+
 flyway-core                   = { module = "org.flywaydb:flyway-core" }
 flyway-mysql                  = { module = "org.flywaydb:flyway-mysql" }
 mysql-connector               = { module = "com.mysql:mysql-connector-j" }

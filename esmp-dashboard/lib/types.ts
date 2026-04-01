@@ -67,6 +67,41 @@ export interface BusinessTermResponse {
   primarySourceFqn: string;
   usageCount: number;
   relatedClassFqns: string[];
+  uiRole: string | null;
+  domainArea: string | null;
+  nlsFileName: string | null;
+  documentContext: string | null;
+  documentSource: string | null;
+}
+
+export interface DomainAreaSummary {
+  domainArea: string;
+  termCount: number;
+  topTerms: string[];
+}
+
+export interface TopTerm {
+  termId: string;
+  displayName: string;
+  definition: string | null;
+  uiRole: string | null;
+  domainArea: string | null;
+  usageCount: number;
+}
+
+export interface Abbreviation {
+  abbreviation: string;
+  expansion: string;
+  evidence: string | null;
+}
+
+export interface DomainGlossaryResponse {
+  domainAreas: DomainAreaSummary[];
+  uiRoleCounts: Record<string, number>;
+  topTerms: TopTerm[];
+  abbreviations: Abbreviation[];
+  totalNlsTerms: number;
+  totalAllTerms: number;
 }
 
 // === Migration API ===

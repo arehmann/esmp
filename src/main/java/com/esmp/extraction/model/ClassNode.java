@@ -168,6 +168,15 @@ public class ClassNode {
    */
   private boolean needsAiMigration;
 
+  // ---------- Phase C: documentation-enriched business context ----------
+
+  /**
+   * Concise English business description of what this class does in commercial terms.
+   * Assembled from linked NLS terms, documentation context, and abbreviation glossary.
+   * Example: "ForeignSupplementPanel — Ad order management. UI: LABEL, MESSAGE. Terms: Supplement, Edition."
+   */
+  private String businessDescription;
+
   public ClassNode() {}
 
   public ClassNode(String fullyQualifiedName) {
@@ -444,5 +453,13 @@ public class ClassNode {
 
   public void setNeedsAiMigration(boolean needsAiMigration) {
     this.needsAiMigration = needsAiMigration;
+  }
+
+  public String getBusinessDescription() {
+    return businessDescription;
+  }
+
+  public void setBusinessDescription(String businessDescription) {
+    this.businessDescription = businessDescription;
   }
 }
