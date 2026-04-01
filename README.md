@@ -111,7 +111,7 @@ ESMP is a Spring Boot application backed by three specialized databases:
 ```
                         +------------------+
                         |   Browser (UI)   |
-                        |  Vaadin 24 SPA   |
+                        | Next.js Dashboard|
                         +--------+---------+
                                  |
                         +--------+---------+
