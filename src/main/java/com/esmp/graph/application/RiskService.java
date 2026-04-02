@@ -511,6 +511,7 @@ public class RiskService {
         node.get("businessRuleDensity").asDouble(0.0),
         node.get("enhancedRiskScore").asDouble(0.0),
         node.get("businessDescription").isNull() ? null : node.get("businessDescription").asString(),
+        node.get("curatedClassDescription").isNull() ? null : node.get("curatedClassDescription").asString(),
         methods);
   }
 

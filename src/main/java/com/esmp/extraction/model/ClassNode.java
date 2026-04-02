@@ -177,6 +177,13 @@ public class ClassNode {
    */
   private String businessDescription;
 
+  /**
+   * Human-written or LLM-generated natural language description of the class's business role.
+   * Set via {@code PUT /api/lexicon/class-description/{fqn}} and never overwritten by re-extraction.
+   * Takes priority over {@code businessDescription} in MCP responses and dashboard display.
+   */
+  private String curatedClassDescription;
+
   public ClassNode() {}
 
   public ClassNode(String fullyQualifiedName) {
@@ -461,5 +468,13 @@ public class ClassNode {
 
   public void setBusinessDescription(String businessDescription) {
     this.businessDescription = businessDescription;
+  }
+
+  public String getCuratedClassDescription() {
+    return curatedClassDescription;
+  }
+
+  public void setCuratedClassDescription(String curatedClassDescription) {
+    this.curatedClassDescription = curatedClassDescription;
   }
 }

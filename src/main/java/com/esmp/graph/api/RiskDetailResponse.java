@@ -45,4 +45,5 @@ public record RiskDetailResponse(
     double businessRuleDensity,
     double enhancedRiskScore,
     String businessDescription,
+    String curatedClassDescription,
     List<MethodComplexityEntry> methods) {}

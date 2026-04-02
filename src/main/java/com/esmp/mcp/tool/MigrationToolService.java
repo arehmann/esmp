@@ -289,6 +289,32 @@ public class MigrationToolService {
   }
 
   /**
+   * Saves a curated natural language business description for a class.
+   * This description is never overwritten by re-extraction and takes priority
+   * over the auto-generated businessDescription in all responses.
+   *
+   * @param classFqn    fully-qualified class name
+   * @param description natural language description of the class's business role
+   * @return confirmation message
+   */
+  @Tool(description = "Save a curated business description for a Java class. Input: classFqn + "
+      + "description (2-3 sentences explaining what the class does in business terms). "
+      + "This is permanent — never overwritten by re-extraction. Use after reading "
+      + "getMigrationContext to write a human-quality description of the class's purpose.")
+  public String saveClassDescription(String classFqn, String description) {
+    long startMs = System.currentTimeMillis();
+
+    boolean updated = lexiconService.updateCuratedClassDescription(classFqn, description);
+
+    log.info("MCP_REQUEST tool=saveClassDescription classFqn={} updated={} latencyMs={}",
+        classFqn, updated, System.currentTimeMillis() - startMs);
+
+    return updated
+        ? "Description saved for " + classFqn
+        : "Class not found: " + classFqn;
+  }
+
+  /**
    * Returns the OpenRewrite migration plan for a Java class, showing which Vaadin 7 transforms
    * can be automated and which require AI-assisted migration.
    *

@@ -231,7 +231,11 @@ export default function ClassDetailPage() {
                 <Skeleton className="h-[60px]" />
               ) : (
                 <div className="space-y-2 text-xs">
-                  {risk?.businessDescription ? (
+                  {risk?.curatedClassDescription ? (
+                    <p className="leading-relaxed">
+                      {risk.curatedClassDescription}
+                    </p>
+                  ) : risk?.businessDescription ? (
                     <p className="leading-relaxed text-muted-foreground">
                       {risk.businessDescription}
                     </p>

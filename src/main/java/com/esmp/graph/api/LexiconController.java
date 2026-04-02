@@ -136,4 +136,27 @@ public class LexiconController {
         "termsEnriched", termsEnriched,
         "classesDescribed", classesDescribed));
   }
+
+  /**
+   * Sets or updates the curated natural language description for a class.
+   * This field is never overwritten by re-extraction.
+   *
+   * @param fqn         the fully-qualified class name
+   * @param request     JSON body with {@code description} field
+   * @return 200 with the updated description, or 404 if the class doesn't exist
+   */
+  @PutMapping("/class-description/{fqn:.+}")
+  public ResponseEntity<Map<String, Object>> updateClassDescription(
+      @PathVariable String fqn,
+      @RequestBody Map<String, String> request) {
+    String description = request.get("description");
+    if (description == null || description.isBlank()) {
+      return ResponseEntity.badRequest().body(Map.of("error", "description is required"));
+    }
+    boolean updated = lexiconService.updateCuratedClassDescription(fqn, description);
+    if (!updated) {
+      return ResponseEntity.notFound().build();
+    }
+    return ResponseEntity.ok(Map.of("fqn", fqn, "curatedClassDescription", description));
+  }
 }

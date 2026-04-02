@@ -328,6 +328,32 @@ public class LexiconService {
         totalAll);
   }
 
+  /**
+   * Sets the curated natural language description for a class. This field is never
+   * overwritten by re-extraction — it's a permanent, human/LLM-authored artifact.
+   *
+   * @param fqn         fully-qualified class name
+   * @param description natural language business description
+   * @return true if the class was found and updated, false if not found
+   */
+  public boolean updateCuratedClassDescription(String fqn, String description) {
+    String cypher = """
+        MATCH (c:JavaClass {fullyQualifiedName: $fqn})
+        SET c.curatedClassDescription = $description
+        RETURN c.fullyQualifiedName AS updated
+        """;
+
+    var result = neo4jClient.query(cypher)
+        .bindAll(java.util.Map.of("fqn", fqn, "description", description))
+        .fetch().one();
+
+    if (result.isPresent()) {
+      log.info("Updated curatedClassDescription for {}", fqn);
+      return true;
+    }
+    return false;
+  }
+
   // ---------------------------------------------------------------------------
   // Mapping helpers
   // ---------------------------------------------------------------------------

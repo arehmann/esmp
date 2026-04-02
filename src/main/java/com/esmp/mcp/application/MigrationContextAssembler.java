@@ -246,18 +246,23 @@ public class MigrationContextAssembler {
           classFqn, MAX_CONE_NODES_WHEN_TRUNCATED);
     }
 
-    // Fetch pre-computed business description from ClassNode
+    // Fetch class description: prefer curatedClassDescription (LLM/human-written),
+    // fall back to auto-generated businessDescription
     String businessDescription = null;
     try {
       var descResult = neo4jClient.query("""
               MATCH (c:JavaClass {fullyQualifiedName: $fqn})
-              RETURN c.businessDescription AS desc
+              RETURN c.curatedClassDescription AS curated, c.businessDescription AS auto
               """)
           .bind(classFqn).to("fqn")
           .fetch().one();
       if (descResult.isPresent()) {
-        Object desc = descResult.get().get("desc");
-        if (desc instanceof String s && !s.isBlank()) {
+        var row = descResult.get();
+        Object curated = row.get("curated");
+        Object auto = row.get("auto");
+        if (curated instanceof String s && !s.isBlank()) {
+          businessDescription = s;
+        } else if (auto instanceof String s && !s.isBlank()) {
           businessDescription = s;
         }
       }
