@@ -108,8 +108,11 @@ public class IndexingController {
   }
 
   @PostMapping("/backfill-modules")
-  public ResponseEntity<Map<String, Object>> backfillModules() {
-    int updated = moduleBackfillService.backfill();
+  public ResponseEntity<Map<String, Object>> backfillModules(
+      @org.springframework.web.bind.annotation.RequestParam(defaultValue = "") String sourceRoot) {
+    int updated = sourceRoot.isBlank()
+        ? moduleBackfillService.backfill()
+        : moduleBackfillService.backfill(sourceRoot);
     return ResponseEntity.ok(Map.of("updatedClasses", updated));
   }
 }
