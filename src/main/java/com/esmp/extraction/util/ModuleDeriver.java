@@ -20,10 +20,23 @@ public final class ModuleDeriver {
   private static final Pattern GRADLE_MODULE_PATTERN =
       Pattern.compile("(?:^|[/\\\\])([^/\\\\]+)[/\\\\]src[/\\\\](?:main|test)[/\\\\]java[/\\\\]");
 
+  // Matches: .../adSuite/<submodule>/... (forward-slash normalized paths)
+  // Captures the directory immediately after "adSuite/" as the submodule name.
+  private static final Pattern ADSUITE_SUBMODULE_PATTERN =
+      Pattern.compile("(?:^|/)adSuite/([^/]+)/");
+
   private ModuleDeriver() {}
 
   /**
    * Derives module name from a source file path.
+   *
+   * <p>Strategies in priority order:
+   * <ol>
+   *   <li>Gradle layout: extract segment before {@code src/main/java} or {@code src/test/java}
+   *   <li>adSuite layout: for paths like {@code de/alfa/openMedia/adSuite/<submodule>/...},
+   *       returns the submodule segment (e.g., "vaadin", "persistentObjects", "admin")
+   *   <li>Package fallback: index 3 of the reconstructed package name
+   * </ol>
    *
    * @param sourceFilePath absolute or relative path to a .java file
    * @return module name, or empty string if undeterminable
@@ -36,8 +49,13 @@ public final class ModuleDeriver {
     if (m.find()) {
       return m.group(1);
     }
-    // Fallback: extract package from path and use package-based derivation
+    // adSuite-specific: de/alfa/openMedia/adSuite/<submodule>/...
     String normalized = sourceFilePath.replace('\\', '/');
+    Matcher adSuiteMatcher = ADSUITE_SUBMODULE_PATTERN.matcher(normalized);
+    if (adSuiteMatcher.find()) {
+      return adSuiteMatcher.group(1);
+    }
+    // Generic fallback: extract package from path and use package-based derivation
     String[] parts = normalized.split("/");
     for (int i = 0; i < parts.length; i++) {
       if ("de".equals(parts[i]) || "com".equals(parts[i]) || "org".equals(parts[i])) {
@@ -54,7 +72,9 @@ public final class ModuleDeriver {
 
   /**
    * Derives module name from a Java package name.
-   * Uses index 3 — for {@code de.alfa.openMedia.adSuite.*} yields {@code "adSuite"}.
+   *
+   * <p>For {@code de.alfa.openMedia.adSuite.vaadin.*} yields {@code "vaadin"} (index 4).
+   * For other packages, uses index 3. Falls back to earlier segments for short packages.
    *
    * @param packageName dot-separated Java package name
    * @return module name, or empty string if undeterminable
@@ -64,6 +84,10 @@ public final class ModuleDeriver {
       return "";
     }
     String[] parts = packageName.split("\\.");
+    // adSuite project: de.alfa.openMedia.adSuite.<submodule>.* → use index 4
+    if (parts.length > 4 && "adSuite".equals(parts[3])) {
+      return parts[4];
+    }
     if (parts.length > 3) return parts[3];
     if (parts.length > 2) return parts[2];
     return parts.length > 0 ? parts[0] : "";

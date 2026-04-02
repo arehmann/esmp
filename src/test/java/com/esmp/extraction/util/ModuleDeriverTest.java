@@ -33,18 +33,40 @@ class ModuleDeriverTest {
         .isEqualTo("adsuite-billing");
   }
 
+  // adSuite submodule tests — the actual project structure
   @Test
-  void fallsBackToPackageSegmentWhenNoSrcMainJava() {
+  void derivesSubmoduleFromAdSuitePath() {
     assertThat(ModuleDeriver.fromSourceFilePath(
-        "/mnt/source/de/alfa/openMedia/adSuite/vaadin/Foo.java"))
-        .isEqualTo("adSuite");
+        "de/alfa/openMedia/adSuite/vaadin/ui/panel/order/AdvertisementEditPanel.java"))
+        .isEqualTo("vaadin");
   }
 
   @Test
-  void packageNameFallback() {
+  void derivesSubmoduleFromAdSuitePersistentObjects() {
+    assertThat(ModuleDeriver.fromSourceFilePath(
+        "de/alfa/openMedia/adSuite/persistentObjects/billing/BankClearingRunPK.java"))
+        .isEqualTo("persistentObjects");
+  }
+
+  @Test
+  void derivesSubmoduleFromAdSuiteAdmin() {
+    assertThat(ModuleDeriver.fromSourceFilePath(
+        "de/alfa/openMedia/adSuite/admin/users/UserManager.java"))
+        .isEqualTo("admin");
+  }
+
+  @Test
+  void packageNameFallbackForAdSuite() {
     assertThat(ModuleDeriver.fromPackageName(
         "de.alfa.openMedia.adSuite.vaadin.ui.panel"))
-        .isEqualTo("adSuite");
+        .isEqualTo("vaadin");
+  }
+
+  @Test
+  void packageNameFallbackForNonAdSuite() {
+    assertThat(ModuleDeriver.fromPackageName(
+        "com.example.myapp.service"))
+        .isEqualTo("service");
   }
 
   @Test
