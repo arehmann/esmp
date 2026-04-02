@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { RiskBadge } from "@/components/risk-badge";
@@ -22,7 +23,7 @@ import {
   useTermsByClass,
   useHeatmap,
 } from "@/lib/queries";
-import { AlertTriangle, Layers, Zap, Activity } from "lucide-react";
+import { AlertTriangle, Layers, Zap, Activity, Clipboard, ClipboardCheck } from "lucide-react";
 import { formatPercent, simpleNameFromFqn } from "@/lib/utils";
 import type { MigrationActionEntry, RiskHeatmapEntry } from "@/lib/types";
 
@@ -39,6 +40,7 @@ export default function ClassDetailPage() {
 
   const [selectedAction, setSelectedAction] =
     useState<MigrationActionEntry | null>(null);
+  const [copied, setCopied] = useState(false);
 
   // Build risk lookup map from cached heatmap for dependency risk coloring
   const riskMap = useMemo(() => {
@@ -53,6 +55,18 @@ export default function ClassDetailPage() {
 
   const simpleName = simpleNameFromFqn(fqn);
   const packageName = fqn.substring(0, fqn.lastIndexOf("."));
+
+  // Business context derived values
+  const nlsTermCount = terms?.filter((t) => t.sourceType?.startsWith("NLS_")).length ?? 0;
+  const domainArea = terms?.find((t) => t.domainArea)?.domainArea ?? "Unknown";
+
+  function handleCopyMcpPrompt() {
+    const prompt = `Use getMigrationContext("${fqn}") to understand this class, then plan the Vaadin 7 to 24 migration.`;
+    navigator.clipboard.writeText(prompt).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
 
   // Breadcrumb segments
   const breadcrumbs = [
@@ -92,6 +106,24 @@ export default function ClassDetailPage() {
             {risk && <RiskBadge score={risk.enhancedRiskScore} />}
           </div>
         </div>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 gap-1.5 text-xs"
+          onClick={handleCopyMcpPrompt}
+        >
+          {copied ? (
+            <>
+              <ClipboardCheck className="h-3.5 w-3.5 text-green-500" />
+              Copied!
+            </>
+          ) : (
+            <>
+              <Clipboard className="h-3.5 w-3.5" />
+              Copy MCP Prompt
+            </>
+          )}
+        </Button>
       </div>
 
       {/* Metric cards */}
@@ -182,6 +214,40 @@ export default function ClassDetailPage() {
 
         {/* Right column: 1/3 */}
         <div className="space-y-4">
+          {/* Business Context card */}
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm">Business Context</CardTitle>
+                {!termsLoading && (
+                  <Badge variant="outline" className="text-[10px]">
+                    {domainArea}
+                  </Badge>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {riskLoading || termsLoading ? (
+                <Skeleton className="h-[60px]" />
+              ) : (
+                <div className="space-y-2 text-xs">
+                  {risk?.businessDescription ? (
+                    <p className="leading-relaxed text-muted-foreground">
+                      {risk.businessDescription}
+                    </p>
+                  ) : (
+                    <p className="text-muted-foreground italic">
+                      No business description available.
+                    </p>
+                  )}
+                  <p className="text-[11px] text-muted-foreground/70">
+                    {nlsTermCount} NLS term{nlsTermCount !== 1 ? "s" : ""} linked
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm">Business Terms</CardTitle>

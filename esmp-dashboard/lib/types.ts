@@ -26,6 +26,7 @@ export interface MethodComplexityEntry {
 }
 
 export interface RiskDetailResponse extends RiskHeatmapEntry {
+  businessDescription: string | null;
   methods: MethodComplexityEntry[];
 }
 

@@ -24,6 +24,7 @@ import java.util.List;
  * @param financialInvolvement   0.0–1.0 from keyword/package/USES_TERM heuristics (DRISK-03)
  * @param businessRuleDensity    log-normalized DEFINES_RULE count (DRISK-04)
  * @param enhancedRiskScore      8-dimension composite score combining structural and domain (DRISK-05)
+ * @param businessDescription    human-readable description of the class's business purpose (nullable)
  * @param methods                per-method cyclomatic complexity breakdown
  */
 public record RiskDetailResponse(
@@ -43,4 +44,5 @@ public record RiskDetailResponse(
     double financialInvolvement,
     double businessRuleDensity,
     double enhancedRiskScore,
+    String businessDescription,
     List<MethodComplexityEntry> methods) {}
