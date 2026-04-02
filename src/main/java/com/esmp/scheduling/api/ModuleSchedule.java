@@ -6,7 +6,7 @@ package com.esmp.scheduling.api;
  * <p>Modules are scored across four weighted dimensions and grouped into topological waves.
  * Lower {@code finalScore} modules are safer to migrate earlier.
  *
- * @param module                  derived module name (from {@code split(packageName, '.')[2]})
+ * @param module                  derived module name (from {@code c.module} property)
  * @param waveNumber              topological wave (1 = no dependencies, higher = depends on earlier waves)
  * @param finalScore              composite score [0, 1]; lower = safer earlier migration target
  * @param riskContribution        weighted risk component: {@code risk_weight * normalizedEnhancedRisk}

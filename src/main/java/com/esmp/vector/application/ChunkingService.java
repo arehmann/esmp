@@ -1,5 +1,6 @@
 package com.esmp.vector.application;
 
+import com.esmp.extraction.util.ModuleDeriver;
 import com.esmp.vector.model.ChunkType;
 import com.esmp.vector.model.CodeChunk;
 import com.esmp.vector.model.DomainTermRef;
@@ -134,7 +135,8 @@ public class ChunkingService {
           .filter(STEREOTYPE_PRIORITY::contains)
           .findFirst()
           .orElse("");
-      String module = deriveModule(pkg);
+      String module = row.get("module") instanceof String s && !s.isBlank()
+          ? s : ModuleDeriver.fromPackageName(pkg);
 
       // Build CLASS_HEADER chunk
       UUID headerId = ChunkIdGenerator.chunkId(fqn, "__HEADER__");
@@ -253,7 +255,8 @@ public class ChunkingService {
           .filter(STEREOTYPE_PRIORITY::contains)
           .findFirst()
           .orElse("");
-      String module = deriveModule(pkg);
+      String module = row.get("module") instanceof String s && !s.isBlank()
+          ? s : ModuleDeriver.fromPackageName(pkg);
 
       // Build CLASS_HEADER chunk
       UUID headerId = ChunkIdGenerator.chunkId(fqn, "__HEADER__");
@@ -296,7 +299,7 @@ public class ChunkingService {
         "MATCH (c:JavaClass) WHERE c.sourceFilePath IS NOT NULL "
             + "RETURN c.fullyQualifiedName AS fqn, c.simpleName AS simpleName, "
             + "c.packageName AS pkg, c.sourceFilePath AS sourcePath, "
-            + "c.contentHash AS hash, "
+            + "c.contentHash AS hash, c.module AS module, "
             + "c.structuralRiskScore AS srs, c.enhancedRiskScore AS ers, "
             + "c.domainCriticality AS dc, c.securitySensitivity AS ss, "
             + "c.financialInvolvement AS fi, c.businessRuleDensity AS brd, "
@@ -317,7 +320,7 @@ public class ChunkingService {
             + "WHERE c.sourceFilePath IS NOT NULL AND c.fullyQualifiedName IN $fqns "
             + "RETURN c.fullyQualifiedName AS fqn, c.simpleName AS simpleName, "
             + "c.packageName AS pkg, c.sourceFilePath AS sourcePath, "
-            + "c.contentHash AS hash, "
+            + "c.contentHash AS hash, c.module AS module, "
             + "c.structuralRiskScore AS srs, c.enhancedRiskScore AS ers, "
             + "c.domainCriticality AS dc, c.securitySensitivity AS ss, "
             + "c.financialInvolvement AS fi, c.businessRuleDensity AS brd, "
@@ -534,6 +537,7 @@ public class ChunkingService {
   }
 
   /** Derives module name from package: second segment after "com.esmp." or the full package. */
+  @Deprecated
   static String deriveModule(String packageName) {
     if (packageName == null || packageName.isBlank()) return "";
     String prefix = "com.esmp.";

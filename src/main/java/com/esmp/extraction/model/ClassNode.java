@@ -41,6 +41,9 @@ public class ClassNode {
 
   private String packageName;
 
+  /** Gradle module name derived from sourceFilePath (e.g. "adsuite-market"). */
+  private String module;
+
   @Property("annotations")
   private List<String> annotations = new ArrayList<>();
 
@@ -228,6 +231,14 @@ public class ClassNode {
 
   public void setPackageName(String packageName) {
     this.packageName = packageName;
+  }
+
+  public String getModule() {
+    return module;
+  }
+
+  public void setModule(String module) {
+    this.module = module;
   }
 
   public List<String> getAnnotations() {

@@ -4,6 +4,7 @@ import com.esmp.extraction.audit.VaadinAuditReport;
 import com.esmp.extraction.audit.VaadinAuditService;
 import com.esmp.vector.application.VectorIndexingService;
 import com.esmp.extraction.config.ExtractionConfig;
+import com.esmp.extraction.util.ModuleDeriver;
 import com.esmp.graph.application.RiskService;
 import com.esmp.extraction.model.AnnotationNode;
 import com.esmp.extraction.model.BusinessTermNode;
@@ -940,7 +941,7 @@ public class ExtractionService {
     // Step 1: MERGE ClassNode properties (scalar fields only, no relationships)
     String classCypher = "UNWIND $rows AS row "
         + "MERGE (c:JavaClass {fullyQualifiedName: row.fqn}) "
-        + "SET c.simpleName = row.simpleName, c.packageName = row.packageName, "
+        + "SET c.simpleName = row.simpleName, c.packageName = row.packageName, c.module = row.module, "
         + "  c.annotations = row.annotations, c.modifiers = row.modifiers, "
         + "  c.imports = row.imports, "
         + "  c.isInterface = row.isInterface, c.isAbstract = row.isAbstract, c.isEnum = row.isEnum, "
@@ -960,6 +961,8 @@ public class ExtractionService {
           row.put("fqn", c.getFullyQualifiedName());
           row.put("simpleName", c.getSimpleName() != null ? c.getSimpleName() : "");
           row.put("packageName", c.getPackageName() != null ? c.getPackageName() : "");
+          row.put("module", ModuleDeriver.fromSourceFilePath(
+              c.getSourceFilePath() != null ? c.getSourceFilePath() : ""));
           row.put("annotations", c.getAnnotations() != null ? c.getAnnotations() : List.of());
           row.put("modifiers", c.getModifiers() != null ? c.getModifiers() : List.of());
           row.put("imports", c.getImports() != null ? c.getImports() : List.of());

@@ -13,13 +13,11 @@ import org.springframework.context.annotation.Configuration;
 /**
  * Cache configuration for the MCP server.
  *
- * <p>Creates three named Caffeine caches with per-cache TTL values driven by {@link McpConfig}.
- * Each cache enables {@code recordStats()} so that Micrometer can expose hit/miss metrics via the
+ * <p>Creates a single named Caffeine cache with TTL driven by {@link McpConfig}.
+ * The cache enables {@code recordStats()} so that Micrometer can expose hit/miss metrics via the
  * {@code cache.*} meter family.
  *
  * <ul>
- *   <li>{@code dependencyCones} — dependency cone traversal results (default TTL 5 min)
- *   <li>{@code domainTermsByClass} — USES_TERM lookups per class FQN (default TTL 10 min)
  *   <li>{@code semanticQueries} — RAG assembly results keyed by query text (default TTL 3 min)
  * </ul>
  */
@@ -27,33 +25,10 @@ import org.springframework.context.annotation.Configuration;
 @EnableCaching
 public class McpCacheConfig {
 
-  /**
-   * Creates a {@link CacheManager} backed by three individually-configured Caffeine caches.
-   *
-   * <p>A {@link SimpleCacheManager} is used instead of {@link
-   * org.springframework.cache.caffeine.CaffeineCacheManager} because the three caches require
-   * different TTL values and {@code CaffeineCacheManager} applies a single specification to all
-   * caches.
-   *
-   * @param mcpConfig MCP configuration properties
-   * @return configured cache manager
-   */
   @Bean
   public CacheManager cacheManager(McpConfig mcpConfig) {
     McpConfig.CacheConfig cfg = mcpConfig.getCache();
     int maxSize = cfg.getMaxSize();
-
-    CaffeineCache dependencyCones =
-        buildCache(
-            "dependencyCones",
-            cfg.getDependencyConeTtlMinutes(),
-            maxSize);
-
-    CaffeineCache domainTermsByClass =
-        buildCache(
-            "domainTermsByClass",
-            cfg.getDomainTermsTtlMinutes(),
-            maxSize);
 
     CaffeineCache semanticQueries =
         buildCache(
@@ -62,7 +37,7 @@ public class McpCacheConfig {
             maxSize);
 
     SimpleCacheManager manager = new SimpleCacheManager();
-    manager.setCaches(List.of(dependencyCones, domainTermsByClass, semanticQueries));
+    manager.setCaches(List.of(semanticQueries));
     return manager;
   }
 

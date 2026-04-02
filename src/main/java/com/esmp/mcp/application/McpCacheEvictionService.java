@@ -11,16 +11,11 @@ import org.springframework.stereotype.Service;
  * Cache eviction service for MCP caches.
  *
  * <p>Called by {@link com.esmp.indexing.application.IncrementalIndexingService} after a reindex
- * completes to ensure stale cache entries are invalidated. This keeps the Caffeine caches fresh
- * after graph/vector data changes.
+ * completes to ensure stale cache entries are invalidated.
  *
  * <p>Cache eviction strategy:
  * <ul>
- *   <li>{@code dependencyCones} — evicted per-FQN via key-based eviction, since the cache is
- *       keyed by class FQN
- *   <li>{@code domainTermsByClass} — cleared entirely (not FQN-keyed; keyed by search+criticality
- *       query params), so selective FQN eviction would silently no-op
- *   <li>{@code semanticQueries} — cleared entirely (also query-keyed, not FQN-keyed)
+ *   <li>{@code semanticQueries} — cleared entirely (query-keyed, not FQN-keyed)
  * </ul>
  */
 @Service
@@ -28,8 +23,6 @@ public class McpCacheEvictionService {
 
   private static final Logger log = LoggerFactory.getLogger(McpCacheEvictionService.class);
 
-  static final String CACHE_DEPENDENCY_CONES = "dependencyCones";
-  static final String CACHE_DOMAIN_TERMS = "domainTermsByClass";
   static final String CACHE_SEMANTIC_QUERIES = "semanticQueries";
 
   private final CacheManager cacheManager;
@@ -39,11 +32,10 @@ public class McpCacheEvictionService {
   }
 
   /**
-   * Evicts cache entries for the specified class FQNs.
+   * Evicts cache entries after classes have been re-indexed.
    *
-   * <p>For {@code dependencyCones}, evicts each FQN key individually.
-   * For {@code domainTermsByClass} and {@code semanticQueries}, clears the entire cache because
-   * these are keyed by query parameters (not class FQNs) and selective eviction is not possible.
+   * <p>Clears the {@code semanticQueries} cache entirely because it is keyed by query
+   * parameters (not class FQNs) and selective eviction is not possible.
    *
    * @param classFqns list of fully-qualified class names that were re-indexed
    */
@@ -52,33 +44,18 @@ public class McpCacheEvictionService {
       return;
     }
 
-    // Evict dependency cones per-FQN (cache is keyed by classFqn)
-    Cache dependencyCones = cacheManager.getCache(CACHE_DEPENDENCY_CONES);
-    if (dependencyCones != null) {
-      for (String fqn : classFqns) {
-        dependencyCones.evict(fqn);
-        log.debug("Evicted dependencyCones cache entry for fqn={}", fqn);
-      }
-    }
-
-    // Clear query-keyed caches entirely (domain terms and semantic queries are not FQN-keyed)
-    clearCache(CACHE_DOMAIN_TERMS);
     clearCache(CACHE_SEMANTIC_QUERIES);
 
-    log.info("MCP cache eviction complete: evicted {} FQNs from dependencyCones, "
-        + "cleared domainTermsByClass and semanticQueries", classFqns.size());
+    log.info("MCP cache eviction complete: cleared semanticQueries for {} re-indexed classes",
+        classFqns.size());
   }
 
   /**
-   * Evicts all 3 MCP caches entirely.
-   *
-   * <p>Called on full re-index to ensure no stale data remains in any cache.
+   * Evicts all MCP caches entirely.
    */
   public void evictAll() {
-    clearCache(CACHE_DEPENDENCY_CONES);
-    clearCache(CACHE_DOMAIN_TERMS);
     clearCache(CACHE_SEMANTIC_QUERIES);
-    log.info("MCP full cache eviction complete: cleared all 3 caches");
+    log.info("MCP full cache eviction complete: cleared semanticQueries cache");
   }
 
   private void clearCache(String cacheName) {

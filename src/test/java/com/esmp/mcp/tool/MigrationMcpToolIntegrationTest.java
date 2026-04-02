@@ -6,7 +6,6 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import com.esmp.extraction.application.ExtractionService;
 import com.esmp.migration.api.MigrationPlan;
 import com.esmp.migration.api.MigrationResult;
-import com.esmp.migration.api.ModuleMigrationSummary;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,13 +25,12 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * Integration tests for the 3 new MCP migration tools in {@link MigrationToolService}.
+ * Integration tests for MCP migration tools in {@link MigrationToolService}.
  *
- * <p>Tests MIG-05 and MIG-06 acceptance criteria:
+ * <p>Tests:
  * <ul>
  *   <li>{@link MigrationToolService#getMigrationPlan} — returns plan with automation score
  *   <li>{@link MigrationToolService#applyMigrationRecipes} — returns diff without writing to disk
- *   <li>{@link MigrationToolService#getModuleMigrationSummary} — returns module statistics
  * </ul>
  *
  * <p>Uses migration fixtures (com.example.migration package) with Testcontainers (Neo4j + MySQL +
@@ -80,7 +78,6 @@ class MigrationMcpToolIntegrationTest {
   private ExtractionService extractionService;
 
   private static final String SIMPLE_VIEW_FQN = "com.example.migration.SimpleVaadinView";
-  private static final String MODULE = "migration";
 
   /** Path to migration fixture used for verifying "no disk write" assertion. */
   private static final Path SIMPLE_VIEW_FIXTURE =
@@ -163,25 +160,6 @@ class MigrationMcpToolIntegrationTest {
     assertThat(fileContentAfter)
         .as("Source file on disk must NOT be modified by applyMigrationRecipes MCP tool")
         .isEqualTo(originalContent);
-  }
-
-  // ---------------------------------------------------------------------------
-  // getModuleMigrationSummary — returns module statistics
-  // ---------------------------------------------------------------------------
-
-  @Test
-  @DisplayName("getModuleMigrationSummary returns summary with totalClasses > 0")
-  void getModuleMigrationSummary_returnsModuleStats() {
-    ModuleMigrationSummary summary = migrationToolService.getModuleMigrationSummary(MODULE);
-
-    assertThat(summary).isNotNull();
-    assertThat(summary.module()).isEqualTo(MODULE);
-    assertThat(summary.totalClasses())
-        .as("Module 'migration' should have classes")
-        .isGreaterThan(0);
-    assertThat(summary.totalActions())
-        .as("Module 'migration' should have migration actions")
-        .isGreaterThan(0);
   }
 
   // ---------------------------------------------------------------------------

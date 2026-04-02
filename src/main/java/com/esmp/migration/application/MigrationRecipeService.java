@@ -280,7 +280,7 @@ public class MigrationRecipeService {
     String query =
         """
         MATCH (c:JavaClass)
-        WHERE split(c.packageName, '.')[2] = $module
+        WHERE c.module = $module
           AND NOT (c.packageName CONTAINS 'castor'
                 OR c.packageName CONTAINS 'persistentObjects'
                 OR c.packageName CONTAINS 'businessObjects'
@@ -305,7 +305,7 @@ public class MigrationRecipeService {
     String coverageQuery =
         """
         MATCH (c:JavaClass)-[:HAS_MIGRATION_ACTION]->(ma:MigrationAction)
-        WHERE split(c.packageName, '.')[2] = $module
+        WHERE c.module = $module
           AND NOT (c.packageName CONTAINS 'castor'
                 OR c.packageName CONTAINS 'persistentObjects'
                 OR c.packageName CONTAINS 'businessObjects'
@@ -374,7 +374,7 @@ public class MigrationRecipeService {
     String usageQuery =
         """
         MATCH (c:JavaClass)-[:HAS_MIGRATION_ACTION]->(ma:MigrationAction)
-        WHERE split(c.packageName, '.')[2] = $module
+        WHERE c.module = $module
           AND NOT (c.packageName CONTAINS 'castor'
                 OR c.packageName CONTAINS 'persistentObjects'
                 OR c.packageName CONTAINS 'businessObjects'
@@ -844,7 +844,7 @@ public class MigrationRecipeService {
     String query =
         """
         MATCH (c:JavaClass)-[:HAS_MIGRATION_ACTION]->(ma:MigrationAction)
-        WHERE split(c.packageName, '.')[2] = $module
+        WHERE c.module = $module
         RETURN c.fullyQualifiedName AS classFqn, c.sourceFilePath AS sourceFilePath,
                collect({actionType: ma.actionType, source: ma.source, target: ma.target,
                         automatable: ma.automatable, context: ma.context}) AS actions

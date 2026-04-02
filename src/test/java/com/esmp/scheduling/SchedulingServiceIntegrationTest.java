@@ -115,12 +115,15 @@ class SchedulingServiceIntegrationTest {
   private void createClass(String fqn, double enhancedRiskScore, int complexitySum) {
     String[] parts = fqn.split("\\.");
     String packageName = String.join(".", java.util.Arrays.copyOf(parts, parts.length - 1));
+    // Module = 3rd segment (index 2) of the package name: com.esmp.<module>
+    String module = parts.length > 2 ? parts[2] : "";
     neo4jClient.query("""
         MERGE (c:JavaClass {fullyQualifiedName: $fqn})
-        SET c.packageName = $pkg, c.enhancedRiskScore = $risk, c.complexitySum = $cc, c.complexityMax = $cc
+        SET c.packageName = $pkg, c.module = $module, c.enhancedRiskScore = $risk, c.complexitySum = $cc, c.complexityMax = $cc
         """)
         .bind(fqn).to("fqn")
         .bind(packageName).to("pkg")
+        .bind(module).to("module")
         .bind(enhancedRiskScore).to("risk")
         .bind(complexitySum).to("cc")
         .run();

@@ -97,6 +97,11 @@ public class Neo4jSchemaInitializer implements ApplicationRunner {
         "CREATE INDEX java_class_automation_score IF NOT EXISTS"
             + " FOR (n:JavaClass) ON (n.automationScore)");
 
+    createConstraint(
+        "java_class_module",
+        "CREATE INDEX java_class_module IF NOT EXISTS"
+            + " FOR (n:JavaClass) ON (n.module)");
+
     log.info("Neo4j uniqueness constraints for AST node types are in place.");
   }
 

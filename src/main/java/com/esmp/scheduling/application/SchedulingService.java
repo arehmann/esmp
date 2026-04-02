@@ -133,9 +133,8 @@ public class SchedulingService {
   private Map<String, ModuleMetrics> aggregateModuleMetrics() {
     String cypher = """
         MATCH (c:JavaClass)
-        WHERE c.packageName IS NOT NULL AND size(c.packageName) > 0
-        WITH split(c.packageName, '.')[2] AS module, c
-        WHERE module IS NOT NULL
+        WHERE c.module IS NOT NULL AND c.module <> ''
+        WITH c.module AS module, c
         WITH module,
              count(c) AS classCount,
              avg(coalesce(c.enhancedRiskScore, 0.0)) AS avgEnhancedRisk,
@@ -168,10 +167,10 @@ public class SchedulingService {
   private Map<String, Integer> computeDependentCounts() {
     String dependentCypher = """
         MATCH (c1:JavaClass)-[:DEPENDS_ON]->(c2:JavaClass)
-        WHERE c1.packageName IS NOT NULL AND c2.packageName IS NOT NULL
-        WITH split(c1.packageName, '.')[2] AS sourceModule,
-             split(c2.packageName, '.')[2] AS targetModule
-        WHERE sourceModule IS NOT NULL AND targetModule IS NOT NULL AND sourceModule <> targetModule
+        WHERE c1.module IS NOT NULL AND c2.module IS NOT NULL
+        WITH c1.module AS sourceModule,
+             c2.module AS targetModule
+        WHERE sourceModule <> '' AND targetModule <> '' AND sourceModule <> targetModule
         WITH targetModule AS module, count(DISTINCT sourceModule) AS dependentCount
         RETURN module, dependentCount
         """;
@@ -197,10 +196,10 @@ public class SchedulingService {
   private Map<String, Set<String>> buildDependencyGraph() {
     String edgeCypher = """
         MATCH (c1:JavaClass)-[:DEPENDS_ON]->(c2:JavaClass)
-        WHERE c1.packageName IS NOT NULL AND c2.packageName IS NOT NULL
-        WITH split(c1.packageName, '.')[2] AS sourceModule,
-             split(c2.packageName, '.')[2] AS targetModule
-        WHERE sourceModule IS NOT NULL AND targetModule IS NOT NULL AND sourceModule <> targetModule
+        WHERE c1.module IS NOT NULL AND c2.module IS NOT NULL
+        WITH c1.module AS sourceModule,
+             c2.module AS targetModule
+        WHERE sourceModule <> '' AND targetModule <> '' AND sourceModule <> targetModule
         RETURN DISTINCT sourceModule, targetModule
         """;
 

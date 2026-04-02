@@ -1,10 +1,12 @@
 package com.esmp.indexing.api;
 
+import com.esmp.extraction.application.ModuleBackfillService;
 import com.esmp.indexing.application.IncrementalIndexingService;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -37,9 +39,12 @@ public class IndexingController {
   private static final Logger log = LoggerFactory.getLogger(IndexingController.class);
 
   private final IncrementalIndexingService incrementalIndexingService;
+  private final ModuleBackfillService moduleBackfillService;
 
-  public IndexingController(IncrementalIndexingService incrementalIndexingService) {
+  public IndexingController(IncrementalIndexingService incrementalIndexingService,
+      ModuleBackfillService moduleBackfillService) {
     this.incrementalIndexingService = incrementalIndexingService;
+    this.moduleBackfillService = moduleBackfillService;
   }
 
   /**
@@ -100,5 +105,11 @@ public class IndexingController {
 
     IncrementalIndexResponse response = incrementalIndexingService.runIncremental(request);
     return ResponseEntity.ok(response);
+  }
+
+  @PostMapping("/backfill-modules")
+  public ResponseEntity<Map<String, Object>> backfillModules() {
+    int updated = moduleBackfillService.backfill();
+    return ResponseEntity.ok(Map.of("updatedClasses", updated));
   }
 }

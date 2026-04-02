@@ -2,9 +2,6 @@ package com.esmp.mcp.tool;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.esmp.graph.api.BusinessTermResponse;
-import com.esmp.graph.api.DependencyConeResponse;
-import com.esmp.graph.api.ValidationReport;
 import com.esmp.mcp.api.MigrationContext;
 import com.esmp.mcp.application.McpCacheEvictionService;
 import com.esmp.vector.application.VectorIndexingService;
@@ -17,13 +14,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -36,10 +31,9 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * Integration tests for {@link MigrationToolService} covering MCP-03 through MCP-07.
+ * Integration tests for {@link MigrationToolService} covering the 6 retained MCP tools.
  *
  * <p>Uses pilot fixtures (com.esmp.pilot package) with Testcontainers (Neo4j + MySQL + Qdrant).
- * All 6 MCP tool methods are tested including cache hit and cache eviction scenarios.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @Testcontainers
@@ -124,114 +118,7 @@ class MigrationToolServiceIntegrationTest {
 
     assertThat(response).isNotNull();
     assertThat(response.results()).isNotNull();
-    // Indexed data should produce results for "InvoiceService"
     assertThat(response.results()).isNotEmpty();
-  }
-
-  // ---------------------------------------------------------------------------
-  // MCP-04: getDependencyCone
-  // ---------------------------------------------------------------------------
-
-  @Test
-  @DisplayName("MCP-04: getDependencyCone returns present cone for a seeded class FQN")
-  void testGetDependencyCone_returnsCone_MCP04() {
-    Optional<DependencyConeResponse> cone = toolService.getDependencyCone(INVOICE_SERVICE, 10);
-
-    assertThat(cone).isPresent();
-    assertThat(cone.get().coneSize()).isGreaterThanOrEqualTo(0);
-  }
-
-  // ---------------------------------------------------------------------------
-  // MCP-05: validateSystemHealth
-  // ---------------------------------------------------------------------------
-
-  @Test
-  @DisplayName("MCP-05: validateSystemHealth returns report with at least one passing query")
-  void testValidateSystemHealth_returnsReport_MCP05() {
-    ValidationReport report = toolService.validateSystemHealth();
-
-    assertThat(report).isNotNull();
-    assertThat(report.passCount()).isGreaterThan(0);
-    assertThat(report.results()).isNotEmpty();
-  }
-
-  // ---------------------------------------------------------------------------
-  // MCP-06: Cache hit — second call faster than first
-  // ---------------------------------------------------------------------------
-
-  @Test
-  @DisplayName("MCP-06: getDependencyCone cache hit — second call is served from cache")
-  void testGetDependencyCone_cacheHit_MCP06() {
-    // First call — potentially cold (cache miss)
-    toolService.getDependencyCone(INVOICE_SERVICE, 10);
-
-    // Second call — should be served from Caffeine cache
-    long startMs = System.currentTimeMillis();
-    Optional<DependencyConeResponse> cached = toolService.getDependencyCone(INVOICE_SERVICE, 10);
-    long latencyMs = System.currentTimeMillis() - startMs;
-
-    assertThat(cached).isPresent();
-    // Cached response should be extremely fast (< 10ms from memory)
-    assertThat(latencyMs)
-        .as("Second call should be served from cache and complete in < 10ms")
-        .isLessThan(10L);
-  }
-
-  // ---------------------------------------------------------------------------
-  // MCP-07: Cache eviction
-  // ---------------------------------------------------------------------------
-
-  @Test
-  @DisplayName("MCP-07: cache eviction removes dependencyCones entry; subsequent call returns fresh data")
-  void testCacheEviction_evictsAndReloadsFromGraph_MCP07() {
-    // Prime the cache
-    toolService.getDependencyCone(INVOICE_SERVICE, 10);
-
-    // Verify entry is in the Caffeine cache
-    Cache dependencyCones = cacheManager.getCache("dependencyCones");
-    assertThat(dependencyCones).isNotNull();
-    assertThat(dependencyCones.get(INVOICE_SERVICE)).isNotNull();
-
-    // Evict the FQN from caches
-    mcpCacheEvictionService.evictForClasses(List.of(INVOICE_SERVICE));
-
-    // Cache entry should now be absent
-    assertThat(dependencyCones.get(INVOICE_SERVICE)).isNull();
-
-    // Re-calling the tool should produce a valid result (fresh from graph)
-    Optional<DependencyConeResponse> fresh = toolService.getDependencyCone(INVOICE_SERVICE, 10);
-    assertThat(fresh).isPresent();
-  }
-
-  // ---------------------------------------------------------------------------
-  // getRiskAnalysis — class detail mode
-  // ---------------------------------------------------------------------------
-
-  @Test
-  @DisplayName("getRiskAnalysis returns RiskDetailResponse for a known class FQN")
-  void testGetRiskAnalysis_classDetail_returnsResponse() {
-    Object result = toolService.getRiskAnalysis(INVOICE_SERVICE, null, null, 0);
-
-    assertThat(result).isNotNull();
-    // Should return Optional<RiskDetailResponse> when classFqn is provided
-    assertThat(result).isInstanceOf(Optional.class);
-    @SuppressWarnings("unchecked")
-    Optional<?> opt = (Optional<?>) result;
-    assertThat(opt).isPresent();
-  }
-
-  // ---------------------------------------------------------------------------
-  // browseDomainTerms
-  // ---------------------------------------------------------------------------
-
-  @Test
-  @DisplayName("browseDomainTerms returns non-empty list of business terms")
-  void testBrowseDomainTerms_returnsTerms() {
-    List<BusinessTermResponse> terms = toolService.browseDomainTerms(null, null, null, null, true);
-
-    assertThat(terms).isNotNull();
-    // At least the "invoice-term" seeded in setup
-    assertThat(terms).isNotEmpty();
   }
 
   // ---------------------------------------------------------------------------
@@ -247,6 +134,17 @@ class MigrationToolServiceIntegrationTest {
     assertThat(ctx.classFqn()).isEqualTo(INVOICE_SERVICE);
     assertThat(ctx.contextCompleteness()).isGreaterThan(0.5);
     assertThat(ctx.durationMs()).isGreaterThan(0L);
+  }
+
+  // ---------------------------------------------------------------------------
+  // getRecipeBookGaps — project-wide (no classFqn filter)
+  // ---------------------------------------------------------------------------
+
+  @Test
+  @DisplayName("getRecipeBookGaps returns list (possibly empty) without classFqn filter")
+  void testGetRecipeBookGaps_noFilter_returnsList() {
+    var gaps = toolService.getRecipeBookGaps(null);
+    assertThat(gaps).isNotNull();
   }
 
   // ---------------------------------------------------------------------------

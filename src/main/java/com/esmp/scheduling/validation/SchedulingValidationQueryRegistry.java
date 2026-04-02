@@ -46,8 +46,8 @@ public class SchedulingValidationQueryRegistry extends ValidationQueryRegistry {
             "All modules should have non-zero average enhanced risk scores for accurate scheduling",
             """
             MATCH (c:JavaClass)
-            WHERE c.packageName IS NOT NULL AND size(c.packageName) > 0
-            WITH split(c.packageName, '.')[2] AS module, avg(coalesce(c.enhancedRiskScore, 0.0)) AS avgRisk
+            WHERE c.module IS NOT NULL AND c.module <> ''
+            WITH c.module AS module, avg(coalesce(c.enhancedRiskScore, 0.0)) AS avgRisk
             WHERE avgRisk = 0.0
             RETURN count(module) AS count, collect(module) AS details
             """,
@@ -60,9 +60,9 @@ public class SchedulingValidationQueryRegistry extends ValidationQueryRegistry {
             "Cross-module DEPENDS_ON edges should exist for multi-wave topological scheduling",
             """
             MATCH (c1:JavaClass)-[:DEPENDS_ON]->(c2:JavaClass)
-            WHERE c1.packageName IS NOT NULL AND c2.packageName IS NOT NULL
-            WITH split(c1.packageName, '.')[2] AS s, split(c2.packageName, '.')[2] AS t
-            WHERE s IS NOT NULL AND t IS NOT NULL AND s <> t
+            WHERE c1.module IS NOT NULL AND c2.module IS NOT NULL
+            WITH c1.module AS s, c2.module AS t
+            WHERE s <> '' AND t <> '' AND s <> t
             WITH count(*) AS total
             WHERE total = 0
             RETURN 1 AS count, ['No cross-module DEPENDS_ON edges found - all modules will be Wave 1'] AS details
