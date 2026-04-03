@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.openrewrite.InMemoryExecutionContext;
 import org.openrewrite.Recipe;
@@ -276,6 +277,125 @@ public class MigrationRecipeService {
    * @param module the module name (third segment of the package name)
    * @return summary with class counts, action counts, automation score, and coverage metrics
    */
+  /**
+   * Returns aggregated migration statistics across the entire project (all modules).
+   */
+  public ModuleMigrationSummary getProjectSummary() {
+    String query =
+        """
+        MATCH (c:JavaClass)
+        WHERE NOT (c.packageName CONTAINS 'castor'
+                OR c.packageName CONTAINS 'persistentObjects'
+                OR c.packageName CONTAINS 'businessObjects'
+                OR c.packageName CONTAINS 'com4j')
+        OPTIONAL MATCH (c)-[:HAS_MIGRATION_ACTION]->(ma:MigrationAction)
+        WITH c, count(ma) AS actionCount,
+             sum(CASE WHEN ma.automatable = 'YES' THEN 1 ELSE 0 END) AS yesCount,
+             sum(CASE WHEN ma.isInherited = true THEN 1 ELSE 0 END) AS inheritedCount
+        RETURN
+          count(c) AS totalClasses,
+          sum(CASE WHEN actionCount > 0 THEN 1 ELSE 0 END) AS classesWithActions,
+          sum(CASE WHEN c.automationScore = 1.0 THEN 1 ELSE 0 END) AS fullyAutomatable,
+          sum(CASE WHEN c.automationScore > 0.0 AND c.automationScore < 1.0 THEN 1 ELSE 0 END) AS partiallyAutomatable,
+          sum(CASE WHEN actionCount > 0 AND c.automationScore = 0.0 THEN 1 ELSE 0 END) AS needsAiOnly,
+          avg(CASE WHEN actionCount > 0 THEN c.automationScore ELSE null END) AS avgScore,
+          sum(actionCount) AS totalActions,
+          sum(yesCount) AS totalAutomatable,
+          sum(CASE WHEN inheritedCount > 0 THEN 1 ELSE 0 END) AS transitiveClassCount
+        """;
+
+    String coverageQuery =
+        """
+        MATCH (c:JavaClass)-[:HAS_MIGRATION_ACTION]->(ma:MigrationAction)
+        WHERE NOT (c.packageName CONTAINS 'castor'
+                OR c.packageName CONTAINS 'persistentObjects'
+                OR c.packageName CONTAINS 'businessObjects'
+                OR c.packageName CONTAINS 'com4j')
+          AND NOT ma.isInherited
+        WITH DISTINCT ma.source AS src, ma.automatable AS auto
+        RETURN count(src) AS totalTypes,
+               sum(CASE WHEN auto <> 'NO' THEN 1 ELSE 0 END) AS mappedTypes
+        """;
+
+    String usageQuery =
+        """
+        MATCH (c:JavaClass)-[:HAS_MIGRATION_ACTION]->(ma:MigrationAction)
+        WHERE NOT (c.packageName CONTAINS 'castor'
+                OR c.packageName CONTAINS 'persistentObjects'
+                OR c.packageName CONTAINS 'businessObjects'
+                OR c.packageName CONTAINS 'com4j')
+          AND NOT ma.isInherited
+        RETURN count(ma) AS totalUsages,
+               sum(CASE WHEN ma.automatable <> 'NO' THEN 1 ELSE 0 END) AS mappedUsages
+        """;
+
+    List<String> topGaps = recipeBookRegistry.getRules().stream()
+        .filter(r -> "NEEDS_MAPPING".equals(r.status()))
+        .sorted(java.util.Comparator.comparingInt(RecipeRule::usageCount).reversed())
+        .limit(5)
+        .map(RecipeRule::source)
+        .collect(Collectors.toList());
+
+    var result = neo4jClient
+        .query(query)
+        .fetchAs(ModuleMigrationSummary.class)
+        .mappedBy((ts, record) -> {
+          int totalClasses = record.get("totalClasses").asInt(0);
+          int classesWithActions = record.get("classesWithActions").asInt(0);
+          int fullyAutomatable = record.get("fullyAutomatable").asInt(0);
+          int partiallyAutomatable = record.get("partiallyAutomatable").asInt(0);
+          int needsAiOnly = record.get("needsAiOnly").asInt(0);
+          double avgScore = record.get("avgScore").isNull() ? 0.0
+              : record.get("avgScore").asDouble(0.0);
+          int totalActions = record.get("totalActions").asInt(0);
+          int totalAutomatable = record.get("totalAutomatable").asInt(0);
+          int transitiveClassCount = record.get("transitiveClassCount").asInt(0);
+          return new ModuleMigrationSummary(
+              "all", totalClasses, classesWithActions, fullyAutomatable,
+              partiallyAutomatable, needsAiOnly, avgScore, totalActions,
+              totalAutomatable, transitiveClassCount, 0.0, 0.0, topGaps);
+        })
+        .one();
+
+    if (result.isEmpty()) {
+      return new ModuleMigrationSummary("all", 0, 0, 0, 0, 0, 0.0, 0, 0, 0, 0.0, 0.0, topGaps);
+    }
+
+    var coverageResult = neo4jClient
+        .query(coverageQuery)
+        .fetchAs(double[].class)
+        .mappedBy((ts, record) -> {
+          int totalTypes = record.get("totalTypes").asInt(0);
+          int mappedTypes = record.get("mappedTypes").asInt(0);
+          double byType = totalTypes > 0 ? (double) mappedTypes / totalTypes : 0.0;
+          return new double[]{byType};
+        })
+        .one();
+
+    double coverageByType = coverageResult.map(arr -> arr[0]).orElse(0.0);
+
+    var usageResult = neo4jClient
+        .query(usageQuery)
+        .fetchAs(double[].class)
+        .mappedBy((ts, record) -> {
+          int totalUsages = record.get("totalUsages").asInt(0);
+          int mappedUsages = record.get("mappedUsages").asInt(0);
+          double byUsage = totalUsages > 0 ? (double) mappedUsages / totalUsages : 0.0;
+          return new double[]{byUsage};
+        })
+        .one();
+
+    double coverageByUsage = usageResult.map(arr -> arr[0]).orElse(0.0);
+
+    ModuleMigrationSummary base = result.get();
+    return new ModuleMigrationSummary(
+        base.module(), base.totalClasses(), base.classesWithActions(),
+        base.fullyAutomatableClasses(), base.partiallyAutomatableClasses(),
+        base.needsAiOnlyClasses(), base.averageAutomationScore(),
+        base.totalActions(), base.totalAutomatableActions(),
+        base.transitiveClassCount(), coverageByType, coverageByUsage, topGaps);
+  }
+
   public ModuleMigrationSummary getModuleSummary(String module) {
     String query =
         """
@@ -441,11 +561,14 @@ public class MigrationRecipeService {
    * @return the number of inherited MigrationAction nodes created or updated
    */
   int detectTransitiveMigrations() {
-    // Step 1: Get known Vaadin 7 source FQNs from recipe book (excluding Flow and NEEDS_MAPPING)
+    // Step 1: Get known Vaadin 7 source FQNs from recipe book (excluding Flow and NEEDS_MAPPING).
+    // Include com.vaadin.* (direct) AND com.alfa.* (Alfa wrapper) sources from recipe book.
+    // com.alfa.* entries are loaded from the overlay added in Plan 19-01.
     List<String> vaadinSourceFqns = recipeBookRegistry.getRules().stream()
         .filter(r -> !"NEEDS_MAPPING".equals(r.status()))
-        .filter(r -> r.source().startsWith("com.vaadin.")
-            && !r.source().startsWith("com.vaadin.flow."))
+        .filter(r -> (r.source().startsWith("com.vaadin.")
+                          && !r.source().startsWith("com.vaadin.flow."))
+                     || r.source().startsWith("com.alfa."))
         .map(RecipeRule::source)
         .distinct()
         .collect(Collectors.toList());
@@ -494,6 +617,12 @@ public class MigrationRecipeService {
 
       if (classFqn == null || ancestorFqn == null) continue;
 
+      // If the matched ancestor is an Alfa* class, walk EXTENDS up to find the real Vaadin 7 type.
+      // For direct com.vaadin.* ancestors, this is a no-op (returns ancestorFqn unchanged).
+      String ultimateVaadinAncestor = ancestorFqn.startsWith("com.alfa.")
+          ? resolveUltimateVaadinAncestor(ancestorFqn).orElse(ancestorFqn)
+          : ancestorFqn;
+
       // Step 3: Compute complexity profile via second Cypher query
       String complexityQuery =
           """
@@ -506,11 +635,15 @@ public class MigrationRecipeService {
           WHERE callee.fullyQualifiedName STARTS WITH 'com.vaadin.'
             AND NOT callee.fullyQualifiedName STARTS WITH 'com.vaadin.flow.'
           WITH overrideCount, count(DISTINCT callee) AS ownVaadinCalls
-          RETURN overrideCount, ownVaadinCalls
+          OPTIONAL MATCH (c2:JavaClass {fullyQualifiedName: $classFqn})-[:CALLS]->(alfaCallee:JavaClass)
+          WHERE alfaCallee.fullyQualifiedName STARTS WITH 'com.alfa.'
+          WITH overrideCount, ownVaadinCalls, count(DISTINCT alfaCallee) AS ownAlfaCalls
+          RETURN overrideCount, ownVaadinCalls, ownAlfaCalls
           """;
 
       int overrideCount = 0;
       int ownVaadinCalls = 0;
+      int ownAlfaCalls = 0;
 
       var complexityResult = neo4jClient.query(complexityQuery)
           .bind(classFqn).to("classFqn")
@@ -520,6 +653,7 @@ public class MigrationRecipeService {
             Map<String, Object> r = new java.util.HashMap<>();
             r.put("overrideCount", record.get("overrideCount").asInt(0));
             r.put("ownVaadinCalls", record.get("ownVaadinCalls").asInt(0));
+            r.put("ownAlfaCalls", record.get("ownAlfaCalls").asInt(0));
             return r;
           })
           .one();
@@ -527,6 +661,7 @@ public class MigrationRecipeService {
       if (complexityResult.isPresent()) {
         overrideCount = (int) complexityResult.get().get("overrideCount");
         ownVaadinCalls = (int) complexityResult.get().get("ownVaadinCalls");
+        ownAlfaCalls = (int) complexityResult.get().get("ownAlfaCalls");
       }
 
       // Step 4: Check labels for VaadinDataBinding and VaadinComponent
@@ -538,6 +673,7 @@ public class MigrationRecipeService {
       // Step 5: Compute transitiveComplexity score
       double rawScore = (overrideCount * config.getOverrideWeight())
           + (ownVaadinCalls * config.getOwnCallsWeight())
+          + (ownAlfaCalls * config.getAlfaCallsWeight())
           + (hasOwnBinding ? config.getBindingWeight() : 0.0)
           + (hasOwnComponents ? config.getComponentWeight() : 0.0);
       double transitiveComplexity = Math.min(1.0, rawScore);
@@ -554,10 +690,19 @@ public class MigrationRecipeService {
           .map(RecipeRule::target)
           .orElse("Manual migration required");
 
-      String context = "Inherited from " + ancestorFqn
-          + (pureWrapper
-              ? " (pure wrapper — mechanical wrapping)"
-              : " (complex — overrides or own Vaadin usage)");
+      String context;
+      if (ancestorFqn.startsWith("com.alfa.")) {
+        context = "Inherited via Alfa* intermediary " + ancestorFqn
+            + " \u2192 Vaadin 7 ancestor: " + ultimateVaadinAncestor
+            + (pureWrapper
+                ? " (pure wrapper \u2014 mechanical wrapping)"
+                : " (complex \u2014 overrides or own Alfa/Vaadin usage)");
+      } else {
+        context = "Inherited from " + ancestorFqn
+            + (pureWrapper
+                ? " (pure wrapper \u2014 mechanical wrapping)"
+                : " (complex \u2014 overrides or own Vaadin usage)");
+      }
 
       String actionId = classFqn + "#INHERITED#" + ancestorFqn;
 
@@ -570,11 +715,13 @@ public class MigrationRecipeService {
                         ma.automatable = $automatable, ma.context = $context,
                         ma.isInherited = true, ma.pureWrapper = $pureWrapper,
                         ma.transitiveComplexity = $transitiveComplexity,
-                        ma.vaadinAncestor = $ancestorFqn,
-                        ma.overrideCount = $overrideCount, ma.ownVaadinCalls = $ownVaadinCalls
+                        ma.vaadinAncestor = $ultimateVaadinAncestor,
+                        ma.overrideCount = $overrideCount, ma.ownVaadinCalls = $ownVaadinCalls,
+                        ma.ownAlfaCalls = $ownAlfaCalls
           ON MATCH SET  ma.automatable = $automatable, ma.transitiveComplexity = $transitiveComplexity,
                         ma.pureWrapper = $pureWrapper, ma.overrideCount = $overrideCount,
-                        ma.ownVaadinCalls = $ownVaadinCalls
+                        ma.ownVaadinCalls = $ownVaadinCalls, ma.ownAlfaCalls = $ownAlfaCalls,
+                        ma.vaadinAncestor = $ultimateVaadinAncestor
           WITH ma
           MATCH (c:JavaClass {fullyQualifiedName: $classFqn})
           MERGE (c)-[:HAS_MIGRATION_ACTION]->(ma)
@@ -589,8 +736,10 @@ public class MigrationRecipeService {
           .bind(context).to("context")
           .bind(pureWrapper).to("pureWrapper")
           .bind(transitiveComplexity).to("transitiveComplexity")
+          .bind(ultimateVaadinAncestor).to("ultimateVaadinAncestor")
           .bind(overrideCount).to("overrideCount")
           .bind(ownVaadinCalls).to("ownVaadinCalls")
+          .bind(ownAlfaCalls).to("ownAlfaCalls")
           .run();
 
       createdCount++;
@@ -750,6 +899,36 @@ public class MigrationRecipeService {
   // ---------------------------------------------------------------------------
 
   /**
+   * Walks the EXTENDS chain from a given class FQN upward until it finds the first ancestor
+   * whose FQN starts with {@code com.vaadin.} (excluding {@code com.vaadin.flow.}).
+   *
+   * <p>Used to resolve the true Vaadin 7 ancestor for Alfa* intermediary nodes. For example,
+   * given {@code com.alfa.ui.AlfaButton} (which EXTENDS {@code com.vaadin.ui.Button}), returns
+   * {@code Optional.of("com.vaadin.ui.Button")}.
+   *
+   * @param startFqn FQN of an Alfa* class or any class in the EXTENDS chain
+   * @return the ultimate com.vaadin.* ancestor FQN, or empty if none found within 10 hops
+   */
+  private Optional<String> resolveUltimateVaadinAncestor(String startFqn) {
+    String query =
+        """
+        MATCH (start:JavaClass {fullyQualifiedName: $startFqn})-[:EXTENDS*1..10]->(ancestor:JavaClass)
+        WHERE ancestor.fullyQualifiedName STARTS WITH 'com.vaadin.'
+          AND NOT ancestor.fullyQualifiedName STARTS WITH 'com.vaadin.flow.'
+        RETURN ancestor.fullyQualifiedName AS ancestorFqn
+        LIMIT 1
+        """;
+
+    return neo4jClient.query(query)
+        .bind(startFqn).to("startFqn")
+        .fetchAs(String.class)
+        .mappedBy((ts, record) -> record.get("ancestorFqn").asString(null))
+        .one()
+        .filter(java.util.Objects::nonNull);
+  }
+
+
+  /**
    * Loads all migration actions for a class from Neo4j via HAS_MIGRATION_ACTION edges.
    *
    * <p>Extended in Phase 17 to include transitive fields (isInherited, vaadinAncestor,
@@ -799,6 +978,10 @@ public class MigrationRecipeService {
                       ? null : record.get("overrideCount").asInt();
                   Integer ownVaadinCalls = record.get("ownVaadinCalls").isNull()
                       ? null : record.get("ownVaadinCalls").asInt();
+                  // inheritedFrom = source (direct ancestor — com.alfa.* or com.vaadin.*)
+                  // vaadinAncestor = ma.vaadinAncestor (ultimate com.vaadin.* ancestor)
+                  // For direct com.vaadin.* actions the values are identical.
+                  // For Alfa-mediated actions, inheritedFrom is the Alfa* class, vaadinAncestor is the Vaadin 7 type.
                   return new MigrationActionEntry(
                       record.get("actionType").asString(null),
                       source,
@@ -806,8 +989,8 @@ public class MigrationRecipeService {
                       record.get("automatable").asString(null),
                       record.get("context").isNull() ? null : record.get("context").asString(),
                       isInherited,
-                      vaadinAncestor,   // inheritedFrom same as vaadinAncestor
-                      vaadinAncestor,
+                      source,           // inheritedFrom = direct ancestor (source FQN in the action node)
+                      vaadinAncestor,   // vaadinAncestor = ultimate com.vaadin.* ancestor
                       pureWrapper,
                       transitiveComplexity,
                       overrideCount,
