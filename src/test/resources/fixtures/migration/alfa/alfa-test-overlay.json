@@ -1,0 +1,36 @@
+{
+  "rules": [
+    {
+      "id": "TEST-ALFA-BTN-001",
+      "category": "ALFA_BUTTON",
+      "source": "com.alfa.ui.AlfaButton",
+      "target": "com.vaadin.flow.component.button.Button",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "Replace AlfaButton with Vaadin 24 Button",
+      "migrationSteps": [
+        "Replace AlfaButton with com.vaadin.flow.component.button.Button",
+        "Update constructor call to use text parameter"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "TEST-ALFA-TBL-001",
+      "category": "ALFA_TABLE",
+      "source": "com.alfa.ui.AlfaTable",
+      "target": "com.vaadin.flow.component.grid.Grid",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Replace AlfaTable with Vaadin 24 Grid",
+      "migrationSteps": [
+        "Replace AlfaTable with com.vaadin.flow.component.grid.Grid",
+        "Update column definitions to use Grid.addColumn()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    }
+  ]
+}
