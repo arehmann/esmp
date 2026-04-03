@@ -175,6 +175,63 @@ public class VectorIndexingService {
   }
 
   /**
+   * Force re-indexes all classes belonging to the given modules, ignoring content hash.
+   *
+   * <p>Intended for use after a Neo4j module backfill ({@code ModuleBackfillService}) where the
+   * source files haven't changed (so hashes match) but the Qdrant payload {@code module} field is
+   * stale. The standard {@link #reindex(String)} would skip these classes because their hashes
+   * are unchanged.
+   *
+   * <p>Steps:
+   * <ol>
+   *   <li>Chunk all classes for the given modules from Neo4j (post-backfill, module is correct).
+   *   <li>Delete existing Qdrant points for those class FQNs (removes stale payload).
+   *   <li>Re-embed and upsert all chunks with correct metadata.
+   * </ol>
+   *
+   * @param modules    list of correct module names to re-index (e.g. {@code ["adsuite-market"]})
+   * @param sourceRoot base path prepended to relative source file paths (may be empty)
+   * @return summary with counts
+   */
+  public IndexStatusResponse reindexByModules(List<String> modules, String sourceRoot) {
+    long start = System.currentTimeMillis();
+    log.info("Starting forced module re-index for modules {} (sourceRoot='{}')", modules, sourceRoot);
+
+    // Step 1: Get chunks from Neo4j for these modules (module field is correct post-backfill)
+    List<CodeChunk> chunks = chunkingService.chunkByModules(modules, sourceRoot);
+    if (chunks.isEmpty()) {
+      log.warn("No chunks found for modules {} — nothing to re-index.", modules);
+      return new IndexStatusResponse(0, 0, 0, System.currentTimeMillis() - start);
+    }
+
+    // Step 2: Delete existing Qdrant points for the affected FQNs (stale module payload)
+    List<String> fqns = chunks.stream().map(CodeChunk::classFqn).distinct().toList();
+    log.info("Deleting existing Qdrant points for {} class FQNs", fqns.size());
+    for (String fqn : fqns) {
+      deleteByClass(fqn);
+    }
+
+    // Step 3: Force re-embed and upsert all chunks (no hash comparison)
+    int chunksIndexed = 0;
+    int chunksSkipped = 0;
+    List<List<CodeChunk>> batches = partition(chunks, vectorConfig.getBatchSize());
+    for (List<CodeChunk> batch : batches) {
+      try {
+        chunksIndexed += embedAndUpsert(batch);
+      } catch (Exception e) {
+        log.error("Batch upsert failed for {} chunks: {}", batch.size(), e.getMessage(), e);
+        chunksSkipped += batch.size();
+      }
+    }
+
+    long duration = System.currentTimeMillis() - start;
+    log.info(
+        "Forced module re-index complete: {} modules, {} classes, {} chunks indexed, {} skipped, {}ms",
+        modules.size(), fqns.size(), chunksIndexed, chunksSkipped, duration);
+    return new IndexStatusResponse(fqns.size(), chunksIndexed, chunksSkipped, duration);
+  }
+
+  /**
    * Deletes all Qdrant points for the given class FQN. Intended for use when a class is removed
    * from the codebase and its vectors should be cleaned up.
    *

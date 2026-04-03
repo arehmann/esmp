@@ -78,18 +78,17 @@ public class MigrationController {
    * @return 200 with {@link ModuleMigrationSummary}, or 400 if module is blank
    */
   @GetMapping("/summary")
-  public ResponseEntity<?> getSummary(@RequestParam String module) {
-    if (module == null || module.isBlank()) {
-      return ResponseEntity.badRequest()
-          .body(Map.of("error", "Query parameter 'module' is required and must not be blank"));
-    }
+  public ResponseEntity<?> getSummary(
+      @RequestParam(required = false) String module) {
     try {
-      ModuleMigrationSummary summary = migrationRecipeService.getModuleSummary(module);
+      ModuleMigrationSummary summary = (module == null || module.isBlank())
+          ? migrationRecipeService.getProjectSummary()
+          : migrationRecipeService.getModuleSummary(module);
       return ResponseEntity.ok(summary);
     } catch (Exception e) {
-      log.error("Failed to get module summary for '{}': {}", module, e.getMessage(), e);
+      log.error("Failed to get migration summary for module='{}': {}", module, e.getMessage(), e);
       return ResponseEntity.internalServerError()
-          .body(Map.of("error", "Failed to get module summary: " + e.getMessage()));
+          .body(Map.of("error", "Failed to get migration summary: " + e.getMessage()));
     }
   }
 

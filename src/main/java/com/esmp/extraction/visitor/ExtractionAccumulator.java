@@ -74,6 +74,10 @@ public class ExtractionAccumulator {
 
   private final Map<String, List<MigrationActionData>> migrationActions = new HashMap<>();
 
+  // ---------- Module override (set by module-aware extraction to skip ModuleDeriver) ----------
+
+  private String moduleOverride = null;
+
   // =========================================================================
   // Mutation methods
   // =========================================================================
@@ -430,6 +434,32 @@ public class ExtractionAccumulator {
    */
   public void addMigrationAction(String classFqn, MigrationActionData action) {
     migrationActions.computeIfAbsent(classFqn, k -> new ArrayList<>()).add(action);
+  }
+
+  // =========================================================================
+  // Module override — set by the module-aware extraction loop so that the
+  // known Gradle module name is used instead of re-deriving it from the
+  // sourceFilePath (which is relative to module.sourceDir() and therefore
+  // no longer contains the Gradle module directory segment).
+  // =========================================================================
+
+  /**
+   * Overrides the module name used when persisting class nodes. When set, {@code
+   * ExtractionService.persistClassNodesBatched()} skips {@code ModuleDeriver.fromSourceFilePath()}
+   * and uses this value directly.
+   *
+   * @param moduleName the Gradle submodule name (e.g. {@code "adsuite-market"})
+   */
+  public void setModuleOverride(String moduleName) {
+    this.moduleOverride = moduleName;
+  }
+
+  /**
+   * Returns the module override set by {@link #setModuleOverride}, or {@code null} if not set
+   * (non-module-aware extraction path).
+   */
+  public String getModuleOverride() {
+    return moduleOverride;
   }
 
   // =========================================================================

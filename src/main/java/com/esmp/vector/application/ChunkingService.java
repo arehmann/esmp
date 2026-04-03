@@ -308,6 +308,47 @@ public class ChunkingService {
   }
 
   /**
+   * Chunks all JavaClass nodes whose {@code c.module} is in the given list. Forces re-embedding
+   * regardless of content hash — intended for use after a Neo4j module backfill where the hash
+   * hasn't changed but the Qdrant payload (module field) is stale.
+   *
+   * @param modules    list of module names to re-index (e.g. {@code ["adsuite-market"]})
+   * @param sourceRoot base path prepended to relative sourcePaths (may be empty string)
+   * @return class-header + method chunks for all classes in those modules
+   */
+  public List<CodeChunk> chunkByModules(List<String> modules, String sourceRoot) {
+    if (modules == null || modules.isEmpty()) {
+      return List.of();
+    }
+    log.info("Starting module-scoped chunking pass for modules {} (sourceRoot='{}')", modules, sourceRoot);
+
+    List<String> fqns = queryFqnsByModules(modules);
+    log.info("Found {} JavaClass FQNs in modules {}", fqns.size(), modules);
+
+    return chunkByFqns(fqns, sourceRoot);
+  }
+
+  /**
+   * Returns all JavaClass FQNs whose {@code c.module} is in the given list.
+   *
+   * @param modules non-empty list of module names
+   * @return list of fully-qualified class names
+   */
+  private List<String> queryFqnsByModules(List<String> modules) {
+    String cypher =
+        "MATCH (c:JavaClass) "
+            + "WHERE c.sourceFilePath IS NOT NULL AND c.module IN $modules "
+            + "RETURN c.fullyQualifiedName AS fqn";
+    return neo4jClient.query(cypher)
+        .bind(modules).to("modules")
+        .fetch()
+        .all()
+        .stream()
+        .map(row -> (String) row.get("fqn"))
+        .collect(Collectors.toList());
+  }
+
+  /**
    * Returns class rows for only the specified FQN list. Mirrors {@link #queryAllClasses()} but
    * adds a {@code WHERE c.fullyQualifiedName IN $fqns} filter for selective chunking.
    *

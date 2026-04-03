@@ -1,7 +1,9 @@
 package com.esmp.mcp.application;
 
 import com.esmp.graph.api.BusinessTermResponse;
+import com.esmp.graph.api.ClassStructureResponse;
 import com.esmp.graph.api.DependencyConeResponse;
+import com.esmp.graph.api.InheritanceChainResponse;
 import com.esmp.graph.api.RiskDetailResponse;
 import com.esmp.graph.application.GraphQueryService;
 import com.esmp.graph.application.LexiconService;
@@ -110,8 +112,14 @@ public class MigrationContextAssembler {
     List<AssemblerWarning> warnings = new ArrayList<>();
 
     // -----------------------------------------------------------------------
-    // Launch 4 graph/risk futures in parallel
+    // Launch 6 graph/risk futures in parallel
     // -----------------------------------------------------------------------
+    CompletableFuture<Optional<ClassStructureResponse>> structureFuture =
+        CompletableFuture.supplyAsync(() -> graphQueryService.findClassStructure(classFqn));
+
+    CompletableFuture<InheritanceChainResponse> inheritanceFuture =
+        CompletableFuture.supplyAsync(() -> graphQueryService.findInheritanceChain(classFqn));
+
     CompletableFuture<Optional<DependencyConeResponse>> coneFuture =
         CompletableFuture.supplyAsync(() -> graphQueryService.findDependencyCone(classFqn));
 
@@ -140,6 +148,25 @@ public class MigrationContextAssembler {
     // Collect results with graceful degradation
     // -----------------------------------------------------------------------
     double completeness = 0.0;
+
+    ClassStructureResponse classStructure = null;
+    try {
+      Optional<ClassStructureResponse> opt = structureFuture.join();
+      if (opt.isPresent()) {
+        classStructure = opt.get();
+      }
+    } catch (Exception e) {
+      log.warn("Class structure query failed for {}: {}", classFqn, e.getMessage());
+      warnings.add(new AssemblerWarning("structure", e.getMessage()));
+    }
+
+    InheritanceChainResponse inheritanceChain = null;
+    try {
+      inheritanceChain = inheritanceFuture.join();
+    } catch (Exception e) {
+      log.warn("Inheritance chain query failed for {}: {}", classFqn, e.getMessage());
+      warnings.add(new AssemblerWarning("inheritance", e.getMessage()));
+    }
 
     DependencyConeResponse cone = null;
     try {
@@ -207,7 +234,9 @@ public class MigrationContextAssembler {
     int tokenBudget = (int) (mcpConfig.getContext().getMaxTokens() * BUDGET_SAFETY_FACTOR);
 
     // Estimate total tokens
-    int totalTokens = estimateTokens(cone)
+    int totalTokens = estimateTokens(classStructure)
+        + estimateTokens(inheritanceChain)
+        + estimateTokens(cone)
         + estimateTokens(risk)
         + estimateTokens(terms)
         + estimateTokens(rules)
@@ -274,6 +303,8 @@ public class MigrationContextAssembler {
     return new MigrationContext(
         classFqn,
         businessDescription,
+        classStructure,
+        inheritanceChain,
         cone,
         risk,
         terms,

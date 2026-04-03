@@ -434,6 +434,11 @@ public class ExtractionService {
           }
           sendModuleProgress(jobId, module.name(), "VISITING", fileCount, fileCount, null, null);
 
+          // Inject the known Gradle module name so persistClassNodesBatched uses it directly
+          // instead of re-deriving from sourceFilePath (which is relative to module.sourceDir()
+          // and no longer contains the module directory segment).
+          moduleAccumulator.setModuleOverride(module.name());
+
           // Persist this module's nodes in its own transaction
           sendModuleProgress(jobId, module.name(), "PERSISTING", 0, fileCount, null, null);
           persistModuleNodes(moduleAccumulator, sourceRootPath.toString());
@@ -543,6 +548,13 @@ public class ExtractionService {
   @Transactional("neo4jTransactionManager")
   void persistModuleNodes(ExtractionAccumulator accumulator, String sourceRoot) {
     List<ClassNode> classNodes = mapper.mapToClassNodes(accumulator);
+
+    // If the module-aware loop injected an override, stamp it on every ClassNode now so that
+    // persistClassNodesBatched() uses it instead of re-deriving from sourceFilePath.
+    String moduleOverride = accumulator.getModuleOverride();
+    if (moduleOverride != null && !moduleOverride.isBlank()) {
+      classNodes.forEach(c -> c.setModule(moduleOverride));
+    }
     List<AnnotationNode> annotationNodes = mapper.mapToAnnotationNodes(accumulator);
     List<PackageNode> packageNodes = mapper.mapToPackageNodes(accumulator);
     List<ModuleNode> moduleNodes = mapper.mapToModuleNodes(accumulator, sourceRoot);
@@ -961,8 +973,14 @@ public class ExtractionService {
           row.put("fqn", c.getFullyQualifiedName());
           row.put("simpleName", c.getSimpleName() != null ? c.getSimpleName() : "");
           row.put("packageName", c.getPackageName() != null ? c.getPackageName() : "");
-          row.put("module", ModuleDeriver.fromSourceFilePath(
-              c.getSourceFilePath() != null ? c.getSourceFilePath() : ""));
+          // Prefer the module already stamped on the ClassNode (set by persistModuleNodes when
+          // the module-aware loop injected an override). Fall back to path-based derivation for
+          // the non-module-aware extraction path (single-module trigger via /api/extraction/trigger).
+          String classModule = c.getModule();
+          row.put("module", (classModule != null && !classModule.isBlank())
+              ? classModule
+              : ModuleDeriver.fromSourceFilePath(
+                  c.getSourceFilePath() != null ? c.getSourceFilePath() : ""));
           row.put("annotations", c.getAnnotations() != null ? c.getAnnotations() : List.of());
           row.put("modifiers", c.getModifiers() != null ? c.getModifiers() : List.of());
           row.put("imports", c.getImports() != null ? c.getImports() : List.of());

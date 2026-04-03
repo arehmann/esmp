@@ -1,7 +1,9 @@
 package com.esmp.mcp.api;
 
 import com.esmp.graph.api.BusinessTermResponse;
+import com.esmp.graph.api.ClassStructureResponse;
 import com.esmp.graph.api.DependencyConeResponse;
+import com.esmp.graph.api.InheritanceChainResponse;
 import com.esmp.graph.api.RiskDetailResponse;
 import com.esmp.rag.api.ContextChunk;
 import java.util.List;
@@ -17,6 +19,8 @@ import java.util.List;
  *
  * @param classFqn            fully-qualified class name of the focal class
  * @param businessDescription concise English description of what this class does in business terms
+ * @param classStructure      class structure including superClass, interfaces, dependencies, methods
+ * @param inheritanceChain    full ancestor chain via EXTENDS with implemented interfaces
  * @param dependencyCone      transitive dependency cone (null if graph service failed)
  * @param riskAnalysis        per-class risk detail with domain scores (null if risk service failed)
  * @param domainTerms         business terms linked to this class via USES_TERM edges
@@ -31,6 +35,8 @@ import java.util.List;
 public record MigrationContext(
     String classFqn,
     String businessDescription,
+    ClassStructureResponse classStructure,
+    InheritanceChainResponse inheritanceChain,
     DependencyConeResponse dependencyCone,
     RiskDetailResponse riskAnalysis,
     List<BusinessTermResponse> domainTerms,

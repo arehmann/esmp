@@ -71,8 +71,11 @@ export function fetchMigrationPreview(fqn: string): Promise<MigrationResult> {
   return fetchJson(`${BASE}/migration/preview/${fqn}`, { method: "POST" });
 }
 
-export function fetchMigrationSummary(module: string): Promise<ModuleMigrationSummary> {
-  return fetchJson(`${BASE}/migration/summary?module=${encodeURIComponent(module)}`);
+export function fetchMigrationSummary(module?: string): Promise<ModuleMigrationSummary> {
+  const url = module
+    ? `${BASE}/migration/summary?module=${encodeURIComponent(module)}`
+    : `${BASE}/migration/summary`;
+  return fetchJson(url);
 }
 
 export function fetchRecipeBook(): Promise<RecipeRule[]> {

@@ -1,13 +1,11 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import * as api from "./api";
 
-// Module filter — derived from package third segment (de.alfa.openMedia.*)
-const MODULE = "openMedia";
 const STALE_30S = 30_000;
 
 export function useHeatmap() {
   return useQuery({
-    queryKey: ["heatmap", MODULE],
+    queryKey: ["heatmap"],
     queryFn: () => api.fetchHeatmap(undefined, 5000),
     staleTime: STALE_30S,
   });
@@ -15,8 +13,8 @@ export function useHeatmap() {
 
 export function useMigrationSummary() {
   return useQuery({
-    queryKey: ["migrationSummary", MODULE],
-    queryFn: () => api.fetchMigrationSummary(MODULE),
+    queryKey: ["migrationSummary"],
+    queryFn: () => api.fetchMigrationSummary(),
     staleTime: STALE_30S,
   });
 }

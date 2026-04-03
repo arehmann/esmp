@@ -1,6 +1,7 @@
 package com.esmp.vector.api;
 
 import com.esmp.vector.application.VectorIndexingService;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -70,6 +71,31 @@ public class VectorIndexController {
     } catch (Exception e) {
       log.error("Incremental reindex failed for sourceRoot='{}': {}", sourceRoot, e.getMessage(), e);
       return ResponseEntity.internalServerError().body("Reindex failed: " + e.getMessage());
+    }
+  }
+
+  /**
+   * Forces a full re-embed for all classes in the given modules, ignoring content hash.
+   *
+   * <p>Use this after a Neo4j module backfill ({@code POST /api/extraction/backfill-modules}) to
+   * refresh stale Qdrant payloads whose {@code module} field was wrong but whose source file hash
+   * hasn't changed (so the normal {@code /reindex} would skip them).
+   *
+   * @param modules    comma-separated list of module names to re-index (e.g. {@code adsuite-market,adsuite-business})
+   * @param sourceRoot base directory prepended to relative source file paths
+   * @return {@link IndexStatusResponse} with counts and duration
+   */
+  @PostMapping("/reindex-modules")
+  public ResponseEntity<?> reindexByModules(
+      @RequestParam List<String> modules,
+      @RequestParam String sourceRoot) {
+    log.info("POST /api/vector/reindex-modules (modules={}, sourceRoot='{}')", modules, sourceRoot);
+    try {
+      IndexStatusResponse response = vectorIndexingService.reindexByModules(modules, sourceRoot);
+      return ResponseEntity.ok(response);
+    } catch (Exception e) {
+      log.error("Module re-index failed for modules={}: {}", modules, e.getMessage(), e);
+      return ResponseEntity.internalServerError().body("Module reindex failed: " + e.getMessage());
     }
   }
 }
