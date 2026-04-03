@@ -1,0 +1,2581 @@
+{
+  "rules": [
+    {
+      "id": "ALFA-L-001",
+      "category": "ALFA_LAYOUT",
+      "source": "com.alfa.ui.AlfaVerticalLayout",
+      "target": "com.vaadin.flow.component.orderedlayout.VerticalLayout",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "Direct replacement: AlfaVerticalLayout maps to Vaadin 24 VerticalLayout",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaVerticalLayout → com.vaadin.flow.component.orderedlayout.VerticalLayout",
+        "Replace class usage: AlfaVerticalLayout → VerticalLayout",
+        "Verify addComponent() calls are replaced with add()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-L-002",
+      "category": "ALFA_LAYOUT",
+      "source": "com.alfa.ui.AlfaHorizontalLayout",
+      "target": "com.vaadin.flow.component.orderedlayout.HorizontalLayout",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "Direct replacement: AlfaHorizontalLayout maps to Vaadin 24 HorizontalLayout",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaHorizontalLayout → com.vaadin.flow.component.orderedlayout.HorizontalLayout",
+        "Replace class usage: AlfaHorizontalLayout → HorizontalLayout",
+        "Verify addComponent() calls are replaced with add()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-L-003",
+      "category": "ALFA_LAYOUT",
+      "source": "com.alfa.ui.AlfaFormLayout",
+      "target": "com.vaadin.flow.component.formlayout.FormLayout",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "Direct replacement: AlfaFormLayout maps to Vaadin 24 FormLayout",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaFormLayout → com.vaadin.flow.component.formlayout.FormLayout",
+        "Replace class usage: AlfaFormLayout → FormLayout",
+        "Update field binding approach — Flow FormLayout uses binders differently"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-L-004",
+      "category": "ALFA_LAYOUT",
+      "source": "com.alfa.ui.AlfaGridLayout",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AlfaGridLayout has no direct Flow equivalent — rewrite using CSS Grid or FlexLayout",
+      "migrationSteps": [
+        "Identify grid column/row configuration in AlfaGridLayout usage",
+        "Replace with CSS Grid using Div with appropriate CSS classes or FlexLayout",
+        "Map addComponent(component, col, row) to positional CSS grid placement",
+        "Test visual layout equivalence after migration"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-L-005",
+      "category": "ALFA_LAYOUT",
+      "source": "com.alfa.ui.AlfaSplitPanel",
+      "target": "com.vaadin.flow.component.splitlayout.SplitLayout",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaSplitPanel maps to Vaadin 24 SplitLayout",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaSplitPanel → com.vaadin.flow.component.splitlayout.SplitLayout",
+        "Replace class usage: AlfaSplitPanel → SplitLayout",
+        "Update split position API: setSplitPosition() → setSplitterPosition()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-L-006",
+      "category": "ALFA_LAYOUT",
+      "source": "com.alfa.ui.AlfaPanel",
+      "target": "com.vaadin.flow.component.html.Div",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaPanel wraps content; use Div with CSS styling or Card-like pattern in Flow",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaPanel → com.vaadin.flow.component.html.Div",
+        "Wrap content in Div and apply CSS class for panel-like appearance",
+        "Transfer caption to a heading element (H3/H4)",
+        "Review scrolling behavior and replicate with CSS overflow"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-L-007",
+      "category": "ALFA_LAYOUT",
+      "source": "com.alfa.ui.AlfaAbsoluteLayout",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AlfaAbsoluteLayout uses position-based layout — replicate with CSS position:absolute",
+      "migrationSteps": [
+        "Identify all component positions set via AlfaAbsoluteLayout.addComponent(comp, constraints)",
+        "Replace with Div container using CSS position:relative",
+        "Apply CSS position:absolute with left/top values to each child",
+        "Test layout on various screen sizes for responsiveness"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-L-008",
+      "category": "ALFA_LAYOUT",
+      "source": "com.alfa.ui.AlfaVerticalSplitPanel",
+      "target": "com.vaadin.flow.component.splitlayout.SplitLayout",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "AlfaVerticalSplitPanel maps to SplitLayout with VERTICAL orientation",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaVerticalSplitPanel → com.vaadin.flow.component.splitlayout.SplitLayout",
+        "Set orientation: new SplitLayout(SplitLayout.Orientation.VERTICAL)",
+        "Migrate setFirstComponent/setSecondComponent to addToPrimary/addToSecondary"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-L-009",
+      "category": "ALFA_LAYOUT",
+      "source": "com.alfa.ui.AlfaHorizontalSplitPanel",
+      "target": "com.vaadin.flow.component.splitlayout.SplitLayout",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaHorizontalSplitPanel maps to SplitLayout (default horizontal orientation)",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaHorizontalSplitPanel → com.vaadin.flow.component.splitlayout.SplitLayout",
+        "Replace class usage: AlfaHorizontalSplitPanel → SplitLayout",
+        "Migrate setFirstComponent/setSecondComponent to addToPrimary/addToSecondary"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-L-010",
+      "category": "ALFA_LAYOUT",
+      "source": "com.alfa.ui.AlfaCssLayout",
+      "target": "com.vaadin.flow.component.html.Div",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaCssLayout is a plain CSS container — maps directly to Div",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaCssLayout → com.vaadin.flow.component.html.Div",
+        "Replace class usage: AlfaCssLayout → Div",
+        "Transfer CSS class names using addClassName()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-L-011",
+      "category": "ALFA_LAYOUT",
+      "source": "com.alfa.ui.AlfaOrderedLayout",
+      "target": "com.vaadin.flow.component.orderedlayout.VerticalLayout",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaOrderedLayout is a deprecated ordered container; use VerticalLayout or HorizontalLayout",
+      "migrationSteps": [
+        "Determine layout direction (HORIZONTAL vs VERTICAL) from AlfaOrderedLayout usage",
+        "Replace with VerticalLayout or HorizontalLayout accordingly",
+        "Update spacing and margin configuration to Flow API"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-L-012",
+      "category": "ALFA_LAYOUT",
+      "source": "com.alfa.ui.AlfaFormItem",
+      "target": "com.vaadin.flow.component.formlayout.FormLayout",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaFormItem is a label+field wrapper; use FormLayout.FormItem in Vaadin 24",
+      "migrationSteps": [
+        "Replace AlfaFormItem with FormLayout.addFormItem(component, label)",
+        "Verify label text is transferred correctly",
+        "Review colspan if multi-column form"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-L-013",
+      "category": "ALFA_LAYOUT",
+      "source": "com.alfa.ui.AlfaFlexLayout",
+      "target": "com.vaadin.flow.component.orderedlayout.FlexLayout",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaFlexLayout maps to Vaadin 24 FlexLayout",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaFlexLayout → com.vaadin.flow.component.orderedlayout.FlexLayout",
+        "Replace class usage: AlfaFlexLayout → FlexLayout",
+        "Update flex properties using setFlexDirection, setAlignItems, setJustifyContentMode"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-L-014",
+      "category": "ALFA_LAYOUT",
+      "source": "com.alfa.ui.AlfaScrollPanel",
+      "target": "com.vaadin.flow.component.html.Div",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaScrollPanel is a scrollable container — use Div with CSS overflow:auto",
+      "migrationSteps": [
+        "Replace with Div container",
+        "Apply CSS style: getStyle().set(\"overflow\", \"auto\")",
+        "Set explicit height/width to enable scrolling",
+        "Transfer content to the new Div"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-L-015",
+      "category": "ALFA_LAYOUT",
+      "source": "com.alfa.ui.AlfaMarginInfo",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AlfaMarginInfo is a margin descriptor — use CSS margin properties directly",
+      "migrationSteps": [
+        "Identify where AlfaMarginInfo is applied",
+        "Replace with CSS margin using getStyle().set(\"margin\", value)",
+        "Or use Lumo utility spacing classes via addClassName()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-L-016",
+      "category": "ALFA_LAYOUT",
+      "source": "com.alfa.ui.AlfaWrapLayout",
+      "target": "com.vaadin.flow.component.orderedlayout.FlexLayout",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaWrapLayout wraps components — use FlexLayout with wrap enabled",
+      "migrationSteps": [
+        "Replace with FlexLayout",
+        "Set flex wrap: setFlexWrap(FlexLayout.FlexWrap.WRAP)",
+        "Transfer child components"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-L-017",
+      "category": "ALFA_LAYOUT",
+      "source": "com.alfa.ui.AlfaSidePanel",
+      "target": "com.vaadin.flow.component.html.Div",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaSidePanel is a slide-out panel — build with Div and CSS transform/transition",
+      "migrationSteps": [
+        "Replace with Div container with CSS transition for slide behavior",
+        "Implement open/close toggle using addClassName/removeClassName",
+        "Transfer panel content to the Div"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-L-018",
+      "category": "ALFA_LAYOUT",
+      "source": "com.alfa.ui.AlfaHeaderLayout",
+      "target": "com.vaadin.flow.component.html.Header",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "AlfaHeaderLayout maps to semantic Header element in Vaadin 24",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaHeaderLayout → com.vaadin.flow.component.html.Header",
+        "Replace class usage: AlfaHeaderLayout → Header",
+        "Review CSS styling and layout inside the header"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-L-019",
+      "category": "ALFA_LAYOUT",
+      "source": "com.alfa.ui.AlfaFooterLayout",
+      "target": "com.vaadin.flow.component.html.Footer",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "AlfaFooterLayout maps to semantic Footer element in Vaadin 24",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaFooterLayout → com.vaadin.flow.component.html.Footer",
+        "Replace class usage: AlfaFooterLayout → Footer",
+        "Review CSS styling and layout inside the footer"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-L-020",
+      "category": "ALFA_LAYOUT",
+      "source": "com.alfa.ui.AlfaResponsiveLayout",
+      "target": "com.vaadin.flow.component.orderedlayout.VerticalLayout",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaResponsiveLayout provides breakpoint-based layouts — use CSS media queries in Flow",
+      "migrationSteps": [
+        "Identify breakpoint configurations in AlfaResponsiveLayout",
+        "Replace with VerticalLayout or FlexLayout",
+        "Add CSS media query classes for responsive behavior",
+        "Test on all target screen sizes"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-L-021",
+      "category": "ALFA_LAYOUT",
+      "source": "com.alfa.ui.AlfaBorderLayout",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AlfaBorderLayout mimics Java Swing BorderLayout — rewrite with CSS grid areas",
+      "migrationSteps": [
+        "Map North/South/East/West/Center regions to CSS grid areas",
+        "Create a Div with CSS display:grid and grid-template-areas",
+        "Place child components in named grid areas",
+        "Test layout resize behavior"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-T-001",
+      "category": "ALFA_TABSHEET",
+      "source": "com.alfa.ui.AlfaTabSheet",
+      "target": "com.vaadin.flow.component.tabs.Tabs",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaTabSheet maps to Tabs + content Div pattern in Vaadin 24",
+      "migrationSteps": [
+        "Replace with Tabs component for tab headers",
+        "Create a Div for tab content area",
+        "Implement tab selection listener to swap content",
+        "Transfer each AlfaTab's caption and content to Tab + Div pair"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-T-002",
+      "category": "ALFA_TABSHEET",
+      "source": "com.alfa.ui.AlfaAccordion",
+      "target": "com.vaadin.flow.component.accordion.Accordion",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaAccordion maps directly to Vaadin 24 Accordion",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaAccordion → com.vaadin.flow.component.accordion.Accordion",
+        "Replace class usage: AlfaAccordion → Accordion",
+        "Update add() calls to use add(String summary, Component content)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-T-003",
+      "category": "ALFA_TABSHEET",
+      "source": "com.alfa.ui.AlfaTab",
+      "target": "com.vaadin.flow.component.tabs.Tab",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaTab maps to Vaadin 24 Tab",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaTab → com.vaadin.flow.component.tabs.Tab",
+        "Replace class usage: AlfaTab → Tab",
+        "Transfer label text to Tab constructor or setLabel()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-T-004",
+      "category": "ALFA_TABSHEET",
+      "source": "com.alfa.ui.AlfaTabContent",
+      "target": "com.vaadin.flow.component.html.Div",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaTabContent is a content container for tabs — use Div and show/hide logic",
+      "migrationSteps": [
+        "Replace AlfaTabContent with Div",
+        "Implement show/hide logic tied to tab selection",
+        "Transfer content components"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-T-005",
+      "category": "ALFA_TABSHEET",
+      "source": "com.alfa.ui.AlfaAccordionPanel",
+      "target": "com.vaadin.flow.component.accordion.AccordionPanel",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaAccordionPanel maps to Vaadin 24 AccordionPanel",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaAccordionPanel → com.vaadin.flow.component.accordion.AccordionPanel",
+        "Replace class usage: AlfaAccordionPanel → AccordionPanel",
+        "Update content and summary setters"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-T-006",
+      "category": "ALFA_TABSHEET",
+      "source": "com.alfa.ui.AlfaWizard",
+      "target": "com.vaadin.flow.component.html.Div",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AlfaWizard has no Flow equivalent — build a multi-step flow manually with Div + navigation",
+      "migrationSteps": [
+        "Design a multi-step wizard using VerticalLayout with step indicator",
+        "Implement step navigation with Back/Next buttons",
+        "Each step is a Div shown/hidden based on current step index",
+        "Transfer step validation logic from AlfaWizard"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-T-007",
+      "category": "ALFA_TABSHEET",
+      "source": "com.alfa.ui.AlfaWizardStep",
+      "target": "com.vaadin.flow.component.html.Div",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AlfaWizardStep is a wizard step container — replace with Div in custom wizard implementation",
+      "migrationSteps": [
+        "Replace with Div representing a single wizard step",
+        "Ensure wizard controller shows/hides Divs based on step navigation",
+        "Transfer step validation and event handling"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-B-001",
+      "category": "ALFA_BUTTON",
+      "source": "com.alfa.ui.AlfaButton",
+      "target": "com.vaadin.flow.component.button.Button",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaButton maps directly to Vaadin 24 Button",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaButton → com.vaadin.flow.component.button.Button",
+        "Replace class usage: AlfaButton → Button",
+        "Update addClickListener() — API is compatible"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-B-002",
+      "category": "ALFA_BUTTON",
+      "source": "com.alfa.ui.AlfaLink",
+      "target": "com.vaadin.flow.component.html.Anchor",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "AlfaLink maps to Anchor for external links or RouterLink for internal navigation",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaLink → com.vaadin.flow.component.html.Anchor",
+        "Replace class usage: AlfaLink → Anchor",
+        "Set href and caption via Anchor constructor",
+        "For internal navigation, consider RouterLink instead"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-B-003",
+      "category": "ALFA_BUTTON",
+      "source": "com.alfa.ui.AlfaMenuBar",
+      "target": "com.vaadin.flow.component.menubar.MenuBar",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaMenuBar maps to Vaadin 24 MenuBar with updated API for menu items",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaMenuBar → com.vaadin.flow.component.menubar.MenuBar",
+        "Replace class usage: AlfaMenuBar → MenuBar",
+        "Rebuild menu structure using addItem() and nested MenuItem.getSubMenu()",
+        "Transfer click listeners to MenuItem click handlers"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-B-004",
+      "category": "ALFA_BUTTON",
+      "source": "com.alfa.ui.AlfaContextMenu",
+      "target": "com.vaadin.flow.component.contextmenu.ContextMenu",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaContextMenu maps to Vaadin 24 ContextMenu",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaContextMenu → com.vaadin.flow.component.contextmenu.ContextMenu",
+        "Replace class usage: AlfaContextMenu → ContextMenu",
+        "Set target component via setTarget()",
+        "Transfer menu items using addItem()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-B-005",
+      "category": "ALFA_BUTTON",
+      "source": "com.alfa.ui.AlfaNativeButton",
+      "target": "com.vaadin.flow.component.button.Button",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaNativeButton maps to Vaadin 24 Button",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaNativeButton → com.vaadin.flow.component.button.Button",
+        "Replace class usage: AlfaNativeButton → Button",
+        "Verify click listener is compatible"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-B-006",
+      "category": "ALFA_BUTTON",
+      "source": "com.alfa.ui.AlfaMenuItem",
+      "target": "com.vaadin.flow.component.menubar.MenuItem",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "AlfaMenuItem maps to Vaadin 24 MenuItem (obtained from MenuBar.addItem())",
+      "migrationSteps": [
+        "Replace standalone AlfaMenuItem usage with MenuBar.addItem() return value",
+        "Transfer text, icon, click listener",
+        "For sub-menus use MenuItem.getSubMenu().addItem()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-B-007",
+      "category": "ALFA_BUTTON",
+      "source": "com.alfa.ui.AlfaContextMenuItem",
+      "target": "com.vaadin.flow.component.contextmenu.MenuItem",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaContextMenuItem maps to ContextMenu MenuItem",
+      "migrationSteps": [
+        "Replace with ContextMenu.addItem() — returns MenuItem",
+        "Transfer click listener"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-B-008",
+      "category": "ALFA_BUTTON",
+      "source": "com.alfa.ui.AlfaToolBar",
+      "target": "com.vaadin.flow.component.orderedlayout.HorizontalLayout",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaToolBar is a button toolbar — use HorizontalLayout with button theme",
+      "migrationSteps": [
+        "Replace with HorizontalLayout",
+        "Apply 'toolbar' CSS class or Lumo theme variant",
+        "Transfer all buttons and actions",
+        "Set padding/spacing to match toolbar appearance"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-B-009",
+      "category": "ALFA_BUTTON",
+      "source": "com.alfa.ui.AlfaToggleButton",
+      "target": "com.vaadin.flow.component.button.Button",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "AlfaToggleButton maps to Button with pressed/toggle theme variant or Checkbox",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaToggleButton → com.vaadin.flow.component.button.Button",
+        "Apply ButtonVariant.LUMO_ICON or LUMO_TERTIARY for toggle appearance",
+        "Track toggle state manually or use Checkbox with button theme"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-B-010",
+      "category": "ALFA_BUTTON",
+      "source": "com.alfa.ui.AlfaSplitButton",
+      "target": "com.vaadin.flow.component.menubar.MenuBar",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaSplitButton is a button with dropdown — use MenuBar with primary action + dropdown",
+      "migrationSteps": [
+        "Replace with MenuBar styled as a split button",
+        "Add primary action as first MenuItem",
+        "Add secondary actions as sub-menu items",
+        "Apply appropriate Lumo theme variant"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-I-001",
+      "category": "ALFA_INPUT",
+      "source": "com.alfa.ui.AlfaTextField",
+      "target": "com.vaadin.flow.component.textfield.TextField",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaTextField maps directly to Vaadin 24 TextField",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaTextField → com.vaadin.flow.component.textfield.TextField",
+        "Replace class usage: AlfaTextField → TextField",
+        "Verify getValue/setValue API is compatible"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-I-002",
+      "category": "ALFA_INPUT",
+      "source": "com.alfa.ui.AlfaTextArea",
+      "target": "com.vaadin.flow.component.textfield.TextArea",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaTextArea maps directly to Vaadin 24 TextArea",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaTextArea → com.vaadin.flow.component.textfield.TextArea",
+        "Replace class usage: AlfaTextArea → TextArea",
+        "Update rows/cols via setMinRows/setMaxRows"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-I-003",
+      "category": "ALFA_INPUT",
+      "source": "com.alfa.ui.AlfaPasswordField",
+      "target": "com.vaadin.flow.component.textfield.PasswordField",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaPasswordField maps directly to Vaadin 24 PasswordField",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaPasswordField → com.vaadin.flow.component.textfield.PasswordField",
+        "Replace class usage: AlfaPasswordField → PasswordField",
+        "Verify reveal/hide password behavior"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-I-004",
+      "category": "ALFA_INPUT",
+      "source": "com.alfa.ui.AlfaEmailField",
+      "target": "com.vaadin.flow.component.textfield.EmailField",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaEmailField maps directly to Vaadin 24 EmailField",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaEmailField → com.vaadin.flow.component.textfield.EmailField",
+        "Replace class usage: AlfaEmailField → EmailField"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-I-005",
+      "category": "ALFA_INPUT",
+      "source": "com.alfa.ui.AlfaNumberField",
+      "target": "com.vaadin.flow.component.textfield.NumberField",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaNumberField maps to Vaadin 24 NumberField",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaNumberField → com.vaadin.flow.component.textfield.NumberField",
+        "Replace class usage: AlfaNumberField → NumberField",
+        "Update min/max/step via setMin/setMax/setStep"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-I-006",
+      "category": "ALFA_INPUT",
+      "source": "com.alfa.ui.AlfaIntegerField",
+      "target": "com.vaadin.flow.component.textfield.IntegerField",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaIntegerField maps to Vaadin 24 IntegerField",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaIntegerField → com.vaadin.flow.component.textfield.IntegerField",
+        "Replace class usage: AlfaIntegerField → IntegerField"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-I-007",
+      "category": "ALFA_INPUT",
+      "source": "com.alfa.ui.AlfaComboBox",
+      "target": "com.vaadin.flow.component.combobox.ComboBox",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaComboBox maps to Vaadin 24 ComboBox with DataProvider API changes",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaComboBox → com.vaadin.flow.component.combobox.ComboBox",
+        "Replace class usage: AlfaComboBox → ComboBox",
+        "Replace Container-based items with DataProvider or setItems(Collection)",
+        "Update value change listeners"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-I-008",
+      "category": "ALFA_INPUT",
+      "source": "com.alfa.ui.AlfaSelect",
+      "target": "com.vaadin.flow.component.select.Select",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaSelect maps to Vaadin 24 Select",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaSelect → com.vaadin.flow.component.select.Select",
+        "Replace class usage: AlfaSelect → Select",
+        "Update items via setItems()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-I-009",
+      "category": "ALFA_INPUT",
+      "source": "com.alfa.ui.AlfaCheckBox",
+      "target": "com.vaadin.flow.component.checkbox.Checkbox",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaCheckBox maps to Vaadin 24 Checkbox",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaCheckBox → com.vaadin.flow.component.checkbox.Checkbox",
+        "Replace class usage: AlfaCheckBox → Checkbox",
+        "Verify setValue/getValue API"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-I-010",
+      "category": "ALFA_INPUT",
+      "source": "com.alfa.ui.AlfaCheckBoxGroup",
+      "target": "com.vaadin.flow.component.checkbox.CheckboxGroup",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaCheckBoxGroup maps to Vaadin 24 CheckboxGroup",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaCheckBoxGroup → com.vaadin.flow.component.checkbox.CheckboxGroup",
+        "Replace class usage: AlfaCheckBoxGroup → CheckboxGroup",
+        "Update setItems() and getValue() to return Set"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-I-011",
+      "category": "ALFA_INPUT",
+      "source": "com.alfa.ui.AlfaRadioButtonGroup",
+      "target": "com.vaadin.flow.component.radiobutton.RadioButtonGroup",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaRadioButtonGroup maps to Vaadin 24 RadioButtonGroup",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaRadioButtonGroup → com.vaadin.flow.component.radiobutton.RadioButtonGroup",
+        "Replace class usage: AlfaRadioButtonGroup → RadioButtonGroup",
+        "Update setItems() and getValue()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-I-012",
+      "category": "ALFA_INPUT",
+      "source": "com.alfa.ui.AlfaSlider",
+      "target": "com.vaadin.flow.component.html.Input",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaSlider maps to Input[type=range] or a third-party slider add-on",
+      "migrationSteps": [
+        "Use Input element with type=range, or integrate a slider web component",
+        "Set min/max/step via attributes",
+        "Handle value change events with addEventListener"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-I-013",
+      "category": "ALFA_INPUT",
+      "source": "com.alfa.ui.AlfaOptionGroup",
+      "target": "com.vaadin.flow.component.radiobutton.RadioButtonGroup",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaOptionGroup (single-select) maps to RadioButtonGroup; multi-select maps to CheckboxGroup",
+      "migrationSteps": [
+        "Determine if single-select or multi-select behavior is needed",
+        "Use RadioButtonGroup for single-select, CheckboxGroup for multi-select",
+        "Update item rendering and value change listeners"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-I-014",
+      "category": "ALFA_INPUT",
+      "source": "com.alfa.ui.AlfaNativeSelect",
+      "target": "com.vaadin.flow.component.select.Select",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "AlfaNativeSelect uses native HTML select — use Select or ComboBox",
+      "migrationSteps": [
+        "Replace with Select for simple option lists",
+        "Or use ComboBox for searchable selection",
+        "Transfer items and value change logic"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-I-015",
+      "category": "ALFA_INPUT",
+      "source": "com.alfa.ui.AlfaListBox",
+      "target": "com.vaadin.flow.component.listbox.ListBox",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaListBox maps to Vaadin 24 ListBox",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaListBox → com.vaadin.flow.component.listbox.ListBox",
+        "Replace class usage: AlfaListBox → ListBox",
+        "Update setItems() and getValue()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-I-016",
+      "category": "ALFA_INPUT",
+      "source": "com.alfa.ui.AlfaMultiSelect",
+      "target": "com.vaadin.flow.component.listbox.MultiSelectListBox",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "AlfaMultiSelect maps to MultiSelectListBox",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaMultiSelect → com.vaadin.flow.component.listbox.MultiSelectListBox",
+        "Replace class usage: AlfaMultiSelect → MultiSelectListBox",
+        "getValue() now returns Set — update callers"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-I-017",
+      "category": "ALFA_INPUT",
+      "source": "com.alfa.ui.AlfaTokenField",
+      "target": "com.vaadin.flow.component.combobox.MultiSelectComboBox",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaTokenField is a tag/token input — maps to MultiSelectComboBox",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaTokenField → com.vaadin.flow.component.combobox.MultiSelectComboBox",
+        "Replace class usage: AlfaTokenField → MultiSelectComboBox",
+        "Update item renderer and value change logic"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-I-018",
+      "category": "ALFA_INPUT",
+      "source": "com.alfa.ui.AlfaAutoComplete",
+      "target": "com.vaadin.flow.component.combobox.ComboBox",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaAutoComplete is an autocomplete text field — maps to ComboBox with lazy loading",
+      "migrationSteps": [
+        "Replace with ComboBox",
+        "Implement server-side filtering via setItems(CallbackDataProvider)",
+        "Transfer suggestion item rendering"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-I-019",
+      "category": "ALFA_INPUT",
+      "source": "com.alfa.ui.AlfaSearchField",
+      "target": "com.vaadin.flow.component.textfield.TextField",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "AlfaSearchField is a text field with search icon — use TextField with prefix icon",
+      "migrationSteps": [
+        "Replace with TextField",
+        "Add search icon via setPrefixComponent(VaadinIcon.SEARCH.create())",
+        "Wire search action to ValueChangeListener or Enter key listener"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-I-020",
+      "category": "ALFA_INPUT",
+      "source": "com.alfa.ui.AlfaInlineEditor",
+      "target": "com.vaadin.flow.component.html.Div",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AlfaInlineEditor is a click-to-edit widget — build custom with Div + TextField shown on click",
+      "migrationSteps": [
+        "Create a Div showing a label by default",
+        "On click, replace label with TextField pre-populated with value",
+        "On blur or Enter, save value and restore label display",
+        "Apply CSS for seamless inline edit appearance"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-I-021",
+      "category": "ALFA_INPUT",
+      "source": "com.alfa.ui.AlfaBigDecimalField",
+      "target": "com.vaadin.flow.component.textfield.BigDecimalField",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaBigDecimalField maps to Vaadin 24 BigDecimalField",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaBigDecimalField → com.vaadin.flow.component.textfield.BigDecimalField",
+        "Replace class usage: AlfaBigDecimalField → BigDecimalField"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-I-022",
+      "category": "ALFA_INPUT",
+      "source": "com.alfa.ui.AlfaMultiSelectComboBox",
+      "target": "com.vaadin.flow.component.combobox.MultiSelectComboBox",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaMultiSelectComboBox maps to Vaadin 24 MultiSelectComboBox",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaMultiSelectComboBox → com.vaadin.flow.component.combobox.MultiSelectComboBox",
+        "Replace class usage: AlfaMultiSelectComboBox → MultiSelectComboBox",
+        "getValue() returns Set — update callers"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-D-001",
+      "category": "ALFA_DATETIME",
+      "source": "com.alfa.ui.AlfaDateField",
+      "target": "com.vaadin.flow.component.datepicker.DatePicker",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "AlfaDateField maps to Vaadin 24 DatePicker — value type changes to LocalDate",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaDateField → com.vaadin.flow.component.datepicker.DatePicker",
+        "Replace class usage: AlfaDateField → DatePicker",
+        "Update value type: Date → LocalDate (use .toLocalDate() for conversion)",
+        "Update date format via setLocale() or setI18n()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-D-002",
+      "category": "ALFA_DATETIME",
+      "source": "com.alfa.ui.AlfaDateTimeField",
+      "target": "com.vaadin.flow.component.datetimepicker.DateTimePicker",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "AlfaDateTimeField maps to Vaadin 24 DateTimePicker — value type changes to LocalDateTime",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaDateTimeField → com.vaadin.flow.component.datetimepicker.DateTimePicker",
+        "Replace class usage: AlfaDateTimeField → DateTimePicker",
+        "Update value type: Date → LocalDateTime"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-D-003",
+      "category": "ALFA_DATETIME",
+      "source": "com.alfa.ui.AlfaInlineDateField",
+      "target": "com.vaadin.flow.component.datepicker.DatePicker",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "AlfaInlineDateField (always-visible calendar) maps to DatePicker — no always-open mode in Flow",
+      "migrationSteps": [
+        "Replace with DatePicker",
+        "Note: DatePicker opens on click only; for always-visible calendar use a third-party add-on",
+        "Update value type to LocalDate"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-D-004",
+      "category": "ALFA_DATETIME",
+      "source": "com.alfa.ui.AlfaTimeField",
+      "target": "com.vaadin.flow.component.timepicker.TimePicker",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaTimeField maps to Vaadin 24 TimePicker — value type changes to LocalTime",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaTimeField → com.vaadin.flow.component.timepicker.TimePicker",
+        "Replace class usage: AlfaTimeField → TimePicker",
+        "Update value type: Date → LocalTime"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-D-005",
+      "category": "ALFA_DATETIME",
+      "source": "com.alfa.ui.AlfaRichTextArea",
+      "target": "com.vaadin.flow.component.richtexteditor.RichTextEditor",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "AlfaRichTextArea maps to Vaadin 24 RichTextEditor",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaRichTextArea → com.vaadin.flow.component.richtexteditor.RichTextEditor",
+        "Replace class usage: AlfaRichTextArea → RichTextEditor",
+        "Update getValue() — RichTextEditor returns HTML string"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-D-006",
+      "category": "ALFA_DATETIME",
+      "source": "com.alfa.ui.AlfaPopupDateField",
+      "target": "com.vaadin.flow.component.datepicker.DatePicker",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "AlfaPopupDateField maps to DatePicker (popup is the standard behavior in Flow)",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaPopupDateField → com.vaadin.flow.component.datepicker.DatePicker",
+        "Replace class usage: AlfaPopupDateField → DatePicker",
+        "Update value type to LocalDate"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-D-007",
+      "category": "ALFA_DATETIME",
+      "source": "com.alfa.ui.AlfaDateRangeField",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AlfaDateRangeField has no direct Flow equivalent — use two DatePicker fields",
+      "migrationSteps": [
+        "Replace with two DatePicker fields (start date, end date)",
+        "Add validation: end date must not be before start date",
+        "Lay out both pickers side by side in HorizontalLayout"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-D-008",
+      "category": "ALFA_DATETIME",
+      "source": "com.alfa.ui.AlfaMonthCalendar",
+      "target": "com.vaadin.flow.component.datepicker.DatePicker",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaMonthCalendar shows a monthly view — DatePicker covers basic case; custom for advanced",
+      "migrationSteps": [
+        "Replace with DatePicker for basic month selection",
+        "For full calendar views, evaluate third-party Flow calendar add-ons",
+        "Update value type to LocalDate"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-D-009",
+      "category": "ALFA_DATETIME",
+      "source": "com.alfa.ui.AlfaYearPicker",
+      "target": "com.vaadin.flow.component.datepicker.DatePicker",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaYearPicker maps to DatePicker with year-only selection via custom I18n or Select",
+      "migrationSteps": [
+        "Use DatePicker with restricted year-only format, or use Select<Integer> for year list",
+        "Implement year validation and value change logic",
+        "Update downstream code expecting year integer"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-D-010",
+      "category": "ALFA_DATETIME",
+      "source": "com.alfa.ui.AlfaWeekPicker",
+      "target": "com.vaadin.flow.component.datepicker.DatePicker",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AlfaWeekPicker has no direct Flow equivalent — build week selection with DatePicker + ISO week util",
+      "migrationSteps": [
+        "Use DatePicker to select any day in the week",
+        "Compute ISO week number using WeekFields.ISO",
+        "Display and validate week number in a separate label or field"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-TB-001",
+      "category": "ALFA_TABLE",
+      "source": "com.alfa.ui.AlfaTable",
+      "target": "com.vaadin.flow.component.grid.Grid",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AlfaTable maps to Vaadin 24 Grid — major API change from Container to DataProvider",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaTable → com.vaadin.flow.component.grid.Grid",
+        "Replace Container-based data source with DataProvider or setItems(Collection)",
+        "Replace addContainerProperty() with addColumn() using lambda/ValueProvider",
+        "Migrate cell renderers to ColumnRenderers in Grid",
+        "Test sorting, filtering, and pagination behavior"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-TB-002",
+      "category": "ALFA_TABLE",
+      "source": "com.alfa.ui.AlfaTreeTable",
+      "target": "com.vaadin.flow.component.treegrid.TreeGrid",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AlfaTreeTable maps to Vaadin 24 TreeGrid — hierarchical data structure changes",
+      "migrationSteps": [
+        "Replace with TreeGrid",
+        "Replace HierarchicalContainer with TreeDataProvider or HierarchicalDataProvider",
+        "Configure expandRecursively and collapse handlers",
+        "Test all hierarchy levels"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-TB-003",
+      "category": "ALFA_TABLE",
+      "source": "com.alfa.ui.AlfaTree",
+      "target": "com.vaadin.flow.component.treegrid.TreeGrid",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AlfaTree maps to TreeGrid (single-column tree display)",
+      "migrationSteps": [
+        "Replace with TreeGrid with a single hierarchy column",
+        "Replace HierarchicalContainer with HierarchicalDataProvider",
+        "Transfer item caption provider to column ValueProvider",
+        "Migrate selection and expand/collapse listeners"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-TB-004",
+      "category": "ALFA_TABLE",
+      "source": "com.alfa.ui.AlfaGrid",
+      "target": "com.vaadin.flow.component.grid.Grid",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "AlfaGrid is a thin Grid wrapper — maps to Vaadin 24 Grid with minor API updates",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaGrid → com.vaadin.flow.component.grid.Grid",
+        "Replace class usage: AlfaGrid → Grid",
+        "Update DataProvider setup and column definitions"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-TB-005",
+      "category": "ALFA_TABLE",
+      "source": "com.alfa.ui.AlfaListSelect",
+      "target": "com.vaadin.flow.component.listbox.ListBox",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "AlfaListSelect maps to Vaadin 24 ListBox",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaListSelect → com.vaadin.flow.component.listbox.ListBox",
+        "Replace class usage: AlfaListSelect → ListBox",
+        "Update setItems() and selection listener"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-TB-006",
+      "category": "ALFA_TABLE",
+      "source": "com.alfa.ui.AlfaTwinColSelect",
+      "target": "com.vaadin.flow.component.listbox.MultiSelectListBox",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaTwinColSelect (source/target list) maps to MultiSelectListBox or custom implementation",
+      "migrationSteps": [
+        "Replace with two ListBox components (available / selected) with Add/Remove buttons",
+        "Or use MultiSelectListBox for simplified selection",
+        "Transfer item rendering and value change logic"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-TB-007",
+      "category": "ALFA_TABLE",
+      "source": "com.alfa.ui.AlfaTableFieldFactory",
+      "target": "com.vaadin.flow.component.grid.editor.Editor",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AlfaTableFieldFactory provides inline editors — use Grid Editor API",
+      "migrationSteps": [
+        "Replace with Grid inline editor using grid.getEditor()",
+        "Define editable columns with addEditColumn() or setEditorComponent()",
+        "Implement Binder for edited row binding",
+        "Configure open/close editor lifecycle"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-TB-008",
+      "category": "ALFA_TABLE",
+      "source": "com.alfa.ui.AlfaContainer",
+      "target": "com.vaadin.flow.data.provider.DataProvider",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AlfaContainer (Vaadin 7 Container pattern) maps to Vaadin 24 DataProvider",
+      "migrationSteps": [
+        "Replace Container with DataProvider<T, F> implementation",
+        "Use DataProvider.ofCollection() for in-memory data",
+        "Implement AbstractBackEndDataProvider for server-side paging",
+        "Update all Container.addItem/addContainerProperty calls"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-TB-009",
+      "category": "ALFA_TABLE",
+      "source": "com.alfa.ui.AlfaBeanItemContainer",
+      "target": "com.vaadin.flow.data.provider.ListDataProvider",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AlfaBeanItemContainer maps to ListDataProvider or DataProvider.ofCollection()",
+      "migrationSteps": [
+        "Replace with DataProvider.ofCollection(items) or new ListDataProvider<>(items)",
+        "Bind to Grid via setDataProvider()",
+        "Remove BeanItemContainer property definitions — use Grid.addColumn() instead"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-TB-010",
+      "category": "ALFA_TABLE",
+      "source": "com.alfa.ui.AlfaIndexedContainer",
+      "target": "com.vaadin.flow.data.provider.ListDataProvider",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AlfaIndexedContainer maps to ListDataProvider for simple in-memory indexed data",
+      "migrationSteps": [
+        "Replace with ListDataProvider backed by a List",
+        "Remove indexed access — iterate or use stream operations",
+        "Rebind to Grid with setDataProvider()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-TB-011",
+      "category": "ALFA_TABLE",
+      "source": "com.alfa.ui.AlfaPagedTable",
+      "target": "com.vaadin.flow.component.grid.Grid",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaPagedTable provides pagination — use Grid with lazy loading DataProvider",
+      "migrationSteps": [
+        "Replace with Grid with a back-end DataProvider implementing size/fetch callbacks",
+        "Grid handles lazy loading natively — no external paging widget needed",
+        "Add optional page size selector if required by UX"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-TB-012",
+      "category": "ALFA_TABLE",
+      "source": "com.alfa.ui.AlfaLazyLoadingTable",
+      "target": "com.vaadin.flow.component.grid.Grid",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaLazyLoadingTable maps to Grid with lazy DataProvider",
+      "migrationSteps": [
+        "Replace with Grid configured with a LazyDataView or AbstractBackEndDataProvider",
+        "Implement fetch and count callbacks",
+        "Transfer sort/filter delegates to DataProvider query handling"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-TB-013",
+      "category": "ALFA_TABLE",
+      "source": "com.alfa.ui.AlfaEditableGrid",
+      "target": "com.vaadin.flow.component.grid.Grid",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaEditableGrid maps to Grid with inline editing via Editor API",
+      "migrationSteps": [
+        "Replace with Grid + Editor for inline editing",
+        "Implement Binder to bind edited row to domain object",
+        "Configure editable columns using column editor components",
+        "Add Save/Cancel logic to editor lifecycle"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-TB-014",
+      "category": "ALFA_TABLE",
+      "source": "com.alfa.ui.AlfaSortableTable",
+      "target": "com.vaadin.flow.component.grid.Grid",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "AlfaSortableTable maps to Grid — sorting is built-in via column sort order",
+      "migrationSteps": [
+        "Replace with Grid — column sorting is enabled by default",
+        "Configure sort direction via column.setSortProperty()",
+        "Remove custom sort listener if Grid DataProvider handles sorting"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-W-001",
+      "category": "ALFA_WINDOW",
+      "source": "com.alfa.ui.AlfaWindow",
+      "target": "com.vaadin.flow.component.dialog.Dialog",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaWindow maps to Vaadin 24 Dialog — window management API changes significantly",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaWindow → com.vaadin.flow.component.dialog.Dialog",
+        "Replace class usage: AlfaWindow → Dialog",
+        "Use dialog.open() / dialog.close() instead of UI.getCurrent().addWindow()",
+        "Transfer window header and content to dialog header/content slots"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-W-002",
+      "category": "ALFA_WINDOW",
+      "source": "com.alfa.ui.AlfaSubWindow",
+      "target": "com.vaadin.flow.component.dialog.Dialog",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaSubWindow (modal sub-window) maps to Dialog",
+      "migrationSteps": [
+        "Replace with Dialog",
+        "Set modal: dialog.setModal(true) — Dialog is modal by default",
+        "Transfer content and close listeners"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-W-003",
+      "category": "ALFA_WINDOW",
+      "source": "com.alfa.ui.AlfaPopupView",
+      "target": "com.vaadin.flow.component.popover.Popover",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "AlfaPopupView maps to Vaadin 24 Popover",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaPopupView → com.vaadin.flow.component.popover.Popover",
+        "Replace class usage: AlfaPopupView → Popover",
+        "Set target component: popover.setTarget(button)",
+        "Transfer popup content"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-W-004",
+      "category": "ALFA_WINDOW",
+      "source": "com.alfa.ui.AlfaNotification",
+      "target": "com.vaadin.flow.component.notification.Notification",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaNotification maps to Vaadin 24 Notification",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaNotification → com.vaadin.flow.component.notification.Notification",
+        "Replace class usage: AlfaNotification → Notification",
+        "Use Notification.show(text) for simple cases",
+        "Configure duration and position"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-W-005",
+      "category": "ALFA_WINDOW",
+      "source": "com.alfa.ui.AlfaConfirmDialog",
+      "target": "com.vaadin.flow.component.confirmdialog.ConfirmDialog",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaConfirmDialog maps to Vaadin 24 ConfirmDialog",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaConfirmDialog → com.vaadin.flow.component.confirmdialog.ConfirmDialog",
+        "Replace class usage: AlfaConfirmDialog → ConfirmDialog",
+        "Configure header, text, confirm/cancel button text and listeners"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-W-006",
+      "category": "ALFA_WINDOW",
+      "source": "com.alfa.ui.AlfaErrorDialog",
+      "target": "com.vaadin.flow.component.dialog.Dialog",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaErrorDialog is a styled error dialog — build with Dialog + error-themed content",
+      "migrationSteps": [
+        "Replace with Dialog",
+        "Add error icon and message to dialog content",
+        "Apply error CSS class or Lumo color theme"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-W-007",
+      "category": "ALFA_WINDOW",
+      "source": "com.alfa.ui.AlfaProgressDialog",
+      "target": "com.vaadin.flow.component.dialog.Dialog",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaProgressDialog shows a progress indicator — use Dialog with ProgressBar",
+      "migrationSteps": [
+        "Replace with Dialog containing a ProgressBar",
+        "Open dialog on long operation start, close on completion",
+        "Update ProgressBar value via UI.access() for thread safety"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-W-008",
+      "category": "ALFA_WINDOW",
+      "source": "com.alfa.ui.AlfaMessageBox",
+      "target": "com.vaadin.flow.component.dialog.Dialog",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaMessageBox is an alert/message dialog — use Dialog or ConfirmDialog",
+      "migrationSteps": [
+        "Replace with ConfirmDialog for simple OK/Cancel message boxes",
+        "Replace with Dialog for custom message layouts",
+        "Transfer message text and button click handlers"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-W-009",
+      "category": "ALFA_WINDOW",
+      "source": "com.alfa.ui.AlfaTooltip",
+      "target": "com.vaadin.flow.component.html.Span",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaTooltip maps to Tooltip API or title attribute; Span with tooltip behavior",
+      "migrationSteps": [
+        "Use Tooltip component (Vaadin 24.1+) or Popover for rich tooltips",
+        "For simple text tooltips: component.getElement().setAttribute(\"title\", text)",
+        "For advanced tooltips: use Tooltip.forComponent(component)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-W-010",
+      "category": "ALFA_WINDOW",
+      "source": "com.alfa.ui.AlfaBalloon",
+      "target": "com.vaadin.flow.component.popover.Popover",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaBalloon is a hover balloon — use Popover or Tooltip add-on",
+      "migrationSteps": [
+        "Replace with Popover",
+        "Set open trigger to hover: popover.setOpenOnHover(true)",
+        "Transfer balloon content and target component"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-P-001",
+      "category": "ALFA_PORTAL",
+      "source": "com.alfa.ui.portal.AlfaPortlet",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AlfaPortlet (Vaadin Portlet integration) has no direct Flow equivalent — manual portlet adaptation required",
+      "migrationSteps": [
+        "Evaluate if portlet container integration is still required",
+        "If portlets are still needed, use Vaadin 24 Portlet support (separate add-on)",
+        "Otherwise, convert portlet to a standalone Route view"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-P-002",
+      "category": "ALFA_PORTAL",
+      "source": "com.alfa.ui.portal.AlfaPortletLayout",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AlfaPortletLayout manages portlet layout — no Flow equivalent; convert to AppLayout",
+      "migrationSteps": [
+        "Replace portlet layout with AppLayout or custom VerticalLayout",
+        "Migrate portlet slots to named layout regions",
+        "Update portlet loading mechanism"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-P-003",
+      "category": "ALFA_PORTAL",
+      "source": "com.alfa.ui.portal.AlfaPortletWindow",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AlfaPortletWindow renders a portlet in a window — no Flow equivalent; use Dialog",
+      "migrationSteps": [
+        "Convert portlet window functionality to a Dialog",
+        "Extract portlet content as a standalone component",
+        "Open Dialog containing the component as needed"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-P-004",
+      "category": "ALFA_PORTAL",
+      "source": "com.alfa.ui.portal.AlfaPortalHeader",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AlfaPortalHeader is a portal-wide header — convert to AppLayout header slot",
+      "migrationSteps": [
+        "Migrate header content to AppLayout.addToNavbar()",
+        "Remove portlet-specific lifecycle hooks"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-P-005",
+      "category": "ALFA_PORTAL",
+      "source": "com.alfa.ui.portal.AlfaDashboard",
+      "target": "com.vaadin.flow.component.orderedlayout.VerticalLayout",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AlfaDashboard is a portal dashboard — convert to a Route view with card grid layout",
+      "migrationSteps": [
+        "Create a @Route view class extending VerticalLayout or using AppLayout",
+        "Replace dashboard widgets with card components in a CSS grid",
+        "Transfer widget data sources to service calls"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-DND-001",
+      "category": "ALFA_DND",
+      "source": "com.alfa.ui.dnd.AlfaDragAndDropWrapper",
+      "target": "com.vaadin.flow.component.dnd.DragSource",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AlfaDragAndDropWrapper is a Vaadin 7 DnD container — use DragSource and DropTarget in Flow",
+      "migrationSteps": [
+        "Separate drag and drop concerns: DragSource.create(sourceComponent) for drag",
+        "DropTarget.create(targetComponent) for drop",
+        "Migrate onDrop handler to DropTarget.addDropListener()",
+        "Remove DragAndDropEvent handling — use separate DragStartEvent/DropEvent"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-DND-002",
+      "category": "ALFA_DND",
+      "source": "com.alfa.ui.dnd.AlfaDropHandler",
+      "target": "com.vaadin.flow.component.dnd.DropTarget",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AlfaDropHandler interface maps to DropTarget listener in Vaadin 24",
+      "migrationSteps": [
+        "Implement DropTarget by calling DropTarget.create(component)",
+        "Add drop listener: dropTarget.addDropListener(event -> { ... })",
+        "Access transferred data via event.getDragData()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-DND-003",
+      "category": "ALFA_DND",
+      "source": "com.alfa.ui.dnd.AlfaDragSource",
+      "target": "com.vaadin.flow.component.dnd.DragSource",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "AlfaDragSource maps to Vaadin 24 DragSource",
+      "migrationSteps": [
+        "Replace with DragSource.create(component)",
+        "Transfer drag data via setDragData()",
+        "Add drag start listener if needed"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-DND-004",
+      "category": "ALFA_DND",
+      "source": "com.alfa.ui.dnd.AlfaDropTarget",
+      "target": "com.vaadin.flow.component.dnd.DropTarget",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "AlfaDropTarget maps to Vaadin 24 DropTarget",
+      "migrationSteps": [
+        "Replace with DropTarget.create(component)",
+        "Set active state: dropTarget.setActive(true)",
+        "Add drop listener"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-DND-005",
+      "category": "ALFA_DND",
+      "source": "com.alfa.ui.dnd.AlfaDragEvent",
+      "target": "com.vaadin.flow.component.dnd.DragStartEvent",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaDragEvent maps to DragStartEvent; also see DragEndEvent in Flow DnD API",
+      "migrationSteps": [
+        "Replace AlfaDragEvent listener with DragSource.addDragStartListener()",
+        "Access drag data via event.getSource()",
+        "Separate start and end event handling"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-DND-006",
+      "category": "ALFA_DND",
+      "source": "com.alfa.ui.dnd.AlfaDropEvent",
+      "target": "com.vaadin.flow.component.dnd.DropEvent",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "AlfaDropEvent maps to Vaadin 24 DropEvent",
+      "migrationSteps": [
+        "Replace AlfaDropEvent handler with DropTarget.addDropListener(DropEvent -> { ... })",
+        "Access transferred data via event.getDragData()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-DND-007",
+      "category": "ALFA_DND",
+      "source": "com.alfa.ui.dnd.AlfaSortable",
+      "target": "com.vaadin.flow.component.dnd.DragSource",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AlfaSortable is a sortable list via DnD — implement with DragSource + DropTarget on list items",
+      "migrationSteps": [
+        "Make each list item a DragSource",
+        "Make each list item a DropTarget to accept reordering drops",
+        "Implement reorder logic in DropEvent handler",
+        "Update data provider after reorder"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-S-001",
+      "category": "ALFA_SPECIALIZED",
+      "source": "com.alfa.ui.AlfaLabel",
+      "target": "com.vaadin.flow.component.html.Span",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaLabel maps to Vaadin 24 Span for inline text display",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaLabel → com.vaadin.flow.component.html.Span",
+        "Replace class usage: AlfaLabel → Span",
+        "Transfer text content via setText() or constructor"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-S-002",
+      "category": "ALFA_SPECIALIZED",
+      "source": "com.alfa.ui.AlfaImage",
+      "target": "com.vaadin.flow.component.html.Image",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaImage maps to Vaadin 24 Image",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaImage → com.vaadin.flow.component.html.Image",
+        "Replace class usage: AlfaImage → Image",
+        "Set src and alt via constructor or setters"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-S-003",
+      "category": "ALFA_SPECIALIZED",
+      "source": "com.alfa.ui.AlfaProgressBar",
+      "target": "com.vaadin.flow.component.progressbar.ProgressBar",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaProgressBar maps to Vaadin 24 ProgressBar",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaProgressBar → com.vaadin.flow.component.progressbar.ProgressBar",
+        "Replace class usage: AlfaProgressBar → ProgressBar",
+        "Use setValue(0.0–1.0) for determinate; setIndeterminate(true) for indeterminate"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-S-004",
+      "category": "ALFA_SPECIALIZED",
+      "source": "com.alfa.ui.AlfaUpload",
+      "target": "com.vaadin.flow.component.upload.Upload",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "AlfaUpload maps to Vaadin 24 Upload with MemoryBuffer or FileBuffer",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaUpload → com.vaadin.flow.component.upload.Upload",
+        "Replace class usage: AlfaUpload → Upload",
+        "Configure MemoryBuffer or MultiFileMemoryBuffer as receiver",
+        "Migrate file receive listener to Upload.addSucceededListener()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-S-005",
+      "category": "ALFA_SPECIALIZED",
+      "source": "com.alfa.ui.AlfaVideo",
+      "target": "com.vaadin.flow.component.html.NativeDetails",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaVideo maps to HTML5 video element via NativeDetails or custom Element",
+      "migrationSteps": [
+        "Create an Element(\"video\") with src, controls, autoplay attributes",
+        "Wrap in a Component for type safety",
+        "Transfer source URL and configuration"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-S-006",
+      "category": "ALFA_SPECIALIZED",
+      "source": "com.alfa.ui.AlfaAudio",
+      "target": "com.vaadin.flow.component.html.Div",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaAudio maps to HTML5 audio element via custom Element",
+      "migrationSteps": [
+        "Create an Element(\"audio\") with src and controls",
+        "Wrap in a Div or custom Component",
+        "Transfer audio source and configuration"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-S-007",
+      "category": "ALFA_SPECIALIZED",
+      "source": "com.alfa.ui.AlfaFlash",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AlfaFlash embeds Flash content — Flash is EOL; replace with HTML5 equivalent or remove",
+      "migrationSteps": [
+        "Identify what the Flash content provides (video, animation, chart)",
+        "Replace video with HTML5 video element",
+        "Replace animations with CSS animations or Lottie",
+        "Replace charts with a supported chart library"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-S-008",
+      "category": "ALFA_SPECIALIZED",
+      "source": "com.alfa.ui.AlfaEmbedded",
+      "target": "com.vaadin.flow.component.html.IFrame",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaEmbedded embeds external content — use IFrame or custom Element",
+      "migrationSteps": [
+        "Replace with IFrame for embedding external URLs",
+        "Set src attribute via setAttribute(\"src\", url)",
+        "Ensure CSP/CORS policies allow the embedded resource"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-S-009",
+      "category": "ALFA_SPECIALIZED",
+      "source": "com.alfa.ui.AlfaCustomComponent",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AlfaCustomComponent is a base class for custom Vaadin 7 components — rewrite as Composite or web component",
+      "migrationSteps": [
+        "Extend Composite<T> for simple wrapper components",
+        "Or create a @Tag custom web component for complex components",
+        "Transfer all rendering and event handling logic"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-S-010",
+      "category": "ALFA_SPECIALIZED",
+      "source": "com.alfa.ui.AlfaCustomLayout",
+      "target": "com.vaadin.flow.component.html.Div",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AlfaCustomLayout uses an HTML template for layout — rewrite using Polymer/Lit template or CSS",
+      "migrationSteps": [
+        "Convert HTML template to a LitElement web component or CSS layout",
+        "Use Div with named slots if slot-based layout is needed",
+        "Transfer named placeholder logic to slot assignments"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-S-011",
+      "category": "ALFA_SPECIALIZED",
+      "source": "com.alfa.ui.AlfaIcon",
+      "target": "com.vaadin.flow.component.icon.VaadinIcon",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "AlfaIcon maps to Vaadin 24 VaadinIcon or custom SvgIcon",
+      "migrationSteps": [
+        "Replace with VaadinIcon.ICON_NAME.create() for Vaadin icon set",
+        "For custom icons, use new Icon(\"iron-icons\", \"icon-name\") or SvgIcon",
+        "Map AlfaIcon icon names to equivalent VaadinIcon enum values"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-S-012",
+      "category": "ALFA_SPECIALIZED",
+      "source": "com.alfa.ui.AlfaHtmlLabel",
+      "target": "com.vaadin.flow.component.Html",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "AlfaHtmlLabel renders raw HTML — use Html component or Span with innerHTML",
+      "migrationSteps": [
+        "Replace with new Html(\"<div>\" + content + \"</div>\")",
+        "Ensure HTML content is sanitized to prevent XSS",
+        "Wrap content in a block-level tag (div/p) as Html requires a single root"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-S-013",
+      "category": "ALFA_SPECIALIZED",
+      "source": "com.alfa.ui.AlfaChart",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AlfaChart has no built-in Flow equivalent — use a third-party chart add-on (Vaadin Charts, ApexCharts, Chart.js)",
+      "migrationSteps": [
+        "Evaluate Vaadin Charts (commercial) or open-source alternatives like ApexCharts web component",
+        "Integrate chosen chart library as a web component",
+        "Migrate data series and chart configuration"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-S-014",
+      "category": "ALFA_SPECIALIZED",
+      "source": "com.alfa.ui.AlfaMap",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AlfaMap has no built-in Flow equivalent — use Leaflet.js or Google Maps web component",
+      "migrationSteps": [
+        "Evaluate vaadin-map add-on or Leaflet.js integration",
+        "Create a web component wrapper for the map library",
+        "Migrate map configuration, markers, and event listeners"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-S-015",
+      "category": "ALFA_SPECIALIZED",
+      "source": "com.alfa.ui.AlfaCodeEditor",
+      "target": "com.vaadin.flow.component.html.Div",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AlfaCodeEditor has no built-in Flow equivalent — integrate CodeMirror or Monaco Editor",
+      "migrationSteps": [
+        "Create a web component wrapper for CodeMirror or Monaco Editor",
+        "Expose value get/set as Java methods via @ClientCallable / executeJs",
+        "Configure language, theme, and editor options"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-S-016",
+      "category": "ALFA_SPECIALIZED",
+      "source": "com.alfa.ui.AlfaMarkdown",
+      "target": "com.vaadin.flow.component.Html",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaMarkdown renders Markdown — convert to HTML server-side and render with Html component",
+      "migrationSteps": [
+        "Add a Markdown-to-HTML library (e.g., commonmark-java)",
+        "Convert Markdown content to HTML in service layer",
+        "Render using new Html(\"<div>\" + htmlContent + \"</div>\")",
+        "Sanitize HTML output before rendering"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-S-017",
+      "category": "ALFA_SPECIALIZED",
+      "source": "com.alfa.ui.AlfaHtmlEditor",
+      "target": "com.vaadin.flow.component.richtexteditor.RichTextEditor",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaHtmlEditor is a WYSIWYG HTML editor — maps to RichTextEditor",
+      "migrationSteps": [
+        "Replace with RichTextEditor",
+        "getValue() returns HTML string — compatible with most use cases",
+        "Configure toolbar options if custom toolbar was used"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-S-018",
+      "category": "ALFA_SPECIALIZED",
+      "source": "com.alfa.ui.AlfaColorPicker",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AlfaColorPicker has no built-in Flow equivalent — use an Input[type=color] or third-party add-on",
+      "migrationSteps": [
+        "Use Element(\"input\") with type=color for basic browser color picker",
+        "Evaluate Vaadin Color Picker add-on or build a custom web component",
+        "Handle color value in hex format (#RRGGBB)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-S-019",
+      "category": "ALFA_SPECIALIZED",
+      "source": "com.alfa.ui.AlfaFileDownloader",
+      "target": "com.vaadin.flow.component.html.Anchor",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaFileDownloader triggers file download — use Anchor with StreamResource",
+      "migrationSteps": [
+        "Create StreamResource with file content supplier",
+        "Create Anchor with resource: new Anchor(streamResource, \"filename\")",
+        "Set download attribute: anchor.getElement().setAttribute(\"download\", true)",
+        "Add anchor to layout (hidden or visible)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-S-020",
+      "category": "ALFA_SPECIALIZED",
+      "source": "com.alfa.ui.AlfaExternalResource",
+      "target": "com.vaadin.flow.component.html.Anchor",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "PARTIAL",
+      "context": "AlfaExternalResource maps to Anchor for external resource links",
+      "migrationSteps": [
+        "Replace with Anchor(url, caption)",
+        "Set target for new tab: anchor.setTarget(\"_blank\")",
+        "Transfer rel attribute for security: anchor.getElement().setAttribute(\"rel\", \"noopener noreferrer\")"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-S-021",
+      "category": "ALFA_SPECIALIZED",
+      "source": "com.alfa.ui.AlfaBadge",
+      "target": "com.vaadin.flow.component.html.Span",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaBadge maps to Span with badge theme variant in Vaadin 24",
+      "migrationSteps": [
+        "Replace with Span",
+        "Apply badge CSS: span.getElement().getThemeList().add(\"badge\")",
+        "Transfer badge text and color theme"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-S-022",
+      "category": "ALFA_SPECIALIZED",
+      "source": "com.alfa.ui.AlfaSpinner",
+      "target": "com.vaadin.flow.component.progressbar.ProgressBar",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaSpinner is a loading spinner — use ProgressBar with indeterminate mode",
+      "migrationSteps": [
+        "Replace with ProgressBar",
+        "Set indeterminate: progressBar.setIndeterminate(true)",
+        "Show/hide via setVisible()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-S-023",
+      "category": "ALFA_SPECIALIZED",
+      "source": "com.alfa.ui.AlfaAvatarGroup",
+      "target": "com.vaadin.flow.component.avatar.AvatarGroup",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaAvatarGroup maps to Vaadin 24 AvatarGroup",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaAvatarGroup → com.vaadin.flow.component.avatar.AvatarGroup",
+        "Replace class usage: AlfaAvatarGroup → AvatarGroup",
+        "Configure items via AvatarGroup.AvatarGroupItem"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-S-024",
+      "category": "ALFA_SPECIALIZED",
+      "source": "com.alfa.ui.AlfaAvatar",
+      "target": "com.vaadin.flow.component.avatar.Avatar",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaAvatar maps to Vaadin 24 Avatar",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaAvatar → com.vaadin.flow.component.avatar.Avatar",
+        "Replace class usage: AlfaAvatar → Avatar",
+        "Set name and image via setName() and setImage()"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-S-025",
+      "category": "ALFA_SPECIALIZED",
+      "source": "com.alfa.ui.AlfaDetails",
+      "target": "com.vaadin.flow.component.details.Details",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaDetails (expand/collapse section) maps to Vaadin 24 Details",
+      "migrationSteps": [
+        "Replace import: com.alfa.ui.AlfaDetails → com.vaadin.flow.component.details.Details",
+        "Replace class usage: AlfaDetails → Details",
+        "Set summary and content via constructor or setters"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-NM-001",
+      "category": "ALFA_SPECIALIZED",
+      "source": "com.alfa.ui.AlfaStyloPanel",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "GWT-based styled panel with no Flow equivalent — requires full manual reimplementation",
+      "migrationSteps": [
+        "Document current AlfaStyloPanel behavior and visual appearance",
+        "Design replacement using Div with custom CSS or Lumo theming",
+        "Implement and test replacement component"
+      ],
+      "status": "NEEDS_MAPPING",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-NM-002",
+      "category": "ALFA_SPECIALIZED",
+      "source": "com.alfa.ui.DTPEditorPanel",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Custom DTP editor panel with no Flow equivalent — manual investigation required",
+      "migrationSteps": [
+        "Analyze DTPEditorPanel functionality and data model",
+        "Evaluate third-party rich text or DTP editor alternatives",
+        "Build custom Flow component or integrate web component"
+      ],
+      "status": "NEEDS_MAPPING",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-NM-003",
+      "category": "ALFA_SPECIALIZED",
+      "source": "com.alfa.ui.AlfaColorChooser",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Color picker dialog with no direct Flow equivalent — use native input[type=color] or third-party",
+      "migrationSteps": [
+        "Evaluate Vaadin Color Picker add-on availability for Vaadin 24",
+        "Use Input[type=color] element for basic color selection",
+        "For advanced color chooser, implement a custom web component"
+      ],
+      "status": "NEEDS_MAPPING",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-T-008",
+      "category": "ALFA_TABSHEET",
+      "source": "com.alfa.ui.AlfaStepIndicator",
+      "target": "com.vaadin.flow.component.html.Div",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaStepIndicator shows wizard progress — build with Div and CSS step indicator pattern",
+      "migrationSteps": [
+        "Create a HorizontalLayout with numbered step indicators",
+        "Apply CSS classes to highlight current step",
+        "Update programmatically based on wizard step changes"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-B-011",
+      "category": "ALFA_BUTTON",
+      "source": "com.alfa.ui.AlfaIconButton",
+      "target": "com.vaadin.flow.component.button.Button",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaIconButton maps to Button with icon and ICON theme variant",
+      "migrationSteps": [
+        "Replace with Button(VaadinIcon.ICON.create())",
+        "Apply ButtonVariant.LUMO_ICON",
+        "Transfer tooltip via getElement().setAttribute(\"title\", label)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-B-012",
+      "category": "ALFA_BUTTON",
+      "source": "com.alfa.ui.AlfaActionMenu",
+      "target": "com.vaadin.flow.component.menubar.MenuBar",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaActionMenu is a contextual action menu — use MenuBar or ContextMenu",
+      "migrationSteps": [
+        "Replace with MenuBar for top-level action menus",
+        "Or use ContextMenu for right-click action menus",
+        "Transfer menu items and action listeners"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-I-023",
+      "category": "ALFA_INPUT",
+      "source": "com.alfa.ui.AlfaFiltered",
+      "target": "com.vaadin.flow.component.combobox.ComboBox",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaFiltered is a filterable selection field — map to ComboBox with server-side filtering",
+      "migrationSteps": [
+        "Replace with ComboBox with LazyDataView",
+        "Implement server-side filter in DataProvider callback",
+        "Transfer label and validation rules"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-I-024",
+      "category": "ALFA_INPUT",
+      "source": "com.alfa.ui.AlfaRangeSlider",
+      "target": "com.vaadin.flow.component.html.Div",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "AlfaRangeSlider is a dual-handle range slider — use a third-party slider web component",
+      "migrationSteps": [
+        "Evaluate available range slider add-ons for Vaadin 24",
+        "Or implement using two Input[type=range] with JS overlap prevention",
+        "Transfer min/max/step and value change handling"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-I-025",
+      "category": "ALFA_INPUT",
+      "source": "com.alfa.ui.AlfaMaskedTextField",
+      "target": "com.vaadin.flow.component.textfield.TextField",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaMaskedTextField applies input masking — use TextField with regex/pattern validation",
+      "migrationSteps": [
+        "Replace with TextField",
+        "Apply input pattern via setPattern(regex) or addBlurListener with validation",
+        "Display mask hint as placeholder"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-TB-015",
+      "category": "ALFA_TABLE",
+      "source": "com.alfa.ui.AlfaGroupingTable",
+      "target": "com.vaadin.flow.component.grid.Grid",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaGroupingTable supports row grouping — implement with Grid and custom data grouping",
+      "migrationSteps": [
+        "Replace with Grid",
+        "Implement grouping using section headers or TreeGrid for hierarchical grouping",
+        "Group data in DataProvider and add separator rows"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-TB-016",
+      "category": "ALFA_TABLE",
+      "source": "com.alfa.ui.AlfaFilteringTable",
+      "target": "com.vaadin.flow.component.grid.Grid",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaFilteringTable provides column-level filtering — use Grid with header filter row",
+      "migrationSteps": [
+        "Replace with Grid",
+        "Add a filter row above the header using grid.getHeaderRows()",
+        "Implement per-column filter text fields wired to DataProvider refresh"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-W-011",
+      "category": "ALFA_WINDOW",
+      "source": "com.alfa.ui.AlfaFloatingPanel",
+      "target": "com.vaadin.flow.component.dialog.Dialog",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaFloatingPanel is a draggable floating panel — use Dialog with draggable enabled",
+      "migrationSteps": [
+        "Replace with Dialog",
+        "Set draggable: dialog.setDraggable(true)",
+        "Set resizable: dialog.setResizable(true) if needed",
+        "Transfer panel content"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-W-012",
+      "category": "ALFA_WINDOW",
+      "source": "com.alfa.ui.AlfaWelcomeScreen",
+      "target": "com.vaadin.flow.component.html.Div",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaWelcomeScreen is an application welcome overlay — build with Dialog or full-screen Div",
+      "migrationSteps": [
+        "Replace with a Dialog or full-screen Div covering the viewport",
+        "Transfer welcome content (logo, message, close button)",
+        "Store dismissal state in session or localStorage"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-DND-008",
+      "category": "ALFA_DND",
+      "source": "com.alfa.ui.dnd.AlfaDragImage",
+      "target": "com.vaadin.flow.component.dnd.DragSource",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaDragImage sets a custom drag image — use DragSource with setDragData() and client-side JS",
+      "migrationSteps": [
+        "Use DragSource.create(component)",
+        "Set custom drag image via JavaScript: element.addEventListener('dragstart', e => e.dataTransfer.setDragImage(...))",
+        "Execute client-side JS via UI.getCurrent().getPage().executeJs(...)"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-L-022",
+      "category": "ALFA_LAYOUT",
+      "source": "com.alfa.ui.AlfaCardLayout",
+      "target": "com.vaadin.flow.component.orderedlayout.VerticalLayout",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaCardLayout is a card container — use VerticalLayout with card CSS classes",
+      "migrationSteps": [
+        "Replace with VerticalLayout",
+        "Apply Lumo card CSS classes or custom card styling",
+        "Transfer card title, content, and action slots"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-S-026",
+      "category": "ALFA_SPECIALIZED",
+      "source": "com.alfa.ui.AlfaStatusBar",
+      "target": "com.vaadin.flow.component.html.Footer",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaStatusBar is a status/info bar — use Footer or a fixed-position Div at page bottom",
+      "migrationSteps": [
+        "Replace with Footer or Div with CSS fixed positioning",
+        "Transfer status text, progress, and indicator components",
+        "Apply Lumo theming for consistent appearance"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-S-027",
+      "category": "ALFA_SPECIALIZED",
+      "source": "com.alfa.ui.AlfaBreadcrumb",
+      "target": "com.vaadin.flow.component.html.Nav",
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "PARTIAL",
+      "context": "AlfaBreadcrumb is a navigation breadcrumb — build with Nav containing RouterLinks",
+      "migrationSteps": [
+        "Replace with Nav element containing RouterLink components",
+        "Separate links with span separators (e.g., ' / ')",
+        "Apply aria-label=\"breadcrumb\" for accessibility"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-S-028",
+      "category": "ALFA_SPECIALIZED",
+      "source": "com.alfa.ui.AlfaPageTitle",
+      "target": "com.vaadin.flow.component.html.H2",
+      "actionType": "CHANGE_TYPE",
+      "automatable": "YES",
+      "context": "AlfaPageTitle is a page title component — use H2 or H1 heading element",
+      "migrationSteps": [
+        "Replace with H2 or H1",
+        "Set text via constructor",
+        "Use @PageTitle annotation for browser tab title"
+      ],
+      "status": "MAPPED",
+      "usageCount": 0,
+      "discoveredAt": null
+    },
+    {
+      "id": "ALFA-NM-004",
+      "category": "ALFA_SPECIALIZED",
+      "source": "com.alfa.ui.AlfaCalendarWindow",
+      "target": null,
+      "actionType": "COMPLEX_REWRITE",
+      "automatable": "NO",
+      "context": "Calendar popup window with no direct Flow equivalent — use DatePicker or third-party calendar",
+      "migrationSteps": [
+        "Replace with DatePicker for simple date selection in popup",
+        "For full calendar view in a popup, use Dialog containing a third-party calendar web component",
+        "Evaluate Vaadin Full Calendar add-on for complex calendar requirements"
+      ],
+      "status": "NEEDS_MAPPING",
+      "usageCount": 0,
+      "discoveredAt": null
+    }
+  ]
+}
