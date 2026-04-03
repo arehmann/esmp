@@ -331,10 +331,45 @@ Plans:
 - [ ] 17-02-PLAN.md — migrationPostProcessing() (transitive detection + score recompute + enrichment), ExtractionService/IncrementalIndexingService pipeline hooks, integration tests
 - [ ] 17-03-PLAN.md — RecipeBookController REST API (5 endpoints), extended API records, MCP tool updates (getRecipeBookGaps), validation queries, integration tests
 
+### Phase 18: Module-Aware Batch Parsing for Enterprise Scale
+
+**Goal**: Auto-detect Gradle/Maven multi-module projects at extraction time, build an inter-module dependency graph, and extract modules in wave order — each with its own scoped classpath and independent Neo4j transaction — so ESMP can parse enterprise codebases of 4M+ LOC without OOM or infinite type-resolution loops
+**Depends on**: Phase 15
+**Requirements**: MODEX-01, MODEX-02, MODEX-03, MODEX-04, MODEX-05
+**Success Criteria** (what must be TRUE):
+  1. ModuleDetectionService parses settings.gradle (Gradle) and pom.xml (Maven) and produces a topologically sorted wave order with inter-module dependency graph
+  2. Each module is extracted with classpath = compiled class directories of upstream dependency modules only
+  3. Each module's nodes are persisted in a separate Neo4j transaction; cross-module linking runs as a single final pass
+  4. SSE progress events include module name, stage, file counts, and per-module duration
+  5. Single-shot fallback applies when no build files are detected (non-multi-module project)
+**Plans:** 2/2 plans complete
+
+Plans:
+- [x] 18-01-PLAN.md — ModuleDetectionService (Gradle + Maven), ModuleGraph (Kahn's BFS wave sort), ModuleDescriptor record, integration tests
+- [x] 18-02-PLAN.md — ExtractionService module-aware loop, per-module classpath, persistModuleNodes @Transactional, SSE progress, single-shot fallback, integration tests
+
+### Phase 19: Alfa* Wrapper Recipe Book & Deep Transitive Detection
+
+**Goal**: getMigrationPlan and getRecipeBookGaps return actionable results for all 1,076 Vaadin-affected classes in adsuite-market — not just the ~150 that directly import com.vaadin.*. Achieved by ingesting the full Alfa* wrapper catalog into the recipe book and extending transitive detection to follow inheritance chains through Alfa* intermediaries to their Vaadin 7 ancestors.
+**Depends on**: Phase 17, Phase 18
+**Requirements**: ALFA-01, ALFA-02, ALFA-03, ALFA-04, ALFA-05
+**Success Criteria** (what must be TRUE):
+  1. Recipe book contains 150+ Alfa* → V24 mappings covering all 10 wrapper categories (layouts, tabsheet, buttons, inputs, date/time, table/tree, windows, portal, DnD, specialized) ingested from the master plan catalog
+  2. Transitive detection follows EXTENDS chains of arbitrary depth through Alfa* intermediaries — a class that uses only AlfaButton (which extends com.vaadin.ui.Button) receives migration actions for its Alfa* usages without directly importing Vaadin
+  3. getRecipeBookGaps returns real unmapped Alfa* types (currently returns [] because Alfa* classes are not recognized as Vaadin-derived)
+  4. getMigrationPlan returns migrationSteps for Layer 2 business classes that use only Alfa* wrappers, including pureWrapper=true classification and vaadinAncestor chain
+  5. REST API exposes recipe book reload endpoint that re-ingests the Alfa* catalog overlay without restart
+**Plans:** 0/3 plans defined
+
+Plans:
+- [ ] 19-01-PLAN.md — Alfa* catalog JSON overlay (150+ rules, all 10 categories), recipe book ingestion, RecipeBookRegistry reload, NEEDS_MAPPING entries for GWT/spike classes (AlfaStyloPanel, DTPEditorPanel, AlfaColorChooser, AlfaCalendarWindow)
+- [ ] 19-02-PLAN.md — Deep transitive detection: extend migrationPostProcessing() to walk EXTENDS*1..10 through Alfa* intermediaries, annotate Layer 2 classes with inherited actions, pureWrapper heuristic, integration tests with fixture hierarchy
+- [ ] 19-03-PLAN.md — getRecipeBookGaps fix (Alfa* now visible), getMigrationPlan Layer 2 output, REST endpoint for Alfa* overlay reload, MCP tool updates, validation queries, integration tests
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15 -> 16 -> 17
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15 -> 16 -> 17 -> 18 -> 19
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -355,3 +390,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 15. Docker Deployment & Enterprise Scale | 3/3 | Complete    | 2026-03-28 |
 | 16. OpenRewrite Recipe-Based Migration Engine | 3/3 | Complete    | 2026-03-28 |
 | 17. Migration Recipe Book & Transitive Detection | 3/3 | Complete    | 2026-03-28 |
+| 18. Module-Aware Batch Parsing for Enterprise Scale | 2/2 | Complete | 2026-03-29 |
+| 19. Alfa* Wrapper Recipe Book & Deep Transitive Detection | 0/3 | Not started | — |
