@@ -6,6 +6,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -166,12 +167,13 @@ public class RecipeBookController {
   /**
    * Re-reads the recipe book from disk, picking up any manual edits or new overlay files.
    *
-   * @return 200 on success
+   * @return 200 with JSON body containing the rule count and status
    */
   @PostMapping("/reload")
-  public ResponseEntity<Void> reload() {
+  public ResponseEntity<Map<String, Object>> reload() {
     recipeBookRegistry.reload();
-    log.info("Recipe book reloaded: {} rules loaded", recipeBookRegistry.getRules().size());
-    return ResponseEntity.ok().build();
+    int count = recipeBookRegistry.getRules().size();
+    log.info("Recipe book reloaded: {} rules loaded", count);
+    return ResponseEntity.ok(Map.of("count", count, "status", "reloaded"));
   }
 }

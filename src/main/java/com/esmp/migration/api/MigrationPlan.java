@@ -16,6 +16,10 @@ import java.util.List;
  * @param manualCount number of non-automatable actions (PARTIAL + NO)
  * @param automationScore ratio: (yesCount + 0.5 * partialCount) / totalCount
  * @param needsAiMigration true if any action has automatable=NO
+ * @param hasAlfaIntermediaries true if any action in this plan has inheritedFrom starting with
+ *                              "com.alfa." — indicates Layer 2 classes using Alfa* wrappers
+ * @param alfaIntermediaryCount count of distinct Alfa* intermediary class FQNs present in this
+ *                              plan's inherited actions
  */
 public record MigrationPlan(
     String classFqn,
@@ -25,4 +29,7 @@ public record MigrationPlan(
     int automatableCount,
     int manualCount,
     double automationScore,
-    boolean needsAiMigration) {}
+    boolean needsAiMigration,
+    // Phase 19 Alfa* fields
+    boolean hasAlfaIntermediaries,
+    int alfaIntermediaryCount) {}

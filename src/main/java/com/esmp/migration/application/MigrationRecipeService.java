@@ -107,6 +107,14 @@ public class MigrationRecipeService {
 
     double automationScore = total > 0 ? (yesCount + 0.5 * partialCount) / total : 0.0;
 
+    boolean hasAlfaIntermediaries = actions.stream()
+        .anyMatch(a -> a.inheritedFrom() != null && a.inheritedFrom().startsWith("com.alfa."));
+    int alfaIntermediaryCount = (int) actions.stream()
+        .filter(a -> a.inheritedFrom() != null && a.inheritedFrom().startsWith("com.alfa."))
+        .map(MigrationActionEntry::inheritedFrom)
+        .distinct()
+        .count();
+
     return new MigrationPlan(
         classFqn,
         automatable,
@@ -115,7 +123,9 @@ public class MigrationRecipeService {
         yesCount,
         manual.size(),
         automationScore,
-        needsAi);
+        needsAi,
+        hasAlfaIntermediaries,
+        alfaIntermediaryCount);
   }
 
   /**
@@ -336,6 +346,13 @@ public class MigrationRecipeService {
         .map(RecipeRule::source)
         .collect(Collectors.toList());
 
+    List<RecipeRule> topAlfaGaps = recipeBookRegistry.getRules().stream()
+        .filter(r -> "NEEDS_MAPPING".equals(r.status())
+            && r.source() != null && r.source().startsWith("com.alfa."))
+        .sorted(java.util.Comparator.comparingInt(RecipeRule::usageCount).reversed())
+        .limit(5)
+        .collect(Collectors.toList());
+
     var result = neo4jClient
         .query(query)
         .fetchAs(ModuleMigrationSummary.class)
@@ -353,12 +370,13 @@ public class MigrationRecipeService {
           return new ModuleMigrationSummary(
               "all", totalClasses, classesWithActions, fullyAutomatable,
               partiallyAutomatable, needsAiOnly, avgScore, totalActions,
-              totalAutomatable, transitiveClassCount, 0.0, 0.0, topGaps);
+              totalAutomatable, transitiveClassCount, 0.0, 0.0, topGaps, 0, 0, topAlfaGaps);
         })
         .one();
 
     if (result.isEmpty()) {
-      return new ModuleMigrationSummary("all", 0, 0, 0, 0, 0, 0.0, 0, 0, 0, 0.0, 0.0, topGaps);
+      return new ModuleMigrationSummary("all", 0, 0, 0, 0, 0, 0.0, 0, 0, 0, 0.0, 0.0, topGaps,
+          0, 0, topAlfaGaps);
     }
 
     var coverageResult = neo4jClient
@@ -387,13 +405,41 @@ public class MigrationRecipeService {
 
     double coverageByUsage = usageResult.map(arr -> arr[0]).orElse(0.0);
 
+    // Alfa* sub-query: count alfaAffectedClassCount and layer2ClassCount
+    String alfaQueryProject =
+        """
+        MATCH (c:JavaClass)-[:HAS_MIGRATION_ACTION]->(ma:MigrationAction)
+        WHERE NOT (c.packageName CONTAINS 'castor'
+                OR c.packageName CONTAINS 'persistentObjects'
+                OR c.packageName CONTAINS 'businessObjects'
+                OR c.packageName CONTAINS 'com4j')
+        WITH
+          count(DISTINCT CASE WHEN ma.source STARTS WITH 'com.alfa.' THEN c ELSE null END) AS alfaAffected,
+          count(DISTINCT CASE WHEN ma.isInherited = true
+                               AND ma.inheritedFrom STARTS WITH 'com.alfa.'
+                               THEN c ELSE null END) AS layer2Count
+        RETURN alfaAffected, layer2Count
+        """;
+
+    var alfaResult = neo4jClient
+        .query(alfaQueryProject)
+        .fetchAs(int[].class)
+        .mappedBy((ts, record) -> new int[]{
+            record.get("alfaAffected").asInt(0),
+            record.get("layer2Count").asInt(0)
+        })
+        .one();
+    int alfaAffectedClassCount = alfaResult.map(arr -> arr[0]).orElse(0);
+    int layer2ClassCount = alfaResult.map(arr -> arr[1]).orElse(0);
+
     ModuleMigrationSummary base = result.get();
     return new ModuleMigrationSummary(
         base.module(), base.totalClasses(), base.classesWithActions(),
         base.fullyAutomatableClasses(), base.partiallyAutomatableClasses(),
         base.needsAiOnlyClasses(), base.averageAutomationScore(),
         base.totalActions(), base.totalAutomatableActions(),
-        base.transitiveClassCount(), coverageByType, coverageByUsage, topGaps);
+        base.transitiveClassCount(), coverageByType, coverageByUsage, topGaps,
+        alfaAffectedClassCount, layer2ClassCount, topAlfaGaps);
   }
 
   public ModuleMigrationSummary getModuleSummary(String module) {
@@ -444,6 +490,13 @@ public class MigrationRecipeService {
         .map(RecipeRule::source)
         .collect(Collectors.toList());
 
+    List<RecipeRule> topAlfaGaps = recipeBookRegistry.getRules().stream()
+        .filter(r -> "NEEDS_MAPPING".equals(r.status())
+            && r.source() != null && r.source().startsWith("com.alfa."))
+        .sorted(java.util.Comparator.comparingInt(RecipeRule::usageCount).reversed())
+        .limit(5)
+        .collect(Collectors.toList());
+
     // Execute primary query
     var result = neo4jClient
         .query(query)
@@ -465,13 +518,13 @@ public class MigrationRecipeService {
               return new ModuleMigrationSummary(
                   module, totalClasses, classesWithActions, fullyAutomatable,
                   partiallyAutomatable, needsAiOnly, avgScore, totalActions,
-                  totalAutomatable, transitiveClassCount, 0.0, 0.0, topGaps);
+                  totalAutomatable, transitiveClassCount, 0.0, 0.0, topGaps, 0, 0, topAlfaGaps);
             })
         .one();
 
     if (result.isEmpty()) {
       return new ModuleMigrationSummary(module, 0, 0, 0, 0, 0, 0.0, 0, 0, 0, 0.0, 0.0,
-          topGaps);
+          topGaps, 0, 0, topAlfaGaps);
     }
 
     // Execute coverage query to fill coverageByType and coverageByUsage
@@ -519,13 +572,40 @@ public class MigrationRecipeService {
 
     double coverageByUsage = usageResult.map(arr -> arr[0]).orElse(0.0);
 
+    // Alfa* sub-query: count alfaAffectedClassCount and layer2ClassCount for this module
+    String alfaQuery =
+        """
+        MATCH (c:JavaClass)-[:HAS_MIGRATION_ACTION]->(ma:MigrationAction)
+        WHERE c.module = $module
+        WITH
+          count(DISTINCT CASE WHEN ma.source STARTS WITH 'com.alfa.' THEN c ELSE null END) AS alfaAffected,
+          count(DISTINCT CASE WHEN ma.isInherited = true
+                               AND ma.inheritedFrom STARTS WITH 'com.alfa.'
+                               THEN c ELSE null END) AS layer2Count
+        RETURN alfaAffected, layer2Count
+        """;
+
+    var alfaResult = neo4jClient
+        .query(alfaQuery)
+        .bind(module)
+        .to("module")
+        .fetchAs(int[].class)
+        .mappedBy((ts, record) -> new int[]{
+            record.get("alfaAffected").asInt(0),
+            record.get("layer2Count").asInt(0)
+        })
+        .one();
+    int alfaAffectedClassCount = alfaResult.map(arr -> arr[0]).orElse(0);
+    int layer2ClassCount = alfaResult.map(arr -> arr[1]).orElse(0);
+
     ModuleMigrationSummary base = result.get();
     return new ModuleMigrationSummary(
         base.module(), base.totalClasses(), base.classesWithActions(),
         base.fullyAutomatableClasses(), base.partiallyAutomatableClasses(),
         base.needsAiOnlyClasses(), base.averageAutomationScore(),
         base.totalActions(), base.totalAutomatableActions(),
-        base.transitiveClassCount(), coverageByType, coverageByUsage, topGaps);
+        base.transitiveClassCount(), coverageByType, coverageByUsage, topGaps,
+        alfaAffectedClassCount, layer2ClassCount, topAlfaGaps);
   }
 
   // ---------------------------------------------------------------------------

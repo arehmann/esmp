@@ -1,6 +1,7 @@
 package com.esmp.migration.api;
 
 import java.util.List;
+import com.esmp.migration.api.RecipeRule;
 
 /**
  * Aggregated migration summary for a module.
@@ -26,6 +27,12 @@ import java.util.List;
  *                                     to a non-NEEDS_MAPPING recipe (0.0..1.0)
  * @param topGaps                      top-5 NEEDS_MAPPING source FQNs sorted by usageCount
  *                                     descending (from recipe book)
+ * @param alfaAffectedClassCount       classes with at least one MigrationAction where source
+ *                                     starts with "com.alfa.*"
+ * @param layer2ClassCount             classes with isInherited=true AND inheritedFrom starts with
+ *                                     "com.alfa.*" (Layer 2 business classes using Alfa* wrappers)
+ * @param topAlfaGaps                  top-5 NEEDS_MAPPING Alfa* rules sorted by usageCount
+ *                                     descending
  */
 public record ModuleMigrationSummary(
     String module,
@@ -41,4 +48,8 @@ public record ModuleMigrationSummary(
     int transitiveClassCount,
     double coverageByType,
     double coverageByUsage,
-    List<String> topGaps) {}
+    List<String> topGaps,
+    // Phase 19 Alfa* fields
+    int alfaAffectedClassCount,
+    int layer2ClassCount,
+    List<RecipeRule> topAlfaGaps) {}
