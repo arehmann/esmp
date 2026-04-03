@@ -96,6 +96,12 @@ public class RecipeBookRegistry {
       }
       log.info("Loaded {} base rules from {}", merged.size(), runtimePath);
 
+      // Step 2b: Load built-in Alfa* overlay from classpath
+      String alfaPath = migrationConfig.getAlfaOverlayPath();
+      if (alfaPath != null && !alfaPath.isBlank()) {
+        loadOverlayFromClasspath(alfaPath, merged);
+      }
+
       // Apply custom overlay if configured and exists
       String overlayPath = migrationConfig.getCustomRecipeBookPath();
       if (overlayPath != null && !overlayPath.isBlank()) {
@@ -177,6 +183,34 @@ public class RecipeBookRegistry {
   // =========================================================================
   // Helpers
   // =========================================================================
+
+  /**
+   * Loads overlay rules from a classpath resource into the merged map.
+   * Strips the "classpath:" prefix and resolves via {@link Class#getResourceAsStream}.
+   * Logs a WARN if the resource is not found but does NOT throw — startup continues.
+   *
+   * @param resourcePath the classpath resource path, optionally prefixed with "classpath:"
+   * @param merged the map to merge loaded rules into (keyed by source FQN)
+   */
+  private void loadOverlayFromClasspath(String resourcePath, Map<String, RecipeRule> merged) {
+    String resolved = resourcePath.startsWith("classpath:")
+        ? resourcePath.substring("classpath:".length()) : resourcePath;
+    try (InputStream in = getClass().getResourceAsStream(resolved)) {
+      if (in == null) {
+        log.warn("Alfa overlay resource not found: {} - skipping", resolved);
+        return;
+      }
+      RecipeBook overlayBook = objectMapper.readValue(in, RecipeBook.class);
+      int count = 0;
+      for (RecipeRule rule : overlayBook.rules()) {
+        merged.put(rule.source(), withIsBase(rule, false));
+        count++;
+      }
+      log.info("Loaded {} Alfa* overlay rules from classpath:{}", count, resolved);
+    } catch (IOException e) {
+      log.warn("Failed to load Alfa overlay from {}: {} - skipping", resolved, e.getMessage());
+    }
+  }
 
   /**
    * Returns a copy of the rule with the {@code isBase} field set to the specified value.

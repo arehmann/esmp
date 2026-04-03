@@ -21,6 +21,7 @@ import org.springframework.stereotype.Component;
  *       com.myapp.CustomButton: com.vaadin.flow.component.button.Button
  *     recipe-book-path: data/migration/vaadin-recipe-book.json
  *     custom-recipe-book-path: /opt/esmp/custom-recipes.json
+ *     alfa-overlay-path: classpath:/migration/alfa-recipe-book-overlay.json
  *     transitive:
  *       override-weight: 0.3
  *       own-calls-weight: 0.3
@@ -51,6 +52,10 @@ public class MigrationConfig {
    * rules with the same source FQN. Empty string disables overlay loading.
    */
   private String customRecipeBookPath = "";
+
+  /** Path to the built-in Alfa* overlay JSON. Prefix "classpath:" triggers classpath loading.
+   *  Default: "classpath:/migration/alfa-recipe-book-overlay.json". */
+  private String alfaOverlayPath = "classpath:/migration/alfa-recipe-book-overlay.json";
 
   /** Transitive detection weight configuration. */
   private TransitiveConfig transitive = new TransitiveConfig();
@@ -150,6 +155,14 @@ public class MigrationConfig {
 
   public void setCustomRecipeBookPath(String customRecipeBookPath) {
     this.customRecipeBookPath = customRecipeBookPath;
+  }
+
+  public String getAlfaOverlayPath() {
+    return alfaOverlayPath;
+  }
+
+  public void setAlfaOverlayPath(String alfaOverlayPath) {
+    this.alfaOverlayPath = alfaOverlayPath;
   }
 
   public TransitiveConfig getTransitive() {

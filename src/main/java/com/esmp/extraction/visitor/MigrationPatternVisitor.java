@@ -27,6 +27,7 @@ import org.openrewrite.java.tree.J;
  *   <li>JAVAX_JAKARTA prefix rules — rules with CHANGE_PACKAGE action and JAVAX_JAKARTA category
  *       are applied as package prefix replacements
  *   <li>Unknown com.vaadin.* type (not in com.vaadin.flow.*) — produces COMPLEX_REWRITE/NO
+ *   <li>Unknown com.alfa.* type (not in registry) — produces COMPLEX_REWRITE/NO
  * </ol>
  *
  * <p>Rules are captured as a snapshot from the registry at construction time for thread safety.
@@ -140,6 +141,18 @@ public class MigrationPatternVisitor extends JavaIsoVisitor<ExtractionAccumulato
           "Unknown — manual investigation required",
           Automatable.NO,
           "Unknown Vaadin 7 type — manual migration required"
+      ));
+      return;
+    }
+
+    // 4. Unknown com.alfa.* type - not found in registry
+    if (importFqn.startsWith("com.alfa.")) {
+      acc.addMigrationAction(classFqn, new MigrationActionData(
+          ActionType.COMPLEX_REWRITE,
+          importFqn,
+          "Unknown Alfa* type - manual investigation required",
+          Automatable.NO,
+          "Unknown Alfa* wrapper type - check if an Alfa* overlay rule covers this"
       ));
     }
   }
