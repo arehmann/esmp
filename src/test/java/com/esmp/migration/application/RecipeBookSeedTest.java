@@ -20,7 +20,8 @@ import org.junit.jupiter.api.Test;
  *   <li>Rule count >= 80
  *   <li>All rules have non-null id, category, source, actionType, automatable, status
  *   <li>All rule IDs are unique
- *   <li>All categories are one of: COMPONENT, DATA_BINDING, SERVER, JAVAX_JAKARTA, DISCOVERED
+ *   <li>All categories are one of: COMPONENT, DATA_BINDING, SERVER, JAVAX_JAKARTA, DISCOVERED,
+ *       EVENT, NAVIGATION, THEME, and all 10 ALFA_* categories
  *   <li>All actionTypes are one of: CHANGE_TYPE, CHANGE_PACKAGE, COMPLEX_REWRITE
  *   <li>All automatable values are one of: YES, PARTIAL, NO
  *   <li>All status values are one of: MAPPED, NEEDS_MAPPING
@@ -33,8 +34,12 @@ class RecipeBookSeedTest {
 
   private static List<RecipeRule> rules;
 
-  private static final Set<String> VALID_CATEGORIES =
-      Set.of("COMPONENT", "DATA_BINDING", "SERVER", "JAVAX_JAKARTA", "DISCOVERED");
+  private static final Set<String> VALID_CATEGORIES = Set.of(
+      "COMPONENT", "DATA_BINDING", "SERVER", "JAVAX_JAKARTA", "DISCOVERED",
+      "EVENT", "NAVIGATION", "THEME",
+      "ALFA_LAYOUT", "ALFA_TABSHEET", "ALFA_BUTTON", "ALFA_INPUT", "ALFA_DATETIME",
+      "ALFA_TABLE", "ALFA_WINDOW", "ALFA_PORTAL", "ALFA_DND", "ALFA_SPECIALIZED"
+  );
 
   private static final Set<String> VALID_ACTION_TYPES =
       Set.of("CHANGE_TYPE", "CHANGE_PACKAGE", "COMPLEX_REWRITE");
