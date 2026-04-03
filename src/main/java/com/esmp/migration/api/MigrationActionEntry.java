@@ -7,7 +7,7 @@ import java.util.List;
  *
  * <p>Maps to a {@code MigrationAction} Neo4j node, carrying the action type, source and target
  * FQNs, automation classification, optional context notes, and transitive enrichment fields added
- * in Phase 17.
+ * in Phase 17 and Phase 19.
  *
  * @param actionType          the action type (e.g., CHANGE_TYPE, CHANGE_PACKAGE, COMPLEX_REWRITE)
  * @param source              the Vaadin 7 or javax fully qualified name being replaced
@@ -26,6 +26,9 @@ import java.util.List;
  *                            direct actions
  * @param ownVaadinCalls      number of distinct Vaadin 7 types the child calls directly (not via
  *                            ancestor); null for direct actions
+ * @param ownAlfaCalls        number of distinct Alfa* wrapper types this class calls directly in
+ *                            its own methods; null for direct (non-inherited) actions and for
+ *                            inherited actions where no Alfa* calls were detected
  * @param migrationSteps      AI-actionable migration steps from the recipe book; may be empty but
  *                            never null
  */
@@ -43,4 +46,6 @@ public record MigrationActionEntry(
     Double transitiveComplexity,
     Integer overrideCount,
     Integer ownVaadinCalls,
+    // Phase 19 Alfa* enrichment field
+    Integer ownAlfaCalls,
     List<String> migrationSteps) {}

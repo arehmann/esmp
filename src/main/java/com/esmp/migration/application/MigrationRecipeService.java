@@ -949,7 +949,8 @@ public class MigrationRecipeService {
                ma.pureWrapper AS pureWrapper,
                ma.transitiveComplexity AS transitiveComplexity,
                ma.overrideCount AS overrideCount,
-               ma.ownVaadinCalls AS ownVaadinCalls
+               ma.ownVaadinCalls AS ownVaadinCalls,
+               ma.ownAlfaCalls AS ownAlfaCalls
         """;
 
     return new ArrayList<>(
@@ -978,6 +979,8 @@ public class MigrationRecipeService {
                       ? null : record.get("overrideCount").asInt();
                   Integer ownVaadinCalls = record.get("ownVaadinCalls").isNull()
                       ? null : record.get("ownVaadinCalls").asInt();
+                  Integer ownAlfaCalls = record.get("ownAlfaCalls").isNull()
+                      ? null : record.get("ownAlfaCalls").asInt();
                   // inheritedFrom = source (direct ancestor — com.alfa.* or com.vaadin.*)
                   // vaadinAncestor = ma.vaadinAncestor (ultimate com.vaadin.* ancestor)
                   // For direct com.vaadin.* actions the values are identical.
@@ -995,6 +998,7 @@ public class MigrationRecipeService {
                       transitiveComplexity,
                       overrideCount,
                       ownVaadinCalls,
+                      ownAlfaCalls,
                       steps);
                 })
             .all());
