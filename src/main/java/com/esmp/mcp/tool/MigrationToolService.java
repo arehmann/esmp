@@ -143,8 +143,11 @@ public class MigrationToolService {
    */
   @Tool(description = "Get migration plan for a Java class showing which Vaadin 7 to Vaadin 24 "
       + "transforms are automatable by OpenRewrite recipe and which need AI-assisted migration. "
-      + "Returns automation score, automatable action list (type renames, import swaps), and "
-      + "manual action list (complex rewrites like Table to Grid, data binding changes).")
+      + "Returns automation score, automatable action list, manual action list, "
+      + "hasAlfaIntermediaries flag (true when Layer 2 class uses Alfa* wrappers), and "
+      + "alfaIntermediaryCount (number of distinct Alfa* wrapper classes in the inheritance chain). "
+      + "For Layer 2 classes, actions include isInherited=true, inheritedFrom (Alfa* FQN), "
+      + "vaadinAncestor (ultimate com.vaadin.* ancestor), and ownAlfaCalls count.")
   public MigrationPlan getMigrationPlan(String classFqn) {
     log.info("MCP getMigrationPlan called for: {}", classFqn);
     try {
@@ -187,10 +190,12 @@ public class MigrationToolService {
    * @param classFqn optional class FQN to filter gaps by
    * @return list of {@link RecipeRule} with status=NEEDS_MAPPING
    */
-  @Tool(description = "Returns unmapped Vaadin 7 types (NEEDS_MAPPING) sorted by usageCount "
-      + "descending. Optional classFqn filter: when provided, returns only gaps affecting "
-      + "that specific class. When omitted, returns all project-wide gaps. "
-      + "Use to discover what Vaadin 7 types need migration mappings.")
+  @Tool(description = "Returns unmapped migration types (NEEDS_MAPPING) sorted by usageCount "
+      + "descending. Includes both unmapped com.vaadin.* types and unmapped Alfa* wrapper types "
+      + "(com.alfa.*) that have no migration mapping yet (e.g. AlfaStyloPanel, DTPEditorPanel). "
+      + "Optional classFqn filter: when provided, returns only gaps affecting that specific class. "
+      + "When omitted, returns all project-wide gaps. "
+      + "Use to discover what Vaadin 7 and Alfa* types need migration mappings before automating.")
   public List<RecipeRule> getRecipeBookGaps(String classFqn) {
     log.info("MCP getRecipeBookGaps called classFqn={}", classFqn);
 
