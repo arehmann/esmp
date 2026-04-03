@@ -104,6 +104,13 @@ public class MigrationActionNode {
    */
   private Integer ownVaadinCalls;
 
+  /**
+   * Number of distinct Alfa* wrapper types (com.alfa.*) the class calls or uses directly in its
+   * own declared methods. Contributes to {@link #transitiveComplexity} via alfaCallsWeight.
+   * {@code null} for direct (non-inherited) actions.
+   */
+  private Integer ownAlfaCalls;
+
   // =========================================================================
   // Constructors
   // =========================================================================
@@ -228,5 +235,13 @@ public class MigrationActionNode {
 
   public void setOwnVaadinCalls(Integer ownVaadinCalls) {
     this.ownVaadinCalls = ownVaadinCalls;
+  }
+
+  public Integer getOwnAlfaCalls() {
+    return ownAlfaCalls;
+  }
+
+  public void setOwnAlfaCalls(Integer ownAlfaCalls) {
+    this.ownAlfaCalls = ownAlfaCalls;
   }
 }

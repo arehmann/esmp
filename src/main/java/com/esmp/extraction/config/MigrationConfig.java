@@ -28,6 +28,7 @@ import org.springframework.stereotype.Component;
  *       binding-weight: 0.2
  *       component-weight: 0.2
  *       ai-assisted-threshold: 0.4
+ *       alfa-calls-weight: 0.2
  * </pre>
  */
 @Component
@@ -88,6 +89,12 @@ public class MigrationConfig {
      */
     private double aiAssistedThreshold = 0.4;
 
+    /**
+     * Weight for the own Alfa* wrapper call count component. Default: 0.2.
+     * Applies when a Layer 2 class calls Alfa* types directly in addition to inheriting from them.
+     */
+    private double alfaCallsWeight = 0.2;
+
     public double getOverrideWeight() {
       return overrideWeight;
     }
@@ -126,6 +133,14 @@ public class MigrationConfig {
 
     public void setAiAssistedThreshold(double aiAssistedThreshold) {
       this.aiAssistedThreshold = aiAssistedThreshold;
+    }
+
+    public double getAlfaCallsWeight() {
+      return alfaCallsWeight;
+    }
+
+    public void setAlfaCallsWeight(double alfaCallsWeight) {
+      this.alfaCallsWeight = alfaCallsWeight;
     }
   }
 

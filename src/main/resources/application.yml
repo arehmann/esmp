@@ -89,6 +89,7 @@ esmp:
       binding-weight: 0.2
       component-weight: 0.2
       ai-assisted-threshold: 0.4
+      alfa-calls-weight: 0.2
   vector:
     collection-name: code_chunks
     vector-dimension: 384
